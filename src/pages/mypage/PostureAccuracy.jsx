@@ -3,12 +3,16 @@ import Card from "@/components/ui/Card";
 function Row({ label, value }) {
   const pct = Math.max(0, Math.min(100, value));
   return (
-    <div className="rounded-2xl bg-slate-50 p-3">
+    <div className="rounded-2xl bg-[color:var(--c-surface-2)] p-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-extrabold text-slate-700">{label}</p>
-        <p className="text-xs font-extrabold text-slate-900">{pct}%</p>
+        <p className="text-xs font-extrabold text-[color:var(--c-muted)]">
+          {label}
+        </p>
+        <p className="text-xs font-extrabold text-[color:var(--c-text)]">
+          {pct}%
+        </p>
       </div>
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-white">
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-[color:var(--c-surface)]">
         <div
           className="h-full rounded-full bg-emerald-500"
           style={{ width: `${pct}%` }}
@@ -29,18 +33,22 @@ export default function PostureAccuracy() {
   return (
     <section className="space-y-4">
       <div>
-        <p className="text-sm font-semibold text-slate-600">자세 정확도 통계</p>
+        <p className="text-sm font-semibold text-[color:var(--c-muted)]">
+          자세 정확도 통계
+        </p>
         <p className="mt-1 text-lg font-extrabold">요약</p>
       </div>
 
       <Card>
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-slate-600">전체 평균</p>
-            <p className="mt-1 text-3xl font-extrabold text-slate-900">
+            <p className="text-sm font-semibold text-[color:var(--c-muted)]">
+              전체 평균
+            </p>
+            <p className="mt-1 text-3xl font-extrabold text-[color:var(--c-text)]">
               {overall}%
             </p>
-            <p className="mt-2 text-xs font-semibold text-slate-500">
+            <p className="mt-2 text-xs font-semibold text-[color:var(--c-muted-2)]">
               최근 7일 기준 (더미)
             </p>
           </div>
@@ -66,7 +74,7 @@ export default function PostureAccuracy() {
 
       <Card>
         <p className="text-sm font-extrabold">코칭 포인트</p>
-        <ul className="mt-3 list-disc space-y-2 pl-5 text-sm font-semibold text-slate-700">
+        <ul className="mt-3 list-disc space-y-2 pl-5 text-sm font-semibold text-[color:var(--c-text)]">
           <li>스쿼트: 무릎이 안쪽으로 말리지 않게 주의</li>
           <li>푸쉬업: 코어 고정 유지</li>
           <li>플랭크: 허리 과신전 방지</li>
@@ -75,4 +83,3 @@ export default function PostureAccuracy() {
     </section>
   );
 }
-

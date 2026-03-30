@@ -2,17 +2,7 @@ import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { clearAuthToken } from "@/auth/auth";
 import { useNavigate } from "react-router-dom";
-
-function ChevronRight() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M9.29 6.71a1 1 0 0 1 1.42 0l5 5a1 1 0 0 1 0 1.42l-5 5a1 1 0 1 1-1.42-1.42L13.59 12 9.3 7.71a1 1 0 0 1 0-1.42Z"
-      />
-    </svg>
-  );
-}
+import { ChevronRight } from "lucide-react";
 
 function MenuRow({ label, description, onClick }) {
   return (
@@ -21,22 +11,22 @@ function MenuRow({ label, description, onClick }) {
       onClick={onClick}
       className={[
         "flex w-full items-center justify-between gap-4 px-4 py-4 text-left",
-        "hover:bg-slate-50 active:bg-slate-100 transition",
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+        "hover:bg-[color:var(--c-surface-2)] active:bg-[color:var(--c-surface-2)] transition",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--c-surface)]"
       ].join(" ")}
     >
       <div className="min-w-0">
-        <p className="truncate text-sm font-extrabold text-slate-900">
+        <p className="truncate text-sm font-extrabold text-[color:var(--c-text)]">
           {label}
         </p>
         {description ? (
-          <p className="mt-1 truncate text-xs font-semibold text-slate-500">
+          <p className="mt-1 truncate text-xs font-semibold text-[color:var(--c-muted-2)]">
             {description}
           </p>
         ) : null}
       </div>
-      <span className="shrink-0 text-slate-400">
-        <ChevronRight />
+      <span className="shrink-0 text-[color:var(--c-muted-2)]">
+        <ChevronRight size={20} aria-hidden="true" />
       </span>
     </button>
   );
@@ -63,11 +53,13 @@ export default function MyPage() {
       <Card className="p-0">
         <div className="flex items-center justify-between gap-4 p-4">
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-slate-600">프로필</p>
-            <p className="mt-1 truncate text-xl font-extrabold text-slate-900">
+            <p className="text-sm font-semibold text-[color:var(--c-muted)]">
+              프로필
+            </p>
+            <p className="mt-1 truncate text-xl font-extrabold text-[color:var(--c-text)]">
               {user.name}
             </p>
-            <p className="mt-1 truncate text-xs font-semibold text-slate-500">
+            <p className="mt-1 truncate text-xs font-semibold text-[color:var(--c-muted-2)]">
               {user.bio}
             </p>
           </div>
@@ -82,13 +74,15 @@ export default function MyPage() {
 
       <Card className="p-0">
         <div className="px-4 pb-3 pt-4">
-          <p className="text-sm font-extrabold text-slate-900">메뉴</p>
-          <p className="mt-1 text-xs font-semibold text-slate-500">
+          <p className="text-sm font-extrabold text-[color:var(--c-text)]">
+            메뉴
+          </p>
+          <p className="mt-1 text-xs font-semibold text-[color:var(--c-muted-2)]">
             필요한 설정과 기록을 빠르게 확인해요.
           </p>
         </div>
 
-        <ul className="divide-y divide-slate-100">
+        <ul className="divide-y divide-[color:var(--c-border)]">
           {menus.map((m) => (
             <li key={m.to}>
               <MenuRow
@@ -103,8 +97,10 @@ export default function MyPage() {
 
       <Card className="p-0">
         <div className="px-4 pb-3 pt-4">
-          <p className="text-sm font-extrabold text-slate-900">계정</p>
-          <p className="mt-1 text-xs font-semibold text-slate-500">
+          <p className="text-sm font-extrabold text-[color:var(--c-text)]">
+            계정
+          </p>
+          <p className="mt-1 text-xs font-semibold text-[color:var(--c-muted-2)]">
             로그인/보안 관련 설정
           </p>
         </div>

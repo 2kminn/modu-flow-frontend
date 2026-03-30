@@ -5,11 +5,11 @@ function ProgressBar({ value, total }) {
   const pct = Math.min(100, Math.round((value / total) * 100));
   return (
     <div className="mt-3">
-      <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
+      <div className="flex items-center justify-between text-xs font-semibold text-[color:var(--c-muted)]">
         <span>진행률</span>
-        <span className="font-extrabold text-slate-900">{pct}%</span>
+        <span className="font-extrabold text-[color:var(--c-text)]">{pct}%</span>
       </div>
-      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[color:var(--c-surface-2)]">
         <div className="h-full rounded-full bg-sky-500" style={{ width: `${pct}%` }} />
       </div>
     </div>
@@ -22,18 +22,22 @@ export default function Goals() {
   return (
     <section className="space-y-4">
       <div>
-        <p className="text-sm font-semibold text-slate-600">운동 목표 설정</p>
+        <p className="text-sm font-semibold text-[color:var(--c-muted)]">
+          운동 목표 설정
+        </p>
         <p className="mt-1 text-lg font-extrabold">이번 주 목표</p>
       </div>
 
       <Card>
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-slate-600">주간 운동 시간</p>
-            <p className="mt-1 text-2xl font-extrabold text-slate-900">
+            <p className="text-sm font-semibold text-[color:var(--c-muted)]">
+              주간 운동 시간
+            </p>
+            <p className="mt-1 text-2xl font-extrabold text-[color:var(--c-text)]">
               {weekly.doneMinutes} / {weekly.targetMinutes}분
             </p>
-            <p className="mt-1 text-xs font-semibold text-slate-500">
+            <p className="mt-1 text-xs font-semibold text-[color:var(--c-muted-2)]">
               목표 세션 · {weekly.sessions}회 (더미)
             </p>
           </div>
@@ -48,12 +52,16 @@ export default function Goals() {
       <Card>
         <p className="text-sm font-extrabold">빠른 설정</p>
         <div className="mt-3 grid grid-cols-2 gap-3">
-          <div className="rounded-2xl bg-slate-50 p-3">
-            <p className="text-[11px] font-extrabold text-slate-500">주 3회</p>
+          <div className="rounded-2xl bg-[color:var(--c-surface-2)] p-3">
+            <p className="text-[11px] font-extrabold text-[color:var(--c-muted-2)]">
+              주 3회
+            </p>
             <p className="mt-1 text-sm font-extrabold">가볍게</p>
           </div>
-          <div className="rounded-2xl bg-slate-50 p-3">
-            <p className="text-[11px] font-extrabold text-slate-500">주 5회</p>
+          <div className="rounded-2xl bg-[color:var(--c-surface-2)] p-3">
+            <p className="text-[11px] font-extrabold text-[color:var(--c-muted-2)]">
+              주 5회
+            </p>
             <p className="mt-1 text-sm font-extrabold">집중</p>
           </div>
         </div>
@@ -67,4 +75,3 @@ export default function Goals() {
     </section>
   );
 }
-

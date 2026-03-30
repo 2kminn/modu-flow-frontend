@@ -2,12 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --c-bg: #ffffff;
+  --c-surface: #ffffff;
+  --c-surface-2: #f6f6f6;
+  --c-text: #0a0a0a;
+  --c-muted: rgba(10, 10, 10, 0.65);
+  --c-muted-2: rgba(10, 10, 10, 0.48);
+  --c-border: rgba(10, 10, 10, 0.12);
+  --c-border-strong: rgba(10, 10, 10, 0.18);
+  color-scheme: light;
+}
+
+html.dark {
+  --c-bg: #09090b;
+  --c-surface: #18181b;
+  --c-surface-2: #27272a;
+  --c-text: #ffffff;
+  --c-muted: rgba(255, 255, 255, 0.72);
+  --c-muted-2: rgba(255, 255, 255, 0.55);
+  --c-border: rgba(255, 255, 255, 0.18);
+  --c-border-strong: rgba(255, 255, 255, 0.26);
+  color-scheme: dark;
+}
+
 html,
 body {
   height: 100%;
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+  @apply antialiased;
+  background: var(--c-bg);
+  color: var(--c-text);
 }
-

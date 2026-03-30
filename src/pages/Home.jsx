@@ -47,19 +47,21 @@ export default function Home() {
     <section className="space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-slate-600">좋은 하루예요,</p>
+          <p className="text-sm font-semibold text-[color:var(--c-muted)]">
+            좋은 하루예요,
+          </p>
           <h2 className="mt-1 text-2xl font-extrabold leading-tight">
             {userName}님
           </h2>
         </div>
         <div className="shrink-0 text-right">
-          <div className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
+          <div className="inline-flex items-center gap-2 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-3 py-2 shadow-sm">
             <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-            <span className="text-xs font-extrabold text-slate-800">
+            <span className="text-xs font-extrabold text-[color:var(--c-text)]">
               {attendance.status}
             </span>
           </div>
-          <p className="mt-2 text-[11px] font-semibold text-slate-500">
+          <p className="mt-2 text-[11px] font-semibold text-[color:var(--c-muted-2)]">
             연속 {attendance.streakDays}일째
           </p>
         </div>
@@ -67,7 +69,9 @@ export default function Home() {
 
       <Card className="p-0">
         <div className="p-4">
-          <p className="text-sm font-semibold text-slate-600">오늘도 한 걸음</p>
+          <p className="text-sm font-semibold text-[color:var(--c-muted)]">
+            오늘도 한 걸음
+          </p>
           <p className="mt-1 text-lg font-extrabold">
             운동을 시작해볼까요?
           </p>
@@ -87,8 +91,10 @@ export default function Home() {
       <Card>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-semibold text-slate-600">오늘 운동 요약</p>
-            <p className="mt-1 text-lg font-extrabold text-slate-900">
+            <p className="text-sm font-semibold text-[color:var(--c-muted)]">
+              오늘 운동 요약
+            </p>
+            <p className="mt-1 text-lg font-extrabold text-[color:var(--c-text)]">
               {today.minutes}분 · {today.sessions}회
             </p>
           </div>
@@ -106,12 +112,16 @@ export default function Home() {
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-3">
-          <div className="rounded-2xl bg-slate-50 p-3">
-            <p className="text-[11px] font-extrabold text-slate-500">운동 시간</p>
+          <div className="rounded-2xl bg-[color:var(--c-surface-2)] p-3">
+            <p className="text-[11px] font-extrabold text-[color:var(--c-muted-2)]">
+              운동 시간
+            </p>
             <p className="mt-1 text-xl font-extrabold">{today.minutes}분</p>
           </div>
-          <div className="rounded-2xl bg-slate-50 p-3">
-            <p className="text-[11px] font-extrabold text-slate-500">운동 횟수</p>
+          <div className="rounded-2xl bg-[color:var(--c-surface-2)] p-3">
+            <p className="text-[11px] font-extrabold text-[color:var(--c-muted-2)]">
+              운동 횟수
+            </p>
             <p className="mt-1 text-xl font-extrabold">{today.sessions}회</p>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from "react-router-dom";
 import BottomNavigation from "@/components/BottomNavigation";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 function getTitle(pathname) {
   if (pathname === "/") return "홈";
@@ -21,23 +22,17 @@ export default function RootLayout() {
   const title = getTitle(location.pathname);
 
   return (
-    <div className="min-h-dvh bg-slate-100 text-slate-900">
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur">
+    <div className="min-h-dvh bg-[color:var(--c-bg)] text-[color:var(--c-text)]">
+      <header className="sticky top-0 z-40 border-b border-[color:var(--c-border)] bg-[color:var(--c-surface)] backdrop-blur">
         <div className="mx-auto flex max-w-[480px] items-center justify-between px-4 pb-3 pt-4">
           <div>
-            <p className="text-[11px] font-semibold tracking-wide text-slate-500">
-              Healthcare PWA
+            <p className="text-[11px] font-semibold tracking-wide text-[color:var(--c-muted-2)]">
+              ModuFlow
             </p>
             <h1 className="text-lg font-bold leading-tight">{title}</h1>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="h-11 w-11 rounded-2xl border border-slate-200 bg-white shadow-sm active:scale-[0.98] transition"
-              aria-label="알림"
-            >
-              <span className="mx-auto block h-2 w-2 rounded-full bg-sky-500" />
-            </button>
+            <ThemeToggle />
           </div>
         </div>
       </header>

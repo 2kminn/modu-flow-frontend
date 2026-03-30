@@ -43,7 +43,7 @@ export default function Exercise() {
       <section className="space-y-4">
         <Card>
           <p className="text-lg font-extrabold">운동을 찾을 수 없어요</p>
-          <p className="mt-2 text-sm text-slate-600">
+          <p className="mt-2 text-sm text-[color:var(--c-muted)]">
             다시 선택 페이지로 이동해 주세요.
           </p>
         </Card>
@@ -59,7 +59,7 @@ export default function Exercise() {
       <div className="flex items-center justify-between gap-3">
         <button
           type="button"
-          className="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-extrabold shadow-sm active:scale-[0.98] transition"
+          className="inline-flex h-11 items-center gap-2 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-sm font-extrabold shadow-sm active:scale-[0.98] transition"
           onClick={() => navigate(-1)}
         >
           <span aria-hidden="true">←</span>
@@ -71,15 +71,17 @@ export default function Exercise() {
       </div>
 
       <Card>
-        <p className="text-sm font-semibold text-slate-600">운동</p>
+        <p className="text-sm font-semibold text-[color:var(--c-muted)]">운동</p>
         <p className="mt-1 text-2xl font-extrabold">{ex.title}</p>
-        <p className="mt-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
+        <p className="mt-3 rounded-2xl bg-[color:var(--c-surface-2)] px-4 py-3 text-sm font-semibold text-[color:var(--c-text)]">
           팁: {ex.tip}
         </p>
       </Card>
 
       <Card>
-        <p className="text-sm font-semibold text-slate-600">오늘의 계획(더미)</p>
+        <p className="text-sm font-semibold text-[color:var(--c-muted)]">
+          오늘의 계획(더미)
+        </p>
         <p className="mt-1 text-lg font-extrabold">{ex.defaultPlan}</p>
         <div className="mt-4 grid grid-cols-2 gap-3">
           <Button

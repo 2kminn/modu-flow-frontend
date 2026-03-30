@@ -2,11 +2,17 @@ import Card from "@/components/ui/Card";
 
 function Stat({ label, value, hint }) {
   return (
-    <div className="rounded-2xl bg-slate-50 p-3">
-      <p className="text-[11px] font-extrabold text-slate-500">{label}</p>
-      <p className="mt-1 text-xl font-extrabold text-slate-900">{value}</p>
+    <div className="rounded-2xl bg-[color:var(--c-surface-2)] p-3">
+      <p className="text-[11px] font-extrabold text-[color:var(--c-muted-2)]">
+        {label}
+      </p>
+      <p className="mt-1 text-xl font-extrabold text-[color:var(--c-text)]">
+        {value}
+      </p>
       {hint ? (
-        <p className="mt-1 text-[11px] font-semibold text-slate-500">{hint}</p>
+        <p className="mt-1 text-[11px] font-semibold text-[color:var(--c-muted-2)]">
+          {hint}
+        </p>
       ) : null}
     </div>
   );
@@ -19,15 +25,19 @@ export default function Attendance() {
   return (
     <section className="space-y-4">
       <div>
-        <p className="text-sm font-semibold text-slate-600">출석률</p>
+        <p className="text-sm font-semibold text-[color:var(--c-muted)]">
+          출석률
+        </p>
         <p className="mt-1 text-lg font-extrabold">이번 달</p>
       </div>
 
       <Card>
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-slate-600">월간 출석률</p>
-            <p className="mt-1 text-3xl font-extrabold text-slate-900">
+            <p className="text-sm font-semibold text-[color:var(--c-muted)]">
+              월간 출석률
+            </p>
+            <p className="mt-1 text-3xl font-extrabold text-[color:var(--c-text)]">
               {rate}%
             </p>
           </div>
@@ -45,7 +55,9 @@ export default function Attendance() {
       <Card>
         <div className="flex items-center justify-between">
           <p className="text-sm font-extrabold">캘린더</p>
-          <span className="text-xs font-semibold text-slate-500">2026-03</span>
+          <span className="text-xs font-semibold text-[color:var(--c-muted-2)]">
+            2026-03
+          </span>
         </div>
 
         <div className="mt-4 grid grid-cols-7 gap-2">
@@ -59,7 +71,7 @@ export default function Attendance() {
                   "grid aspect-square place-items-center rounded-2xl text-xs font-extrabold",
                   active
                     ? "bg-emerald-50 text-emerald-700"
-                    : "bg-slate-50 text-slate-400"
+                    : "bg-[color:var(--c-surface-2)] text-[color:var(--c-muted-2)]"
                 ].join(" ")}
                 aria-label={`${day}일`}
               >
@@ -72,4 +84,3 @@ export default function Attendance() {
     </section>
   );
 }
-

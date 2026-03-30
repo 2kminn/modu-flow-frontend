@@ -11,24 +11,26 @@ export default function Routines() {
   return (
     <section className="space-y-4">
       <div>
-        <p className="text-sm font-semibold text-slate-600">루틴 설정</p>
+        <p className="text-sm font-semibold text-[color:var(--c-muted)]">
+          루틴 설정
+        </p>
         <p className="mt-1 text-lg font-extrabold">내 루틴</p>
       </div>
 
       <Card className="p-0">
-        <ul className="divide-y divide-slate-100">
+        <ul className="divide-y divide-[color:var(--c-border)]">
           {routines.map((r) => (
             <li key={r.name} className="p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-extrabold text-slate-900">
+                  <p className="truncate text-sm font-extrabold text-[color:var(--c-text)]">
                     {r.name}
                   </p>
-                  <p className="mt-1 truncate text-xs font-semibold text-slate-500">
+                  <p className="mt-1 truncate text-xs font-semibold text-[color:var(--c-muted-2)]">
                     {r.items.join(" · ")}
                   </p>
                 </div>
-                <span className="shrink-0 rounded-2xl bg-slate-50 px-3 py-2 text-xs font-extrabold text-slate-700">
+                <span className="shrink-0 rounded-2xl bg-[color:var(--c-surface-2)] px-3 py-2 text-xs font-extrabold text-[color:var(--c-text)]">
                   {r.tag}
                 </span>
               </div>
@@ -50,4 +52,3 @@ export default function Routines() {
     </section>
   );
 }
-

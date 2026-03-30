@@ -64,9 +64,11 @@ export default function Workout() {
   return (
     <section className="space-y-4">
       <div>
-        <p className="text-sm font-semibold text-slate-600">운동 선택</p>
+        <p className="text-sm font-semibold text-[color:var(--c-muted)]">
+          운동 선택
+        </p>
         <p className="mt-1 text-lg font-extrabold">오늘 어떤 운동을 할까요?</p>
-        <p className="mt-2 text-sm text-slate-600">
+        <p className="mt-2 text-sm text-[color:var(--c-muted)]">
           카드를 눌러 상세 화면으로 이동해요.
         </p>
       </div>
@@ -84,11 +86,11 @@ export default function Workout() {
                     <p className="truncate text-base font-extrabold">
                       {ex.title}
                     </p>
-                    <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-extrabold text-slate-600">
+                    <span className="shrink-0 rounded-full bg-[color:var(--c-surface-2)] px-2.5 py-1 text-[11px] font-extrabold text-[color:var(--c-muted)]">
                       {ex.desc}
                     </span>
                   </div>
-                  <p className="mt-2 text-sm font-semibold text-slate-600">
+                  <p className="mt-2 text-sm font-semibold text-[color:var(--c-muted)]">
                     {ex.meta}
                   </p>
                 </div>

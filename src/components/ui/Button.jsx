@@ -5,7 +5,7 @@ export default function Button({ variant = "primary", className, ...props }) {
   const styles =
     variant === "primary"
       ? "bg-sky-600 text-white hover:bg-sky-700"
-      : "bg-white text-slate-900 border border-slate-200 hover:bg-slate-50";
+      : "border border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-[color:var(--c-text)] hover:bg-[color:var(--c-surface-2)]";
 
   return <button className={[base, styles, className].filter(Boolean).join(" ")} {...props} />;
 }

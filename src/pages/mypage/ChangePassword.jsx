@@ -5,15 +5,17 @@ import { useState } from "react";
 function Input({ label, value, onChange, type = "text", placeholder }) {
   return (
     <label className="block">
-      <span className="text-xs font-extrabold text-slate-700">{label}</span>
+      <span className="text-xs font-extrabold text-[color:var(--c-muted)]">
+        {label}
+      </span>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className={[
-          "mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3",
-          "text-sm font-semibold text-slate-900 placeholder:text-slate-400",
+          "mt-2 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 py-3",
+          "text-sm font-semibold text-[color:var(--c-text)] placeholder:text-[color:var(--c-muted-2)]",
           "focus:outline-none focus:ring-2 focus:ring-sky-400"
         ].join(" ")}
       />
@@ -31,7 +33,9 @@ export default function ChangePassword() {
   return (
     <section className="space-y-4">
       <div>
-        <p className="text-sm font-semibold text-slate-600">비밀번호 변경</p>
+        <p className="text-sm font-semibold text-[color:var(--c-muted)]">
+          비밀번호 변경
+        </p>
         <p className="mt-1 text-lg font-extrabold">보안 설정</p>
       </div>
 
@@ -67,7 +71,7 @@ export default function ChangePassword() {
             새 비밀번호가 일치하지 않아요.
           </p>
         ) : (
-          <p className="text-xs font-semibold text-slate-500">
+          <p className="text-xs font-semibold text-[color:var(--c-muted-2)]">
             실제 저장/검증 로직은 아직 연결되지 않았어요.
           </p>
         )}
@@ -75,4 +79,3 @@ export default function ChangePassword() {
     </section>
   );
 }
-
