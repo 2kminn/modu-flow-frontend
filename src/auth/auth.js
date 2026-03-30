@@ -1,25 +1,46 @@
 const TOKEN_KEY = "auth_token";
 
-export function getAuthToken() {
+function safeGet(storage) {
   try {
-    return localStorage.getItem(TOKEN_KEY);
+    return storage.getItem(TOKEN_KEY);
   } catch {
     return null;
   }
 }
 
-export function setAuthToken(token) {
+function safeSet(storage, token) {
   try {
-    localStorage.setItem(TOKEN_KEY, token);
+    storage.setItem(TOKEN_KEY, token);
   } catch {
     // ignore
   }
 }
 
-export function clearAuthToken() {
+function safeRemove(storage) {
   try {
-    localStorage.removeItem(TOKEN_KEY);
+    storage.removeItem(TOKEN_KEY);
   } catch {
     // ignore
   }
+}
+
+export function getAuthToken() {
+  const sessionToken = safeGet(sessionStorage);
+  if (sessionToken) return sessionToken;
+
+  const legacyLocalToken = safeGet(localStorage);
+  if (legacyLocalToken) {
+    safeRemove(localStorage);
+  }
+  return null;
+}
+
+export function setAuthToken(token) {
+  safeSet(sessionStorage, token);
+  safeRemove(localStorage);
+}
+
+export function clearAuthToken() {
+  safeRemove(sessionStorage);
+  safeRemove(localStorage);
 }

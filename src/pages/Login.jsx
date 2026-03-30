@@ -60,9 +60,12 @@ export default function Login() {
 
   return (
     <Card>
-      <h2 className="text-lg font-bold">로그인</h2>
-      <p className="mt-1 text-sm text-slate-600">
-        이메일로 로그인해 주세요.
+      <p className="text-[11px] font-extrabold tracking-wide text-slate-500">
+        moduflow
+      </p>
+      <h2 className="mt-1 text-lg font-bold">로그인</h2>
+      <p className="mt-1 text-sm font-semibold text-slate-600">
+        오늘의 운동 흐름을 이어가요.
       </p>
 
       <form className="mt-5 space-y-3" onSubmit={onSubmit}>
@@ -85,7 +88,7 @@ export default function Login() {
             <input
               type={showPassword ? "text" : "password"}
               autoComplete="current-password"
-              placeholder="••••••••"
+              placeholder="password"
               className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 pr-12 text-sm shadow-sm outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
