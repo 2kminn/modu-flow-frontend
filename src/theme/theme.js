@@ -21,9 +21,15 @@ export function setStoredTheme(theme) {
 export function applyTheme(theme) {
   try {
     const root = document.documentElement;
+    root.classList.add("theme-changing");
     root.classList.toggle("dark", theme === "dark");
+    const bg = getComputedStyle(root).getPropertyValue("--c-bg")?.trim();
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta && bg) meta.setAttribute("content", bg);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => root.classList.remove("theme-changing"));
+    });
   } catch {
     // ignore
   }
 }
-

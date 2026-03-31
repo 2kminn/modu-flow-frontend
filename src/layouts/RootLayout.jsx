@@ -23,7 +23,7 @@ export default function RootLayout() {
 
   return (
     <div className="min-h-dvh bg-[color:var(--c-bg)] text-[color:var(--c-text)]">
-      <header className="sticky top-0 z-40 border-b border-[color:var(--c-border)] bg-[color:var(--c-surface)] backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-[color:var(--c-border)] bg-[color:var(--c-surface)] backdrop-blur transition-[background-color,border-color] duration-200">
         <div className="mx-auto flex max-w-[480px] items-center justify-between px-4 pb-3 pt-4">
           <div>
             <p className="text-[11px] font-semibold tracking-wide text-[color:var(--c-muted-2)]">

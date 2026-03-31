@@ -10,7 +10,7 @@ function ProgressBar({ value, total }) {
         <span className="font-extrabold text-[color:var(--c-text)]">{pct}%</span>
       </div>
       <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[color:var(--c-surface-2)]">
-        <div className="h-full rounded-full bg-sky-500" style={{ width: `${pct}%` }} />
+        <div className="h-full rounded-full bg-[color:var(--c-text)]" style={{ width: `${pct}%` }} />
       </div>
     </div>
   );
@@ -41,7 +41,7 @@ export default function Goals() {
               목표 세션 · {weekly.sessions}회 (더미)
             </p>
           </div>
-          <span className="rounded-2xl bg-sky-50 px-3 py-2 text-xs font-extrabold text-sky-700">
+          <span className="rounded-2xl bg-[color:var(--c-text)] px-3 py-2 text-xs font-extrabold text-[color:var(--c-bg)] transition-[background-color] duration-200">
             알림 ON
           </span>
         </div>

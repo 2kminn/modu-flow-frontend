@@ -33,7 +33,7 @@ export default function ForgotPassword() {
             inputMode="email"
             autoComplete="email"
             placeholder="you@example.com"
-            className="mt-1 h-12 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-sm shadow-sm outline-none placeholder:text-[color:var(--c-muted-2)] focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+            className="mt-1 h-12 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-sm shadow-sm outline-none placeholder:text-[color:var(--c-muted-2)] transition duration-200 focus:border-[color:var(--c-border-strong)] focus:ring-4 focus:ring-[color:var(--c-focus-ring)]"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
@@ -49,7 +49,7 @@ export default function ForgotPassword() {
 
         <p className="text-center text-sm text-[color:var(--c-muted)]">
           로그인으로 돌아가기{" "}
-          <Link className="font-semibold text-sky-700" to="/login">
+          <Link className="font-semibold text-[color:var(--c-text)] underline decoration-[color:var(--c-border-strong)] underline-offset-4 hover:decoration-[color:var(--c-text)]" to="/login">
             로그인
           </Link>
         </p>

@@ -13,7 +13,7 @@ export default function ThemeToggle({ className }) {
       aria-label={isDark ? "화이트 모드로 전환" : "다크 모드로 전환"}
       onClick={toggleTheme}
       className={[
-        "relative inline-flex h-11 w-[72px] items-center rounded-full border shadow-sm transition active:scale-[0.98]",
+        "relative inline-flex h-11 w-[72px] items-center rounded-full border shadow-sm transition duration-200 active:scale-[0.98] hover:bg-[color:var(--c-surface-2)]",
         "border-[color:var(--c-border)] bg-[color:var(--c-surface)]",
         className
       ]

@@ -78,7 +78,7 @@ export default function Workout() {
           <Link key={ex.id} to={`/workout/${ex.id}`} className="block">
             <Card className="p-0">
               <div className="flex items-center gap-4 p-4">
-                <div className="grid h-14 w-14 place-items-center rounded-3xl bg-sky-50 text-sky-700">
+                <div className="grid h-14 w-14 place-items-center rounded-3xl border border-[color:var(--c-border)] bg-[color:var(--c-surface-2)] text-[color:var(--c-text)] transition-[background-color,border-color] duration-200">
                   {ex.icon}
                 </div>
                 <div className="min-w-0 flex-1">

@@ -13,16 +13,16 @@ export default function AuthLayout() {
   return (
     <div className="min-h-dvh bg-[color:var(--c-bg)] text-[color:var(--c-text)]">
       <div className="absolute inset-0 -z-10 overflow-hidden bg-[color:var(--c-bg)]">
-        <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-sky-500/15 blur-3xl" />
-        <div className="absolute -right-24 top-10 h-80 w-80 rounded-full bg-indigo-500/12 blur-3xl" />
-        <div className="absolute bottom-0 left-1/3 h-96 w-96 -translate-x-1/2 rounded-full bg-emerald-400/10 blur-3xl" />
+        <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-black/10 blur-3xl dark:bg-white/10" />
+        <div className="absolute -right-24 top-10 h-80 w-80 rounded-full bg-black/10 blur-3xl dark:bg-white/10" />
+        <div className="absolute bottom-0 left-1/3 h-96 w-96 -translate-x-1/2 rounded-full bg-black/5 blur-3xl dark:bg-white/5" />
         <div className="absolute inset-0 bg-gradient-to-b from-[color:var(--c-bg)] via-[color:var(--c-bg)] to-[color:var(--c-surface-2)]" />
       </div>
 
       <div className="mx-auto max-w-[480px] px-4 pb-10 pt-10">
         <div className="mb-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-3 py-1.5 backdrop-blur">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            <span className="h-2 w-2 rounded-full bg-[color:var(--c-text)]" />
             <span className="text-[11px] font-extrabold tracking-wide">
               moduflow
             </span>

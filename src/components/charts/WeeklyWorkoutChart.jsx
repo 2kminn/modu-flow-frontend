@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Chart,
   LineController,
@@ -23,9 +23,17 @@ Chart.register(
 export default function WeeklyWorkoutChart({ data, labels }) {
   const canvasRef = useRef(null);
   const chartRef = useRef(null);
+  const [themeToken, setThemeToken] = useState(0);
 
   const safeLabels = useMemo(() => labels ?? ["월", "화", "수", "목", "금", "토", "일"], [labels]);
   const safeData = useMemo(() => data ?? [0, 25, 40, 20, 55, 35, 60], [data]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const observer = new MutationObserver(() => setThemeToken((t) => t + 1));
+    observer.observe(root, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -35,9 +43,19 @@ export default function WeeklyWorkoutChart({ data, labels }) {
 
     chartRef.current?.destroy();
 
+    const styles = getComputedStyle(document.documentElement);
+    const line = styles.getPropertyValue("--c-chart-line")?.trim() || "rgba(10,10,10,0.92)";
+    const fillTop = styles.getPropertyValue("--c-chart-fill-top")?.trim() || "rgba(10,10,10,0.18)";
+    const fillBottom = styles.getPropertyValue("--c-chart-fill-bottom")?.trim() || "rgba(10,10,10,0)";
+    const grid = styles.getPropertyValue("--c-chart-grid")?.trim() || "rgba(10,10,10,0.08)";
+    const tick = styles.getPropertyValue("--c-chart-tick")?.trim() || "rgba(10,10,10,0.45)";
+    const tooltipBg = styles.getPropertyValue("--c-chart-tooltip-bg")?.trim() || "rgba(10,10,10,0.92)";
+    const tooltipText = styles.getPropertyValue("--c-chart-tooltip-text")?.trim() || "rgba(255,255,255,0.92)";
+    const pointBg = styles.getPropertyValue("--c-chart-point-bg")?.trim() || "rgba(255,255,255,1)";
+
     const gradient = ctx.createLinearGradient(0, 0, 0, 240);
-    gradient.addColorStop(0, "rgba(14,165,233,0.35)");
-    gradient.addColorStop(1, "rgba(14,165,233,0)");
+    gradient.addColorStop(0, fillTop);
+    gradient.addColorStop(1, fillBottom);
 
     chartRef.current = new Chart(ctx, {
       type: "line",
@@ -47,15 +65,15 @@ export default function WeeklyWorkoutChart({ data, labels }) {
           {
             label: "운동 시간(분)",
             data: safeData,
-            borderColor: "rgba(14,165,233,1)",
+            borderColor: line,
             backgroundColor: gradient,
             fill: true,
             tension: 0.35,
             pointRadius: 3,
             pointHoverRadius: 4,
             pointBorderWidth: 2,
-            pointBackgroundColor: "rgba(255,255,255,1)",
-            pointBorderColor: "rgba(14,165,233,1)"
+            pointBackgroundColor: pointBg,
+            pointBorderColor: line
           }
         ]
       },
@@ -67,9 +85,9 @@ export default function WeeklyWorkoutChart({ data, labels }) {
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: "rgba(15,23,42,0.92)",
-            titleColor: "rgba(255,255,255,0.9)",
-            bodyColor: "rgba(255,255,255,0.9)",
+            backgroundColor: tooltipBg,
+            titleColor: tooltipText,
+            bodyColor: tooltipText,
             padding: 10,
             displayColors: false,
             callbacks: {
@@ -80,18 +98,18 @@ export default function WeeklyWorkoutChart({ data, labels }) {
         scales: {
           x: {
             grid: { display: false },
-            ticks: { color: "rgba(100,116,139,1)", font: { weight: "600" } },
+            ticks: { color: tick, font: { weight: "600" } },
             border: { display: false }
           },
           y: {
             beginAtZero: true,
             suggestedMax: Math.max(...safeData, 60),
             ticks: {
-              color: "rgba(100,116,139,1)",
+              color: tick,
               font: { weight: "600" },
               callback: (v) => `${v}`
             },
-            grid: { color: "rgba(148,163,184,0.25)" },
+            grid: { color: grid },
             border: { display: false }
           }
         }
@@ -102,7 +120,7 @@ export default function WeeklyWorkoutChart({ data, labels }) {
       chartRef.current?.destroy();
       chartRef.current = null;
     };
-  }, [safeData, safeLabels]);
+  }, [safeData, safeLabels, themeToken]);
 
   return (
     <div className="relative h-44 w-full">
@@ -110,4 +128,3 @@ export default function WeeklyWorkoutChart({ data, labels }) {
     </div>
   );
 }
-

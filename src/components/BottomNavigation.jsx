@@ -6,7 +6,7 @@ function HomeIcon(active) {
     <Home
       size={24}
       aria-hidden="true"
-      className={active ? "text-sky-600" : "text-[color:var(--c-muted-2)]"}
+      className={active ? "text-[color:var(--c-text)]" : "text-[color:var(--c-muted-2)]"}
     />
   );
 }
@@ -16,7 +16,7 @@ function DumbbellIcon(active) {
     <Dumbbell
       size={24}
       aria-hidden="true"
-      className={active ? "text-sky-600" : "text-[color:var(--c-muted-2)]"}
+      className={active ? "text-[color:var(--c-text)]" : "text-[color:var(--c-muted-2)]"}
     />
   );
 }
@@ -26,7 +26,7 @@ function ChartIcon(active) {
     <BarChart3
       size={24}
       aria-hidden="true"
-      className={active ? "text-sky-600" : "text-[color:var(--c-muted-2)]"}
+      className={active ? "text-[color:var(--c-text)]" : "text-[color:var(--c-muted-2)]"}
     />
   );
 }
@@ -36,7 +36,7 @@ function UserIcon(active) {
     <User
       size={24}
       aria-hidden="true"
-      className={active ? "text-sky-600" : "text-[color:var(--c-muted-2)]"}
+      className={active ? "text-[color:var(--c-text)]" : "text-[color:var(--c-muted-2)]"}
     />
   );
 }
@@ -52,7 +52,7 @@ export default function BottomNavigation() {
   return (
     <nav
       aria-label="하단 네비게이션"
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-[color:var(--c-border)] bg-[color:var(--c-surface)] backdrop-blur"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-[color:var(--c-border)] bg-[color:var(--c-surface)] backdrop-blur transition-[background-color,border-color] duration-200"
     >
       <div className="mx-auto max-w-[480px] px-3 pb-[env(safe-area-inset-bottom)]">
         <ul className="grid h-[72px] grid-cols-4">
@@ -64,9 +64,9 @@ export default function BottomNavigation() {
                 className={({ isActive }) =>
                   [
                     "flex h-full flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2",
-                    "active:scale-[0.98] transition",
+                    "active:scale-[0.98] transition duration-200 hover:bg-[color:var(--c-surface-2)]",
                     isActive
-                      ? "text-sky-700"
+                      ? "text-[color:var(--c-text)] font-extrabold"
                       : "text-[color:var(--c-muted)] hover:text-[color:var(--c-text)]"
                   ].join(" ")
                 }
@@ -76,7 +76,7 @@ export default function BottomNavigation() {
                     <span
                       className={[
                         "flex h-11 w-14 items-center justify-center rounded-2xl",
-                        isActive ? "bg-sky-500/10" : "bg-transparent"
+                        isActive ? "bg-[color:var(--c-surface-2)]" : "bg-transparent"
                       ].join(" ")}
                     >
                       {tab.icon(isActive)}

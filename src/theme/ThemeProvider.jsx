@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { applyTheme, getStoredTheme, setStoredTheme } from "@/theme/theme";
 
 const ThemeContext = createContext(null);
@@ -12,7 +12,7 @@ export function ThemeProvider({ children }) {
     setStoredTheme(theme);
   }, [theme]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     applyTheme(effectiveTheme);
   }, [effectiveTheme]);
 

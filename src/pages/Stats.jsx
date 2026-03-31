@@ -36,7 +36,7 @@ export default function Stats() {
               <p className="text-xs font-semibold text-[color:var(--c-muted-2)]">
                 최고
               </p>
-              <p className="mt-1 rounded-2xl bg-sky-50 px-3 py-2 text-xs font-extrabold text-sky-700">
+              <p className="mt-1 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface-2)] px-3 py-2 text-xs font-extrabold text-[color:var(--c-text)] transition-[background-color,border-color] duration-200">
                 {best}분
               </p>
             </div>

@@ -16,7 +16,7 @@ function Input({ label, value, onChange, type = "text", placeholder }) {
         className={[
           "mt-2 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 py-3",
           "text-sm font-semibold text-[color:var(--c-text)] placeholder:text-[color:var(--c-muted-2)]",
-          "focus:outline-none focus:ring-2 focus:ring-sky-400"
+          "transition duration-200 focus:outline-none focus:ring-2 focus:ring-[color:var(--c-focus-ring)] focus:border-[color:var(--c-border-strong)]"
         ].join(" ")}
       />
     </label>
@@ -67,7 +67,7 @@ export default function ChangePassword() {
         </Button>
 
         {next && confirm && next !== confirm ? (
-          <p className="text-xs font-semibold text-rose-700">
+          <p className="text-xs font-semibold text-[color:var(--c-text)]">
             새 비밀번호가 일치하지 않아요.
           </p>
         ) : (

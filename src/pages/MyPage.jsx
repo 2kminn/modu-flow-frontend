@@ -12,7 +12,7 @@ function MenuRow({ label, description, onClick }) {
       className={[
         "flex w-full items-center justify-between gap-4 px-4 py-4 text-left",
         "hover:bg-[color:var(--c-surface-2)] active:bg-[color:var(--c-surface-2)] transition",
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--c-surface)]"
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--c-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--c-surface)]"
       ].join(" ")}
     >
       <div className="min-w-0">
@@ -64,10 +64,10 @@ export default function MyPage() {
             </p>
           </div>
           <div
-            className="grid h-14 w-14 shrink-0 place-items-center rounded-3xl bg-gradient-to-br from-sky-200 to-indigo-200"
+            className="grid h-14 w-14 shrink-0 place-items-center rounded-3xl border border-[color:var(--c-border)] bg-[color:var(--c-surface-2)] transition-[background-color,border-color] duration-200"
             aria-hidden="true"
           >
-            <span className="h-6 w-6 rounded-2xl bg-white/70" />
+            <span className="h-6 w-6 rounded-2xl bg-[color:var(--c-surface)]" />
           </div>
         </div>
       </Card>
@@ -109,7 +109,6 @@ export default function MyPage() {
           <Button
             type="button"
             variant="secondary"
-            className="border-rose-200 text-rose-700 hover:bg-rose-50"
             onClick={() => {
               clearAuthToken();
               navigate("/login", { replace: true });

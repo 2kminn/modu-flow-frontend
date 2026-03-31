@@ -11,6 +11,18 @@
   --c-muted-2: rgba(10, 10, 10, 0.48);
   --c-border: rgba(10, 10, 10, 0.12);
   --c-border-strong: rgba(10, 10, 10, 0.18);
+  --c-focus-ring: rgba(10, 10, 10, 0.14);
+  --c-level-low: rgba(10, 10, 10, 0.22);
+  --c-level-mid: rgba(10, 10, 10, 0.42);
+  --c-level-high: rgba(10, 10, 10, 0.7);
+  --c-chart-line: rgba(10, 10, 10, 0.92);
+  --c-chart-fill-top: rgba(10, 10, 10, 0.18);
+  --c-chart-fill-bottom: rgba(10, 10, 10, 0);
+  --c-chart-grid: rgba(10, 10, 10, 0.08);
+  --c-chart-tick: rgba(10, 10, 10, 0.45);
+  --c-chart-tooltip-bg: rgba(10, 10, 10, 0.92);
+  --c-chart-tooltip-text: rgba(255, 255, 255, 0.92);
+  --c-chart-point-bg: rgba(255, 255, 255, 1);
   color-scheme: light;
 }
 
@@ -23,7 +35,24 @@ html.dark {
   --c-muted-2: rgba(255, 255, 255, 0.55);
   --c-border: rgba(255, 255, 255, 0.18);
   --c-border-strong: rgba(255, 255, 255, 0.26);
+  --c-focus-ring: rgba(255, 255, 255, 0.18);
+  --c-level-low: rgba(255, 255, 255, 0.25);
+  --c-level-mid: rgba(255, 255, 255, 0.45);
+  --c-level-high: rgba(255, 255, 255, 0.75);
+  --c-chart-line: rgba(255, 255, 255, 0.9);
+  --c-chart-fill-top: rgba(255, 255, 255, 0.14);
+  --c-chart-fill-bottom: rgba(255, 255, 255, 0);
+  --c-chart-grid: rgba(255, 255, 255, 0.1);
+  --c-chart-tick: rgba(255, 255, 255, 0.55);
+  --c-chart-tooltip-bg: rgba(0, 0, 0, 0.85);
+  --c-chart-tooltip-text: rgba(255, 255, 255, 0.92);
+  --c-chart-point-bg: rgba(24, 24, 27, 1);
   color-scheme: dark;
+}
+
+html.theme-changing,
+html.theme-changing * {
+  transition: none !important;
 }
 
 html,
@@ -35,4 +64,10 @@ body {
   @apply antialiased;
   background: var(--c-bg);
   color: var(--c-text);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  body {
+    transition: background-color 240ms ease;
+  }
 }

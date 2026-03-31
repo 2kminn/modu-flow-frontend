@@ -59,13 +59,13 @@ export default function Exercise() {
       <div className="flex items-center justify-between gap-3">
         <button
           type="button"
-          className="inline-flex h-11 items-center gap-2 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-sm font-extrabold shadow-sm active:scale-[0.98] transition"
+          className="inline-flex h-11 items-center gap-2 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-sm font-extrabold shadow-sm transition duration-200 hover:bg-[color:var(--c-surface-2)] active:scale-[0.98]"
           onClick={() => navigate(-1)}
         >
           <span aria-hidden="true">←</span>
           뒤로
         </button>
-        <span className="rounded-full bg-sky-50 px-3 py-2 text-xs font-extrabold text-sky-700">
+        <span className="rounded-full border border-[color:var(--c-border)] bg-[color:var(--c-surface-2)] px-3 py-2 text-xs font-extrabold text-[color:var(--c-text)] transition-[background-color,border-color] duration-200">
           {ex.target}
         </span>
       </div>

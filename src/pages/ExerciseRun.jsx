@@ -95,9 +95,9 @@ export default function ExerciseRun() {
   }
 
   function accuracyTone(a) {
-    if (a >= 90) return "text-emerald-300";
-    if (a >= 75) return "text-amber-300";
-    return "text-rose-300";
+    if (a >= 90) return "text-white";
+    if (a >= 75) return "text-white/85";
+    return "text-white/70";
   }
 
   return (
@@ -135,7 +135,7 @@ export default function ExerciseRun() {
                 </button>
                 <button
                   type="button"
-                  className="h-12 flex-1 rounded-2xl bg-sky-500 px-4 text-sm font-extrabold text-white active:scale-[0.98] transition"
+                  className="h-12 flex-1 rounded-2xl bg-white px-4 text-sm font-extrabold text-black active:scale-[0.98] transition duration-200 hover:bg-neutral-200"
                   onClick={() => window.location.reload()}
                 >
                   다시 시도
@@ -194,10 +194,10 @@ export default function ExerciseRun() {
                       className={[
                         "h-full rounded-full",
                         accuracy >= 90
-                          ? "bg-emerald-400"
+                          ? "bg-white"
                           : accuracy >= 75
-                            ? "bg-amber-400"
-                            : "bg-rose-400"
+                            ? "bg-white/70"
+                            : "bg-white/45"
                       ].join(" ")}
                       style={{ width: `${accuracy}%` }}
                     />
@@ -229,7 +229,7 @@ export default function ExerciseRun() {
           <button
             type="button"
             onClick={end}
-            className="h-14 w-full rounded-3xl bg-rose-500 text-base font-extrabold text-white shadow-lg shadow-rose-500/25 active:scale-[0.99] transition"
+            className="h-14 w-full rounded-3xl bg-white text-base font-extrabold text-black shadow-lg shadow-black/20 active:scale-[0.99] transition duration-200 hover:bg-neutral-200"
           >
             종료
           </button>
@@ -238,4 +238,3 @@ export default function ExerciseRun() {
     </div>
   );
 }
-

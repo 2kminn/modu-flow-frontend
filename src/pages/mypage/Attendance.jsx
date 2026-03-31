@@ -41,7 +41,7 @@ export default function Attendance() {
               {rate}%
             </p>
           </div>
-          <span className="rounded-2xl bg-sky-50 px-3 py-2 text-xs font-extrabold text-sky-700">
+          <span className="rounded-2xl bg-[color:var(--c-text)] px-3 py-2 text-xs font-extrabold text-[color:var(--c-bg)] transition-[background-color] duration-200">
             연속 {streak}일
           </span>
         </div>
@@ -70,7 +70,7 @@ export default function Attendance() {
                 className={[
                   "grid aspect-square place-items-center rounded-2xl text-xs font-extrabold",
                   active
-                    ? "bg-emerald-50 text-emerald-700"
+                    ? "bg-[color:var(--c-text)] text-[color:var(--c-bg)]"
                     : "bg-[color:var(--c-surface-2)] text-[color:var(--c-muted-2)]"
                 ].join(" ")}
                 aria-label={`${day}일`}
