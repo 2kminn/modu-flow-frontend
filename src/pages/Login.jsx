@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
+import FloatingLabelInput from "@/components/ui/FloatingLabelInput";
 import { setAuthToken } from "@/auth/auth";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -48,37 +49,29 @@ export default function Login() {
       </p>
 
       <form className="mt-5 space-y-3" onSubmit={onSubmit}>
-        <label className="block">
-          <span className="text-xs font-semibold text-[color:var(--c-muted)]">
-            이메일
-          </span>
-          <input
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            placeholder="you@example.com"
-            className="mt-1 h-12 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-sm shadow-sm outline-none placeholder:text-[color:var(--c-muted-2)] transition duration-200 focus:border-[color:var(--c-border-strong)] focus:ring-4 focus:ring-[color:var(--c-focus-ring)]"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </label>
+        <FloatingLabelInput
+          id="login-email"
+          label="이메일"
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          inputClassName="focus:border-black focus:ring-0"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
 
-        <label className="block">
-          <span className="text-xs font-semibold text-[color:var(--c-muted)]">
-            비밀번호
-          </span>
-          <div className="relative mt-1">
-            <input
-              type={showPassword ? "text" : "password"}
-              autoComplete="current-password"
-              placeholder="password"
-              className="h-12 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 pr-12 text-sm shadow-sm outline-none placeholder:text-[color:var(--c-muted-2)] transition duration-200 focus:border-[color:var(--c-border-strong)] focus:ring-4 focus:ring-[color:var(--c-focus-ring)]"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+        <FloatingLabelInput
+          id="login-password"
+          label="비밀번호"
+          type={showPassword ? "text" : "password"}
+          autoComplete="current-password"
+          inputClassName="focus:border-black focus:ring-0"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          rightAdornment={
             <button
               type="button"
-              className="absolute inset-y-0 right-2 grid w-10 place-items-center rounded-2xl text-[color:var(--c-muted-2)] hover:bg-[color:var(--c-surface-2)] hover:text-[color:var(--c-text)] active:scale-[0.98] transition"
+              className="grid h-10 w-10 place-items-center rounded-2xl text-[color:var(--c-muted-2)] transition hover:bg-[color:var(--c-surface-2)] hover:text-[color:var(--c-text)] active:scale-[0.98]"
               onClick={() => setShowPassword((v) => !v)}
               aria-label={showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}
             >
@@ -88,8 +81,8 @@ export default function Login() {
                 <EyeOff size={20} aria-hidden="true" />
               )}
             </button>
-          </div>
-        </label>
+          }
+        />
 
         {error ? (
           <p className="rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface-2)] px-4 py-3 text-sm font-semibold text-[color:var(--c-text)]">

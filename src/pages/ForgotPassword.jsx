@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
+import FloatingLabelInput from "@/components/ui/FloatingLabelInput";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -24,20 +25,16 @@ export default function ForgotPassword() {
       </p>
 
       <form className="mt-5 space-y-3" onSubmit={onSubmit}>
-        <label className="block">
-          <span className="text-xs font-semibold text-[color:var(--c-muted)]">
-            이메일
-          </span>
-          <input
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            placeholder="you@example.com"
-            className="mt-1 h-12 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-sm shadow-sm outline-none placeholder:text-[color:var(--c-muted-2)] transition duration-200 focus:border-[color:var(--c-border-strong)] focus:ring-4 focus:ring-[color:var(--c-focus-ring)]"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </label>
+        <FloatingLabelInput
+          id="forgot-email"
+          label="이메일"
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          inputClassName="focus:border-black focus:ring-0"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
 
         {message ? (
           <p className="rounded-2xl bg-[color:var(--c-surface-2)] px-4 py-3 text-sm font-semibold text-[color:var(--c-text)]">
