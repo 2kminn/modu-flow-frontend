@@ -119,11 +119,11 @@ export default function Login() {
               type="button"
               onClick={() => onSocialLogin("naver")}
               aria-label="네이버로 로그인"
-              className="grid h-14 w-14 place-items-center rounded-full border border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-[color:var(--c-text)] shadow-sm transition duration-200 active:scale-[0.98] hover:bg-[color:var(--c-surface-2)]"
+              className="grid h-14 w-14 place-items-center rounded-full bg-[#03C75A] shadow-sm transition duration-200 hover:brightness-105 hover:shadow-md hover:scale-[1.03] active:scale-[0.98]"
             >
               <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
                 <path
-                  fill="currentColor"
+                  fill="white"
                   d="M6 4h4.1l3.8 5.6V4H18v16h-4.1L10.1 14.4V20H6V4Z"
                 />
               </svg>
@@ -133,11 +133,11 @@ export default function Login() {
               type="button"
               onClick={() => onSocialLogin("kakao")}
               aria-label="카카오로 로그인"
-              className="grid h-14 w-14 place-items-center rounded-full border border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-[color:var(--c-text)] shadow-sm transition duration-200 active:scale-[0.98] hover:bg-[color:var(--c-surface-2)]"
+              className="grid h-14 w-14 place-items-center rounded-full bg-[#FEE500] shadow-sm transition duration-200 hover:brightness-105 hover:shadow-md hover:scale-[1.03] active:scale-[0.98]"
             >
               <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
                 <path
-                  fill="currentColor"
+                  fill="#3C1E1E"
                   d="M12 4C7.58 4 4 6.72 4 10.08c0 2.26 1.62 4.25 4.04 5.3L7.4 19.7a.6.6 0 0 0 .9.63l4.76-3.02c.32.03.64.04.98.04 4.42 0 8-2.72 8-6.27C22 6.72 16.42 4 12 4Z"
                 />
               </svg>
@@ -147,23 +147,23 @@ export default function Login() {
               type="button"
               onClick={() => onSocialLogin("google")}
               aria-label="구글로 로그인"
-              className="grid h-14 w-14 place-items-center rounded-full border border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-[color:var(--c-text)] shadow-sm transition duration-200 active:scale-[0.98] hover:bg-[color:var(--c-surface-2)]"
+              className="grid h-14 w-14 place-items-center rounded-full border border-[color:var(--c-border)] bg-[color:var(--c-surface)] shadow-sm transition duration-200 hover:bg-[color:var(--c-surface-2)] hover:shadow-md hover:scale-[1.03] active:scale-[0.98]"
             >
               <svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true">
                 <path
-                  fill="currentColor"
+                  fill="#EA4335"
                   d="M24 9.5c3.1 0 5.9 1.1 8.1 3.1l6-6C34.4 2.9 29.5 1 24 1 14.7 1 6.7 6.4 3 14.3l7 5.4C11.7 13.1 17.4 9.5 24 9.5Z"
                 />
                 <path
-                  fill="currentColor"
+                  fill="#34A853"
                   d="M46.5 24.5c0-1.6-.1-2.8-.4-4.1H24v8.2h12.7c-.3 2-1.6 5-4.6 7.1l7.1 5.5c4.1-3.8 6.3-9.4 6.3-16.7Z"
                 />
                 <path
-                  fill="currentColor"
+                  fill="#4285F4"
                   d="M10 28.7a14.5 14.5 0 0 1-.8-4.7c0-1.6.3-3.2.8-4.7l-7-5.4A24 24 0 0 0 0 24c0 3.9.9 7.6 3 10.1l7-5.4Z"
                 />
                 <path
-                  fill="currentColor"
+                  fill="#FBBC05"
                   d="M24 47c6.5 0 12-2.1 16-5.8l-7.1-5.5c-2 1.4-4.6 2.4-8.9 2.4-6.6 0-12.3-3.7-15.2-9.4l-7 5.4C6.7 41.6 14.7 47 24 47Z"
                 />
               </svg>
