@@ -1,27 +1,7 @@
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import FloatingLabelInput from "@/components/ui/FloatingLabelInput";
 import { useState } from "react";
-
-function Input({ label, value, onChange, type = "text", placeholder }) {
-  return (
-    <label className="block">
-      <span className="text-xs font-extrabold text-[color:var(--c-muted)]">
-        {label}
-      </span>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className={[
-          "mt-2 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 py-3",
-          "text-sm font-semibold text-[color:var(--c-text)] placeholder:text-[color:var(--c-muted-2)]",
-          "transition duration-200 focus:outline-none focus:ring-2 focus:ring-[color:var(--c-focus-ring)] focus:border-[color:var(--c-border-strong)]"
-        ].join(" ")}
-      />
-    </label>
-  );
-}
 
 export default function ChangePassword() {
   const [current, setCurrent] = useState("");
@@ -29,6 +9,10 @@ export default function ChangePassword() {
   const [confirm, setConfirm] = useState("");
 
   const disabled = !current || !next || next !== confirm;
+  const inputClassName = [
+    "font-semibold text-[color:var(--c-text)]",
+    "focus:outline-none focus:ring-2 focus:ring-[color:var(--c-focus-ring)] focus:border-[color:var(--c-border-strong)]",
+  ].join(" ");
 
   return (
     <section className="space-y-4">
@@ -40,26 +24,35 @@ export default function ChangePassword() {
       </div>
 
       <Card className="space-y-4">
-        <Input
+        <FloatingLabelInput
+          id="change-password-current"
           label="현재 비밀번호"
           type="password"
+          autoComplete="current-password"
           value={current}
-          onChange={setCurrent}
+          onChange={(e) => setCurrent(e.target.value)}
           placeholder="현재 비밀번호 입력"
+          inputClassName={inputClassName}
         />
-        <Input
+        <FloatingLabelInput
+          id="change-password-next"
           label="새 비밀번호"
           type="password"
+          autoComplete="new-password"
           value={next}
-          onChange={setNext}
+          onChange={(e) => setNext(e.target.value)}
           placeholder="새 비밀번호 입력"
+          inputClassName={inputClassName}
         />
-        <Input
+        <FloatingLabelInput
+          id="change-password-confirm"
           label="새 비밀번호 확인"
           type="password"
+          autoComplete="new-password"
           value={confirm}
-          onChange={setConfirm}
+          onChange={(e) => setConfirm(e.target.value)}
           placeholder="한 번 더 입력"
+          inputClassName={inputClassName}
         />
 
         <Button type="button" disabled={disabled}>

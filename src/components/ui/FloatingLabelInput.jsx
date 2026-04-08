@@ -1,6 +1,7 @@
 export default function FloatingLabelInput({
   id,
   label,
+  placeholder,
   rightAdornment,
   inputClassName = "",
   className = "",
@@ -10,7 +11,7 @@ export default function FloatingLabelInput({
     <div className={`relative ${className}`}>
       <input
         id={id}
-        placeholder=" "
+        placeholder={placeholder ?? " "}
         className={[
           "peer h-12 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 pt-5 pb-2 text-sm shadow-sm outline-none transition duration-200 placeholder:text-transparent",
           rightAdornment ? "pr-12" : "",
