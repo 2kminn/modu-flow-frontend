@@ -11,6 +11,7 @@ import Stats from "@/pages/Stats";
 import Workout from "@/pages/Workout";
 import Exercise from "@/pages/Exercise";
 import ExerciseRun from "@/pages/ExerciseRun";
+import BackendTest from "@/pages/BackendTest";
 import WorkoutDiary from "@/pages/mypage/WorkoutDiary";
 import Goals from "@/pages/mypage/Goals";
 import Routines from "@/pages/mypage/Routines";
@@ -25,6 +26,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/signup" element={<SignUp />} />
+        <Route path="/dev/backend" element={<BackendTest />} />
       </Route>
 
       <Route
