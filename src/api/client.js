@@ -30,11 +30,6 @@ apiClient.interceptors.request.use((config) => {
   const token = getAuthToken();
   config.headers = config.headers ?? {};
 
-  if (baseURL.includes("ngrok")) {
-    config.headers["ngrok-skip-browser-warning"] =
-      config.headers["ngrok-skip-browser-warning"] ?? "true";
-  }
-
   if (!token) return config;
 
   config.headers.Authorization = `Bearer ${token}`;

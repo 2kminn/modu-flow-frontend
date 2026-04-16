@@ -1,5 +1,51 @@
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+
+const ROUTINE_STORAGE_KEY = "moduflow:routines-by-day:v1";
+const DAY_LABELS = {
+  mon: "월",
+  tue: "화",
+  wed: "수",
+  thu: "목",
+  fri: "금",
+  sat: "토",
+  sun: "일"
+};
+const EXERCISE_NAME_TO_ID = {
+  squat: "squat",
+  "스쿼트": "squat",
+  pushup: "pushup",
+  "푸쉬업": "pushup",
+  "푸시업": "pushup",
+  lunge: "lunge",
+  "런지": "lunge",
+  plank: "plank",
+  "플랭크": "plank"
+};
+
+function dayKeyFromDate(date) {
+  const map = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+  return map[date.getDay()];
+}
+
+function loadRoutinesByDay() {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(ROUTINE_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function resolveExerciseId(name) {
+  if (typeof name !== "string") return null;
+  return EXERCISE_NAME_TO_ID[name.trim().toLowerCase()] || null;
+}
 
 function CongestionPill({ level }) {
   const map = {
@@ -34,10 +80,22 @@ function CongestionPill({ level }) {
 }
 
 export default function Home() {
+  const navigate = useNavigate();
   const userName = "사용자";
   const attendance = { status: "출석 완료", streakDays: 3 };
   const today = { minutes: 45, sessions: 1 };
   const congestionLevel = "mid";
+  const todayDayKey = useMemo(() => dayKeyFromDate(new Date()), []);
+  const todayRoutines = useMemo(() => {
+    const stored = loadRoutinesByDay();
+    const list = stored?.[todayDayKey];
+    return Array.isArray(list) ? list : [];
+  }, [todayDayKey]);
+  const firstExerciseId = useMemo(() => {
+    if (!todayRoutines.length) return null;
+    return resolveExerciseId(todayRoutines[0]?.name);
+  }, [todayRoutines]);
+  const startPath = firstExerciseId ? `/workout/${firstExerciseId}/run` : "/workout";
 
   return (
     <section className="space-y-4">
@@ -72,8 +130,51 @@ export default function Home() {
             운동을 시작해볼까요?
           </p>
 
+          <div className="mt-4 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] p-3">
+            <p className="text-xs font-extrabold text-[color:var(--c-muted)]">
+              오늘 루틴 ({DAY_LABELS[todayDayKey] || ""})
+            </p>
+            {todayRoutines.length ? (
+              <ul className="mt-2 space-y-1.5">
+                {todayRoutines.slice(0, 3).map((it) => (
+                  <li
+                    key={it.id}
+                    className="truncate text-sm font-semibold text-[color:var(--c-text)]"
+                  >
+                    • {it.name || "새 운동"} · {it.sets ?? "-"}세트 · {it.weight ?? "-"}kg
+                  </li>
+                ))}
+                {todayRoutines.length > 3 ? (
+                  <li className="text-xs font-semibold text-[color:var(--c-muted-2)]">
+                    외 {todayRoutines.length - 3}개
+                  </li>
+                ) : null}
+              </ul>
+            ) : (
+              <>
+                <p className="mt-2 text-xs font-semibold text-[color:var(--c-muted-2)]">
+                  설정된 루틴이 없어요. 마이페이지에서 루틴을 추가해 주세요.
+                </p>
+                <div className="mt-3">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="py-3 text-sm"
+                    onClick={() => navigate("/mypage/routines")}
+                  >
+                    루틴 설정하러 가기
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+
           <div className="mt-4">
-            <Button type="button" className="py-5 text-lg">
+            <Button
+              type="button"
+              className="py-5 text-lg"
+              onClick={() => navigate(startPath)}
+            >
               운동 시작
             </Button>
           </div>

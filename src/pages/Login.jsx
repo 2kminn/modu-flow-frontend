@@ -96,15 +96,6 @@ export default function Login() {
           </Link>
         </div>
 
-        <div className="text-center text-sm">
-          <Link
-            className="font-semibold text-[color:var(--c-muted-2)] underline decoration-[color:var(--c-border)] underline-offset-4 hover:decoration-[color:var(--c-text)]"
-            to="/dev/backend"
-          >
-            백엔드 연결 테스트
-          </Link>
-        </div>
-
         <Button type="submit">로그인</Button>
 
         <div className="pt-2">
