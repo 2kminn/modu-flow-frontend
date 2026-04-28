@@ -22,7 +22,12 @@ export default function RootLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const title = getTitle(location.pathname);
-  const showBack = location.pathname !== "/";
+  const isMainPage =
+    location.pathname === "/" ||
+    location.pathname === "/workout" ||
+    location.pathname === "/stats" ||
+    location.pathname === "/mypage";
+  const showBack = !isMainPage;
 
   return (
     <div className="min-h-dvh bg-[color:var(--c-bg)] text-[color:var(--c-text)]">
