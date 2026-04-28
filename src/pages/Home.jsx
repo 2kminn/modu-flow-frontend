@@ -1,9 +1,10 @@
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const ROUTINE_STORAGE_KEY = "moduflow:routines-by-day:v1";
+const AUTO_ATTENDANCE_STORAGE_KEY = "moduflow:auto-attendance:v1";
 const DAY_LABELS = {
   mon: "월",
   tue: "화",
@@ -47,7 +48,7 @@ function resolveExerciseId(name) {
   return EXERCISE_NAME_TO_ID[name.trim().toLowerCase()] || null;
 }
 
-function CongestionPill({ level }) {
+function CongestionPill({ level, title }) {
   const map = {
     low: {
       label: "여유",
@@ -68,9 +69,14 @@ function CongestionPill({ level }) {
   return (
     <div className="rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface-2)] px-3 py-2 transition-[background-color,border-color] duration-200">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs font-extrabold text-[color:var(--c-muted)]">
-          혼잡도 · {ui.label}
-        </p>
+        <div className="min-w-0">
+          <p className="truncate text-xs font-extrabold text-[color:var(--c-muted)]">
+            {title}
+          </p>
+          <p className="mt-0.5 text-[11px] font-semibold text-[color:var(--c-muted-2)]">
+            혼잡도 · {ui.label}
+          </p>
+        </div>
         <div className="h-2 w-20 overflow-hidden rounded-full bg-[color:var(--c-surface)]">
           <div className={`h-full ${ui.bar}`} />
         </div>
@@ -79,12 +85,47 @@ function CongestionPill({ level }) {
   );
 }
 
+function AutoAttendanceToggle({ enabled, onChange }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={enabled}
+      aria-label={enabled ? "자동출석 끄기" : "자동출석 켜기"}
+      onClick={() => onChange(!enabled)}
+      className={[
+        "relative inline-flex h-11 w-[96px] items-center rounded-full border shadow-sm transition duration-200 active:scale-[0.98] hover:bg-[color:var(--c-surface-2)]",
+        "border-[color:var(--c-border)] bg-[color:var(--c-surface)]"
+      ].join(" ")}
+    >
+      <span className="absolute left-3 text-[11px] font-extrabold text-[color:var(--c-muted-2)]">
+        OFF
+      </span>
+      <span className="absolute right-3 text-[11px] font-extrabold text-[color:var(--c-muted-2)]">
+        ON
+      </span>
+      <span
+        aria-hidden="true"
+        className={[
+          "absolute top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full border shadow-sm transition-transform",
+          "border-[color:var(--c-border)] bg-[color:var(--c-surface-2)]",
+          enabled ? "translate-x-[56px]" : "translate-x-[4px]"
+        ].join(" ")}
+      >
+        <span className="text-[11px] font-extrabold text-[color:var(--c-text)]">
+          {enabled ? "ON" : "OFF"}
+        </span>
+      </span>
+    </button>
+  );
+}
+
 export default function Home() {
   const navigate = useNavigate();
   const userName = "사용자";
   const attendance = { status: "출석 완료", streakDays: 3 };
-  const today = { minutes: 45, sessions: 1 };
-  const congestionLevel = "mid";
+  const cardioCongestionLevel = "mid";
+  const weightCongestionLevel = "low";
   const todayDayKey = useMemo(() => dayKeyFromDate(new Date()), []);
   const todayRoutines = useMemo(() => {
     const stored = loadRoutinesByDay();
@@ -96,6 +137,20 @@ export default function Home() {
     return resolveExerciseId(todayRoutines[0]?.name);
   }, [todayRoutines]);
   const startPath = firstExerciseId ? `/workout/${firstExerciseId}/run` : "/workout";
+  const [autoAttendanceEnabled, setAutoAttendanceEnabled] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const raw = window.localStorage.getItem(AUTO_ATTENDANCE_STORAGE_KEY);
+    if (!raw) return false;
+    return raw === "true";
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(
+      AUTO_ATTENDANCE_STORAGE_KEY,
+      autoAttendanceEnabled ? "true" : "false"
+    );
+  }, [autoAttendanceEnabled]);
 
   return (
     <section className="space-y-4">
@@ -178,49 +233,41 @@ export default function Home() {
               운동 시작
             </Button>
           </div>
-
-          <div className="mt-4">
-            <CongestionPill level={congestionLevel} />
-          </div>
         </div>
       </Card>
 
       <Card>
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-[color:var(--c-muted)]">
-              오늘 운동 요약
+              혼잡도
             </p>
             <p className="mt-1 text-lg font-extrabold text-[color:var(--c-text)]">
-              {today.minutes}분 · {today.sessions}회
+              지금 운동존 상태
             </p>
           </div>
-          <div
-            className="grid h-14 w-14 place-items-center rounded-3xl border border-[color:var(--c-border)] bg-[color:var(--c-surface-2)] text-[color:var(--c-text)] transition-[background-color,border-color] duration-200"
-            aria-hidden="true"
-          >
-            <svg width="26" height="26" viewBox="0 0 24 24">
-              <path
-                fill="currentColor"
-                d="M12 21c-4.97 0-9-4.03-9-9s4.03-9 9-9 9 4.03 9 9-4.03 9-9 9Zm1-14h-2v5.2l4.2 2.5 1-1.65-3.2-1.85V7Z"
+          <div className="text-right">
+            <p className="text-[11px] font-extrabold text-[color:var(--c-muted-2)]">
+              자동출석
+            </p>
+            <div className="mt-2">
+              <AutoAttendanceToggle
+                enabled={autoAttendanceEnabled}
+                onChange={setAutoAttendanceEnabled}
               />
-            </svg>
+            </div>
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          <div className="rounded-2xl bg-[color:var(--c-surface-2)] p-3">
-            <p className="text-[11px] font-extrabold text-[color:var(--c-muted-2)]">
-              운동 시간
-            </p>
-            <p className="mt-1 text-xl font-extrabold">{today.minutes}분</p>
-          </div>
-          <div className="rounded-2xl bg-[color:var(--c-surface-2)] p-3">
-            <p className="text-[11px] font-extrabold text-[color:var(--c-muted-2)]">
-              운동 횟수
-            </p>
-            <p className="mt-1 text-xl font-extrabold">{today.sessions}회</p>
-          </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <CongestionPill
+            title="유산소존"
+            level={cardioCongestionLevel}
+          />
+          <CongestionPill
+            title="웨이트존"
+            level={weightCongestionLevel}
+          />
         </div>
       </Card>
     </section>
