@@ -12,9 +12,9 @@
   --c-border: rgba(10, 10, 10, 0.12);
   --c-border-strong: rgba(10, 10, 10, 0.18);
   --c-focus-ring: rgba(10, 10, 10, 0.14);
-  --c-level-low: rgba(10, 10, 10, 0.22);
-  --c-level-mid: rgba(10, 10, 10, 0.42);
-  --c-level-high: rgba(10, 10, 10, 0.7);
+  --c-level-low: #22c55e;
+  --c-level-mid: #f59e0b;
+  --c-level-high: #ef4444;
   --c-chart-line: rgba(10, 10, 10, 0.92);
   --c-chart-fill-top: rgba(10, 10, 10, 0.18);
   --c-chart-fill-bottom: rgba(10, 10, 10, 0);
@@ -36,9 +36,9 @@ html.dark {
   --c-border: rgba(255, 255, 255, 0.18);
   --c-border-strong: rgba(255, 255, 255, 0.26);
   --c-focus-ring: rgba(255, 255, 255, 0.18);
-  --c-level-low: rgba(255, 255, 255, 0.25);
-  --c-level-mid: rgba(255, 255, 255, 0.45);
-  --c-level-high: rgba(255, 255, 255, 0.75);
+  --c-level-low: #4ade80;
+  --c-level-mid: #fbbf24;
+  --c-level-high: #f87171;
   --c-chart-line: rgba(255, 255, 255, 0.9);
   --c-chart-fill-top: rgba(255, 255, 255, 0.14);
   --c-chart-fill-bottom: rgba(255, 255, 255, 0);

@@ -127,6 +127,13 @@ export default function Home() {
   const cardioCongestionLevel = "mid";
   const weightCongestionLevel = "low";
   const todayDayKey = useMemo(() => dayKeyFromDate(new Date()), []);
+  const [startNotice, setStartNotice] = useState(null);
+  const hasAnyRoutine = useMemo(() => {
+    const stored = loadRoutinesByDay();
+    return Object.values(stored || {}).some(
+      (list) => Array.isArray(list) && list.length > 0
+    );
+  }, []);
   const todayRoutines = useMemo(() => {
     const stored = loadRoutinesByDay();
     const list = stored?.[todayDayKey];
@@ -136,7 +143,6 @@ export default function Home() {
     if (!todayRoutines.length) return null;
     return resolveExerciseId(todayRoutines[0]?.name);
   }, [todayRoutines]);
-  const startPath = firstExerciseId ? `/workout/${firstExerciseId}/run` : "/workout";
   const [autoAttendanceEnabled, setAutoAttendanceEnabled] = useState(() => {
     if (typeof window === "undefined") return false;
     const raw = window.localStorage.getItem(AUTO_ATTENDANCE_STORAGE_KEY);
@@ -152,124 +158,163 @@ export default function Home() {
     );
   }, [autoAttendanceEnabled]);
 
+  useEffect(() => {
+    if (!startNotice) return;
+    const t = window.setTimeout(() => setStartNotice(null), 2200);
+    return () => window.clearTimeout(t);
+  }, [startNotice]);
+
   return (
-    <section className="space-y-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-[color:var(--c-muted)]">
-            좋은 하루예요,
-          </p>
-          <h2 className="mt-1 text-2xl font-extrabold leading-tight">
-            {userName}님
-          </h2>
-        </div>
-        <div className="shrink-0 text-right">
-          <div className="inline-flex items-center gap-2 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-3 py-2 shadow-sm">
-            <span className="h-2.5 w-2.5 rounded-full bg-[color:var(--c-text)]" />
-            <span className="text-xs font-extrabold text-[color:var(--c-text)]">
-              {attendance.status}
-            </span>
-          </div>
-          <p className="mt-2 text-[11px] font-semibold text-[color:var(--c-muted-2)]">
-            연속 {attendance.streakDays}일째
-          </p>
-        </div>
-      </div>
-
-      <Card className="p-0">
-        <div className="p-4">
-          <p className="text-sm font-semibold text-[color:var(--c-muted)]">
-            오늘도 한 걸음
-          </p>
-          <p className="mt-1 text-lg font-extrabold">
-            운동을 시작해볼까요?
-          </p>
-
-          <div className="mt-4 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] p-3">
-            <p className="text-xs font-extrabold text-[color:var(--c-muted)]">
-              오늘 루틴 ({DAY_LABELS[todayDayKey] || ""})
-            </p>
-            {todayRoutines.length ? (
-              <ul className="mt-2 space-y-1.5">
-                {todayRoutines.slice(0, 3).map((it) => (
-                  <li
-                    key={it.id}
-                    className="truncate text-sm font-semibold text-[color:var(--c-text)]"
-                  >
-                    • {it.name || "새 운동"} · {it.sets ?? "-"}세트 · {it.weight ?? "-"}kg
-                  </li>
-                ))}
-                {todayRoutines.length > 3 ? (
-                  <li className="text-xs font-semibold text-[color:var(--c-muted-2)]">
-                    외 {todayRoutines.length - 3}개
-                  </li>
-                ) : null}
-              </ul>
-            ) : (
-              <>
-                <p className="mt-2 text-xs font-semibold text-[color:var(--c-muted-2)]">
-                  설정된 루틴이 없어요. 마이페이지에서 루틴을 추가해 주세요.
-                </p>
-                <div className="mt-3">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="py-3 text-sm"
-                    onClick={() => navigate("/mypage/routines")}
-                  >
-                    루틴 설정하러 가기
-                  </Button>
-                </div>
-              </>
-            )}
-          </div>
-
-          <div className="mt-4">
-            <Button
-              type="button"
-              className="py-5 text-lg"
-              onClick={() => navigate(startPath)}
-            >
-              운동 시작
-            </Button>
-          </div>
-        </div>
-      </Card>
-
-      <Card>
-        <div className="flex items-start justify-between gap-4">
+    <>
+      <section className="space-y-4">
+        <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-sm font-semibold text-[color:var(--c-muted)]">
-              혼잡도
+              좋은 하루예요,
             </p>
-            <p className="mt-1 text-lg font-extrabold text-[color:var(--c-text)]">
-              지금 운동존 상태
-            </p>
+            <h2 className="mt-1 text-2xl font-extrabold leading-tight">
+              {userName}님
+            </h2>
           </div>
-          <div className="text-right">
-            <p className="text-[11px] font-extrabold text-[color:var(--c-muted-2)]">
-              자동출석
-            </p>
-            <div className="mt-2">
-              <AutoAttendanceToggle
-                enabled={autoAttendanceEnabled}
-                onChange={setAutoAttendanceEnabled}
-              />
+          <div className="shrink-0 text-right">
+            <div className="inline-flex items-center gap-2 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-3 py-2 shadow-sm">
+              <span className="h-2.5 w-2.5 rounded-full bg-[color:var(--c-text)]" />
+              <span className="text-xs font-extrabold text-[color:var(--c-text)]">
+                {attendance.status}
+              </span>
             </div>
+            <p className="mt-2 text-[11px] font-semibold text-[color:var(--c-muted-2)]">
+              연속 {attendance.streakDays}일째
+            </p>
           </div>
         </div>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <CongestionPill
-            title="유산소존"
-            level={cardioCongestionLevel}
-          />
-          <CongestionPill
-            title="웨이트존"
-            level={weightCongestionLevel}
-          />
+        <Card className="p-0">
+          <div className="p-4">
+            <p className="text-sm font-semibold text-[color:var(--c-muted)]">
+              오늘도 한 걸음
+            </p>
+            <p className="mt-1 text-lg font-extrabold">
+              운동을 시작해볼까요?
+            </p>
+
+            <div className="mt-4 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] p-3">
+              <p className="text-xs font-extrabold text-[color:var(--c-muted)]">
+                오늘 루틴 ({DAY_LABELS[todayDayKey] || ""})
+              </p>
+              {todayRoutines.length ? (
+                <>
+                  <ul className="mt-2 space-y-1.5">
+                    {todayRoutines.slice(0, 3).map((it) => (
+                      <li
+                        key={it.id}
+                        className="truncate text-sm font-semibold text-[color:var(--c-text)]"
+                      >
+                        • {it.name || "운동 이름"} · {it.sets ?? "-"}세트 ·{" "}
+                        {it.weight ?? "-"}kg
+                      </li>
+                    ))}
+                    {todayRoutines.length > 3 ? (
+                      <li className="text-xs font-semibold text-[color:var(--c-muted-2)]">
+                        외 {todayRoutines.length - 3}개
+                      </li>
+                    ) : null}
+                  </ul>
+                  <div className="mt-3">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="py-3 text-sm"
+                      onClick={() => navigate("/mypage/routines")}
+                    >
+                      루틴 수정하기
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="mt-2 text-xs font-semibold text-[color:var(--c-muted-2)]">
+                    {hasAnyRoutine
+                      ? "오늘은 루틴이 없어요. 마이페이지에서 루틴을 수정해 주세요."
+                      : "설정된 루틴이 없어요. 마이페이지에서 루틴을 추가해 주세요."}
+                  </p>
+                  <div className="mt-3">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="py-3 text-sm"
+                      onClick={() => navigate("/mypage/routines")}
+                    >
+                      {hasAnyRoutine ? "루틴 수정하기" : "루틴 설정하러 가기"}
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="mt-4">
+              <Button
+                type="button"
+                className="py-5 text-lg"
+                onClick={() => {
+                  if (todayRoutines.length) {
+                    navigate("/workout/run");
+                  } else if (!hasAnyRoutine) {
+                    setStartNotice("루틴이 설정되지 않았습니다.");
+                  } else {
+                    navigate("/workout");
+                  }
+                }}
+              >
+                운동 시작
+              </Button>
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-[color:var(--c-muted)]">
+                혼잡도
+              </p>
+              <p className="mt-1 text-lg font-extrabold text-[color:var(--c-text)]">
+                지금 운동존 상태
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-[11px] font-extrabold text-[color:var(--c-muted-2)]">
+                자동출석
+              </p>
+              <div className="mt-2">
+                <AutoAttendanceToggle
+                  enabled={autoAttendanceEnabled}
+                  onChange={setAutoAttendanceEnabled}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <CongestionPill
+              title="유산소존"
+              level={cardioCongestionLevel}
+            />
+            <CongestionPill
+              title="웨이트존"
+              level={weightCongestionLevel}
+            />
+          </div>
+        </Card>
+      </section>
+
+      {startNotice ? (
+        <div className="pointer-events-none fixed inset-x-0 bottom-24 z-50 px-4">
+          <div className="mx-auto w-full max-w-md rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 py-3 text-center text-sm font-extrabold text-[color:var(--c-text)] shadow-lg">
+            {startNotice}
+          </div>
         </div>
-      </Card>
-    </section>
+      ) : null}
+    </>
   );
 }

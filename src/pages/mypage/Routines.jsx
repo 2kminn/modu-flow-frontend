@@ -146,7 +146,7 @@ export default function Routines() {
     });
   }
 
-  function cancelEdit() {
+  function finishEdit() {
     setEditingId(null);
     setDraft(null);
   }
@@ -162,16 +162,30 @@ export default function Routines() {
         it.id === editingId
           ? {
               ...it,
-              name: draft.name.trim() || "새 운동",
+              name: draft.name.trim(),
               sets: draft.sets === "" ? null : Number.isFinite(nextSets) ? nextSets : null,
               weight:
-                draft.weight === "" ? null : Number.isFinite(nextWeight) ? nextWeight : null
+                draft.weight === "" ? null : Number.isFinite(nextWeight) ? nextWeight : null,
+              isNew: false
             }
           : it
       );
       return next;
     });
-    cancelEdit();
+    finishEdit();
+  }
+
+  function cancelEdit() {
+    if (!editingId) return finishEdit();
+    setRoutinesByDay((prev) => {
+      const next = { ...(prev || {}) };
+      const list = Array.isArray(next[selectedDay]) ? next[selectedDay] : [];
+      const target = list.find((it) => it.id === editingId);
+      if (!target?.isNew) return next;
+      next[selectedDay] = list.filter((it) => it.id !== editingId);
+      return next;
+    });
+    finishEdit();
   }
 
   function deleteItem(id) {
@@ -185,11 +199,11 @@ export default function Routines() {
       next[selectedDay] = list.filter((it) => it.id !== id);
       return next;
     });
-    if (editingId === id) cancelEdit();
+    if (editingId === id) finishEdit();
   }
 
   function addRoutine() {
-    const newItem = { id: createId(), name: "새 운동", sets: null, weight: null };
+    const newItem = { id: createId(), name: "", sets: null, weight: null, isNew: true };
     setRoutinesByDay((prev) => {
       const next = { ...(prev || {}) };
       const list = Array.isArray(next[selectedDay]) ? [...next[selectedDay]] : [];
@@ -232,7 +246,7 @@ export default function Routines() {
               무게
             </p>
           </div>
-          {routineForSelectedDay.length ? (
+          {routineForSelectedDay.length && !editingId ? (
             <div className="shrink-0">
               <Button
                 type="button"
@@ -261,6 +275,7 @@ export default function Routines() {
                             onChange={(e) =>
                               setDraft((prev) => ({ ...(prev || {}), name: e.target.value }))
                             }
+                            placeholder="운동 이름"
                             className={[
                               "h-11 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4",
                               "text-sm font-semibold text-[color:var(--c-text)] shadow-sm outline-none transition duration-200",
@@ -299,7 +314,13 @@ export default function Routines() {
                     ) : (
                       <>
                         <p className="truncate text-sm font-extrabold text-[color:var(--c-text)]">
-                          {it.name}
+                          {it.name ? (
+                            it.name
+                          ) : (
+                            <span className="font-semibold text-[color:var(--c-muted-2)]">
+                              운동 이름
+                            </span>
+                          )}
                         </p>
                         <p className="mt-1 truncate text-xs font-semibold text-[color:var(--c-muted-2)]">
                           세트: {it.sets ?? "-"} · 무게: {it.weight ?? "-"}

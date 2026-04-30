@@ -40,11 +40,7 @@ export default function MyPage() {
   };
 
   const menus = [
-    { label: "운동일지", to: "/mypage/workout-diary", description: "최근 기록/히스토리" },
-    { label: "운동 목표 설정", to: "/mypage/goals", description: "주간 목표, 알림" },
     { label: "루틴 설정", to: "/mypage/routines", description: "자주 하는 루틴 관리" },
-    { label: "자세 정확도 통계", to: "/mypage/posture-accuracy", description: "자세 피드백 요약" },
-    { label: "출석률", to: "/mypage/attendance", description: "주간/월간 출석" },
     { label: "비밀번호 변경", to: "/mypage/password", description: "보안 설정" }
   ];
 
@@ -78,7 +74,7 @@ export default function MyPage() {
             메뉴
           </p>
           <p className="mt-1 text-xs font-semibold text-[color:var(--c-muted-2)]">
-            필요한 설정과 기록을 빠르게 확인해요.
+            기록은 '기록' 탭에서 확인하고, 여기서는 계정/설정을 관리해요.
           </p>
         </div>
 

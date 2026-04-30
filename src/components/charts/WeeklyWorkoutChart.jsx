@@ -20,7 +20,13 @@ Chart.register(
   Filler
 );
 
-export default function WeeklyWorkoutChart({ data, labels }) {
+export default function WeeklyWorkoutChart({
+  data,
+  labels,
+  unit = "분",
+  datasetLabel = "운동 시간",
+  suggestedMax
+}) {
   const canvasRef = useRef(null);
   const chartRef = useRef(null);
   const [themeToken, setThemeToken] = useState(0);
@@ -63,7 +69,7 @@ export default function WeeklyWorkoutChart({ data, labels }) {
         labels: safeLabels,
         datasets: [
           {
-            label: "운동 시간(분)",
+            label: datasetLabel,
             data: safeData,
             borderColor: line,
             backgroundColor: gradient,
@@ -91,7 +97,7 @@ export default function WeeklyWorkoutChart({ data, labels }) {
             padding: 10,
             displayColors: false,
             callbacks: {
-              label: (ctx2) => `${ctx2.parsed.y ?? 0}분`
+              label: (ctx2) => `${ctx2.parsed.y ?? 0}${unit}`
             }
           }
         },
@@ -103,7 +109,7 @@ export default function WeeklyWorkoutChart({ data, labels }) {
           },
           y: {
             beginAtZero: true,
-            suggestedMax: Math.max(...safeData, 60),
+            suggestedMax: suggestedMax ?? Math.max(...safeData, 60),
             ticks: {
               color: tick,
               font: { weight: "600" },

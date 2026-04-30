@@ -11,11 +11,8 @@ import Stats from "@/pages/Stats";
 import Workout from "@/pages/Workout";
 import Exercise from "@/pages/Exercise";
 import ExerciseRun from "@/pages/ExerciseRun";
-import WorkoutDiary from "@/pages/mypage/WorkoutDiary";
-import Goals from "@/pages/mypage/Goals";
+import WorkoutRun from "@/pages/WorkoutRun";
 import Routines from "@/pages/mypage/Routines";
-import PostureAccuracy from "@/pages/mypage/PostureAccuracy";
-import Attendance from "@/pages/mypage/Attendance";
 import ChangePassword from "@/pages/mypage/ChangePassword";
 
 export default function App() {
@@ -36,15 +33,16 @@ export default function App() {
       >
         <Route index element={<Home />} />
         <Route path="/workout" element={<Workout />} />
+        <Route path="/workout/run" element={<WorkoutRun />} />
         <Route path="/workout/:exerciseId" element={<Exercise />} />
         <Route path="/workout/:exerciseId/run" element={<ExerciseRun />} />
         <Route path="/stats" element={<Stats />} />
         <Route path="/mypage" element={<MyPage />} />
-        <Route path="/mypage/workout-diary" element={<WorkoutDiary />} />
-        <Route path="/mypage/goals" element={<Goals />} />
+        <Route path="/mypage/workout-diary" element={<Navigate to="/stats" replace />} />
+        <Route path="/mypage/posture-accuracy" element={<Navigate to="/stats" replace />} />
+        <Route path="/mypage/attendance" element={<Navigate to="/stats" replace />} />
+        <Route path="/mypage/goals" element={<Navigate to="/mypage" replace />} />
         <Route path="/mypage/routines" element={<Routines />} />
-        <Route path="/mypage/posture-accuracy" element={<PostureAccuracy />} />
-        <Route path="/mypage/attendance" element={<Attendance />} />
         <Route path="/mypage/password" element={<ChangePassword />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
