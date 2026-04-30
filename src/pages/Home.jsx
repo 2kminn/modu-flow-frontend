@@ -253,21 +253,21 @@ export default function Home() {
             </div>
 
             <div className="mt-4">
-              <Button
-                type="button"
-                className="py-5 text-lg"
-                onClick={() => {
-                  if (todayRoutines.length) {
-                    navigate("/workout/run");
-                  } else if (!hasAnyRoutine) {
-                    setStartNotice("루틴이 설정되지 않았습니다.");
-                  } else {
-                    navigate("/workout");
-                  }
-                }}
-              >
-                운동 시작
-              </Button>
+            <Button
+              type="button"
+              className="py-5 text-lg"
+              onClick={() => {
+                if (todayRoutines.length) {
+                  navigate("/workout/run");
+                } else {
+                  setStartNotice(
+                    "오늘 루틴이 설정되지 않았습니다. 마이페이지에서 루틴을 설정해 주세요."
+                  );
+                }
+              }}
+            >
+              운동 시작
+            </Button>
             </div>
           </div>
         </Card>
