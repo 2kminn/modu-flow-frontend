@@ -278,7 +278,7 @@ export default function Routines() {
                             placeholder="운동 이름"
                             className={[
                               "h-11 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4",
-                              "text-sm font-semibold text-[color:var(--c-text)] shadow-sm outline-none transition duration-200",
+                              "text-base font-semibold text-[color:var(--c-text)] shadow-sm outline-none transition duration-200",
                               "focus:ring-2 focus:ring-[color:var(--c-focus-ring)] focus:border-[color:var(--c-border-strong)]"
                             ].join(" ")}
                           />
@@ -291,7 +291,7 @@ export default function Routines() {
                             inputMode="numeric"
                             className={[
                               "h-11 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4",
-                              "text-sm font-semibold text-[color:var(--c-text)] shadow-sm outline-none transition duration-200",
+                              "text-base font-semibold text-[color:var(--c-text)] shadow-sm outline-none transition duration-200",
                               "focus:ring-2 focus:ring-[color:var(--c-focus-ring)] focus:border-[color:var(--c-border-strong)]"
                             ].join(" ")}
                             placeholder="세트"
@@ -304,7 +304,7 @@ export default function Routines() {
                             inputMode="numeric"
                             className={[
                               "h-11 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4",
-                              "text-sm font-semibold text-[color:var(--c-text)] shadow-sm outline-none transition duration-200",
+                              "text-base font-semibold text-[color:var(--c-text)] shadow-sm outline-none transition duration-200",
                               "focus:ring-2 focus:ring-[color:var(--c-focus-ring)] focus:border-[color:var(--c-border-strong)]"
                             ].join(" ")}
                             placeholder="무게(kg)"
