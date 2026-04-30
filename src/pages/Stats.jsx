@@ -2,7 +2,7 @@ import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import WeeklyWorkoutChart from "@/components/charts/WeeklyWorkoutChart";
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 function formatMonth(date) {
   const y = date.getFullYear();
@@ -61,14 +61,6 @@ function WorkoutListModal({ open, title, items, onClose }) {
               해당 날짜에 수행한 운동 목록이에요.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="grid h-10 w-10 place-items-center rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-[color:var(--c-text)] transition hover:bg-[color:var(--c-surface-2)]"
-            aria-label="닫기"
-          >
-            <X size={18} aria-hidden="true" />
-          </button>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
