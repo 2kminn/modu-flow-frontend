@@ -309,7 +309,7 @@ export default function Home() {
       </section>
 
       {startNotice ? (
-        <div className="pointer-events-none fixed inset-x-0 bottom-24 z-50 px-4">
+        <div className="pointer-events-none fixed inset-x-0 bottom-24 z-[60] px-4">
           <div className="mx-auto w-full max-w-md rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 py-3 text-center text-sm font-extrabold text-[color:var(--c-text)] shadow-lg">
             {startNotice}
           </div>
