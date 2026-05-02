@@ -161,13 +161,13 @@ export default function Routines() {
       next[selectedDay] = list.map((it) =>
         it.id === editingId
           ? {
-              ...it,
-              name: draft.name.trim(),
-              sets: draft.sets === "" ? null : Number.isFinite(nextSets) ? nextSets : null,
-              weight:
-                draft.weight === "" ? null : Number.isFinite(nextWeight) ? nextWeight : null,
-              isNew: false
-            }
+            ...it,
+            name: draft.name.trim(),
+            sets: draft.sets === "" ? null : Number.isFinite(nextSets) ? nextSets : null,
+            weight:
+              draft.weight === "" ? null : Number.isFinite(nextWeight) ? nextWeight : null,
+            isNew: false
+          }
           : it
       );
       return next;
@@ -283,86 +283,85 @@ export default function Routines() {
                             ].join(" ")}
                           />
                           <div className="grid grid-cols-2 gap-2">
-                          <input
-                            value={draft?.sets ?? ""}
-                            onChange={(e) =>
-                              setDraft((prev) => ({ ...(prev || {}), sets: e.target.value }))
-                            }
-                            inputMode="numeric"
-                            className={[
-                              "h-11 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4",
-                              "text-base font-semibold text-[color:var(--c-text)] shadow-sm outline-none transition duration-200",
-                              "focus:ring-2 focus:ring-[color:var(--c-focus-ring)] focus:border-[color:var(--c-border-strong)]"
-                            ].join(" ")}
-                            placeholder="세트"
-                          />
-                          <input
-                            value={draft?.weight ?? ""}
-                            onChange={(e) =>
-                              setDraft((prev) => ({ ...(prev || {}), weight: e.target.value }))
-                            }
-                            inputMode="numeric"
-                            className={[
-                              "h-11 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4",
-                              "text-base font-semibold text-[color:var(--c-text)] shadow-sm outline-none transition duration-200",
-                              "focus:ring-2 focus:ring-[color:var(--c-focus-ring)] focus:border-[color:var(--c-border-strong)]"
-                            ].join(" ")}
-                            placeholder="무게(kg)"
-                          />
+                            <input
+                              value={draft?.sets ?? ""}
+                              onChange={(e) =>
+                                setDraft((prev) => ({ ...(prev || {}), sets: e.target.value }))
+                              }
+                              inputMode="numeric"
+                              className={[
+                                "h-11 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4",
+                                "text-base font-semibold text-[color:var(--c-text)] shadow-sm outline-none transition duration-200",
+                                "focus:ring-2 focus:ring-[color:var(--c-focus-ring)] focus:border-[color:var(--c-border-strong)]"
+                              ].join(" ")}
+                              placeholder="세트"
+                            />
+                            <input
+                              value={draft?.weight ?? ""}
+                              onChange={(e) =>
+                                setDraft((prev) => ({ ...(prev || {}), weight: e.target.value }))
+                              }
+                              inputMode="numeric"
+                              className={[
+                                "h-11 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4",
+                                "text-base font-semibold text-[color:var(--c-text)] shadow-sm outline-none transition duration-200",
+                                "focus:ring-2 focus:ring-[color:var(--c-focus-ring)] focus:border-[color:var(--c-border-strong)]"
+                              ].join(" ")}
+                              placeholder="무게(kg)"
+                            />
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <>
-                        <p className="truncate text-sm font-extrabold text-[color:var(--c-text)]">
-                          {it.name ? (
-                            it.name
-                          ) : (
-                            <span className="font-semibold text-[color:var(--c-muted-2)]">
-                              운동 이름
-                            </span>
-                          )}
-                        </p>
-                        <p className="mt-1 truncate text-xs font-semibold text-[color:var(--c-muted-2)]">
-                          세트: {it.sets ?? "-"} · 무게: {it.weight ?? "-"}
-                        </p>
-                      </>
-                    )}
-                  </div>
+                      ) : (
+                        <>
+                          <p className="truncate text-sm font-extrabold text-[color:var(--c-text)]">
+                            {it.name ? (
+                              it.name
+                            ) : (
+                              <span className="font-semibold text-[color:var(--c-muted-2)]">
+                                운동 이름
+                              </span>
+                            )}
+                          </p>
+                          <p className="mt-1 truncate text-xs font-semibold text-[color:var(--c-muted-2)]">
+                            세트: {it.sets ?? "-"} · 무게: {it.weight ?? "-"}
+                          </p>
+                        </>
+                      )}
+                    </div>
 
-                  <div className="flex shrink-0 items-center gap-1">
-                    {editing ? (
-                      <>
-                        <IconButton label="저장" onClick={saveEdit}>
-                          <Check size={18} aria-hidden="true" />
-                        </IconButton>
-                        <IconButton label="취소" onClick={cancelEdit}>
-                          <X size={18} aria-hidden="true" />
-                        </IconButton>
-                      </>
-                    ) : (
-                      <>
-                        <IconButton label="편집" onClick={() => startEdit(it)}>
-                          <Pencil size={18} aria-hidden="true" />
-                        </IconButton>
-                        <IconButton
-                          label="삭제"
-                          tone="danger"
-                          onClick={() => deleteItem(it.id)}
-                        >
-                          <Trash2 size={18} aria-hidden="true" />
-                        </IconButton>
-                      </>
-                    )}
-                  </div>
-                </Card>
-              </li>
-            );
-          })}
+                    <div className="flex shrink-0 items-center gap-1">
+                      {editing ? (
+                        <>
+                          <IconButton label="저장" onClick={saveEdit}>
+                            <Check size={18} aria-hidden="true" />
+                          </IconButton>
+                          <IconButton label="취소" onClick={cancelEdit}>
+                            <X size={18} aria-hidden="true" />
+                          </IconButton>
+                        </>
+                      ) : (
+                        <>
+                          <IconButton label="편집" onClick={() => startEdit(it)}>
+                            <Pencil size={18} aria-hidden="true" />
+                          </IconButton>
+                          <IconButton
+                            label="삭제"
+                            tone="danger"
+                            onClick={() => deleteItem(it.id)}
+                          >
+                            <Trash2 size={18} aria-hidden="true" />
+                          </IconButton>
+                        </>
+                      )}
+                    </div>
+                  </Card>
+                </li>
+              );
+            })}
           </ul>
         ) : (
           <div className="rounded-3xl border border-dashed border-[color:var(--c-border)] bg-[color:var(--c-surface)] p-8 text-center">
             <p className="text-sm font-semibold text-[color:var(--c-muted)]">
-              이 요일에는 루틴이 없어요.
             </p>
             <div className="mx-auto mt-4 w-full max-w-xs">
               <Button type="button" variant="secondary" onClick={addRoutine}>
