@@ -1,7 +1,6 @@
 {
   "functions": {
-    "api/proxy/[...path].js": {
-      "maxDuration": 10
-    }
+    "api/auth/login.js": { "maxDuration": 10 },
+    "api/auth/signup.js": { "maxDuration": 10 }
   }
 }
