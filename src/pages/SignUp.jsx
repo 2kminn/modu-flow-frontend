@@ -5,6 +5,7 @@ import Button from "@/components/ui/Button";
 import FloatingLabelInput from "@/components/ui/FloatingLabelInput";
 import { setAuthToken } from "@/auth/auth";
 import { Eye, EyeOff } from "lucide-react";
+import { loginWithEmail, signupWithEmail } from "@/api/auth";
 
 export default function SignUp() {
   const navigate = useNavigate();
@@ -15,8 +16,9 @@ export default function SignUp() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  function onSubmit(e) {
+  async function onSubmit(e) {
     e.preventDefault();
     setError(null);
 
@@ -29,7 +31,36 @@ export default function SignUp() {
       return;
     }
 
-    setAuthToken("dummy-token");
+    setLoading(true);
+    const signupResult = await signupWithEmail({
+      email: email.trim(),
+      password,
+      confirmPassword
+    });
+
+    if (!signupResult.ok) {
+      setLoading(false);
+      setError(signupResult.message || "회원가입에 실패했어요.");
+      return;
+    }
+
+    if (signupResult.accessToken) {
+      setAuthToken(signupResult.accessToken);
+      setLoading(false);
+      navigate("/", { replace: true });
+      return;
+    }
+
+    const loginResult = await loginWithEmail({ email: email.trim(), password });
+    setLoading(false);
+
+    if (!loginResult.ok) {
+      setError("회원가입은 완료됐지만 자동 로그인에 실패했어요. 로그인 화면에서 다시 시도해 주세요.");
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    setAuthToken(loginResult.accessToken);
     navigate("/", { replace: true });
   }
 
@@ -111,7 +142,9 @@ export default function SignUp() {
           </p>
         ) : null}
 
-        <Button type="submit">회원가입</Button>
+        <Button type="submit" disabled={loading}>
+          {loading ? "가입 중..." : "회원가입"}
+        </Button>
 
         <p className="text-center text-sm text-[color:var(--c-muted)]">
           이미 계정이 있나요?{" "}

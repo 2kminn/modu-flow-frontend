@@ -5,6 +5,7 @@ import Button from "@/components/ui/Button";
 import FloatingLabelInput from "@/components/ui/FloatingLabelInput";
 import { setAuthToken } from "@/auth/auth";
 import { Eye, EyeOff } from "lucide-react";
+import { loginWithEmail } from "@/api/auth";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -18,14 +19,13 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   function onSocialLogin(provider) {
-    setError(null);
-    setAuthToken(`dummy-${provider}-token`);
-    navigate(fromPath, { replace: true });
+    setError(`${provider} 로그인은 아직 준비 중이에요.`);
   }
 
-  function onSubmit(e) {
+  async function onSubmit(e) {
     e.preventDefault();
     setError(null);
 
@@ -34,7 +34,16 @@ export default function Login() {
       return;
     }
 
-    setAuthToken("dummy-token");
+    setLoading(true);
+    const result = await loginWithEmail({ email: email.trim(), password });
+    setLoading(false);
+
+    if (!result.ok) {
+      setError(result.message || "로그인에 실패했어요.");
+      return;
+    }
+
+    setAuthToken(result.accessToken);
     navigate(fromPath, { replace: true });
   }
 
@@ -96,7 +105,9 @@ export default function Login() {
           </Link>
         </div>
 
-        <Button type="submit">로그인</Button>
+        <Button type="submit" disabled={loading}>
+          {loading ? "로그인 중..." : "로그인"}
+        </Button>
 
         <div className="pt-2">
           <div className="flex items-center gap-3">
@@ -112,6 +123,7 @@ export default function Login() {
               type="button"
               onClick={() => onSocialLogin("naver")}
               aria-label="네이버로 로그인"
+              disabled={loading}
               className="grid h-14 w-14 place-items-center rounded-full bg-[#03C75A] shadow-sm transition duration-200 hover:brightness-105 hover:shadow-md hover:scale-[1.03] active:scale-[0.98]"
             >
               <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
@@ -126,6 +138,7 @@ export default function Login() {
               type="button"
               onClick={() => onSocialLogin("kakao")}
               aria-label="카카오로 로그인"
+              disabled={loading}
               className="grid h-14 w-14 place-items-center rounded-full bg-[#FEE500] shadow-sm transition duration-200 hover:brightness-105 hover:shadow-md hover:scale-[1.03] active:scale-[0.98]"
             >
               <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
@@ -140,6 +153,7 @@ export default function Login() {
               type="button"
               onClick={() => onSocialLogin("google")}
               aria-label="구글로 로그인"
+              disabled={loading}
               className="grid h-14 w-14 place-items-center rounded-full border border-[color:var(--c-border)] bg-[color:var(--c-surface)] shadow-sm transition duration-200 hover:bg-[color:var(--c-surface-2)] hover:shadow-md hover:scale-[1.03] active:scale-[0.98]"
             >
               <svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true">
