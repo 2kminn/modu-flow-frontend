@@ -263,12 +263,14 @@ function AddToRoutineModal({
 }) {
   const [dayKey, setDayKey] = useState(initialDayKey);
   const [sets, setSets] = useState("");
+  const [reps, setReps] = useState("");
   const [weight, setWeight] = useState("");
 
   useEffect(() => {
     if (!open) return;
     setDayKey(initialDayKey);
     setSets("");
+    setReps("");
     setWeight("");
   }, [open, initialDayKey]);
 
@@ -342,9 +344,9 @@ function AddToRoutineModal({
 
           <Card className="space-y-3">
             <p className="text-sm font-extrabold text-[color:var(--c-text)]">
-              세트/무게
+              세트/횟수/무게
             </p>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <input
                 value={sets}
                 onChange={(e) => setSets(e.target.value)}
@@ -357,10 +359,21 @@ function AddToRoutineModal({
                 ].join(" ")}
               />
               <input
+                value={reps}
+                onChange={(e) => setReps(e.target.value)}
+                inputMode="numeric"
+                placeholder="횟수"
+                className={[
+                  "h-11 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4",
+                  "text-base font-semibold text-[color:var(--c-text)] shadow-sm outline-none transition duration-200",
+                  "focus:ring-2 focus:ring-[color:var(--c-focus-ring)] focus:border-[color:var(--c-border-strong)]"
+                ].join(" ")}
+              />
+              <input
                 value={weight}
                 onChange={(e) => setWeight(e.target.value)}
                 inputMode="numeric"
-                placeholder="무게(kg)"
+                placeholder="무게"
                 className={[
                   "h-11 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4",
                   "text-base font-semibold text-[color:var(--c-text)] shadow-sm outline-none transition duration-200",
@@ -368,9 +381,6 @@ function AddToRoutineModal({
                 ].join(" ")}
               />
             </div>
-            <p className="text-xs font-semibold text-[color:var(--c-muted-2)]">
-              비워두면 ‘-’로 저장돼요.
-            </p>
           </Card>
 
           <div className="grid gap-2">
@@ -380,6 +390,7 @@ function AddToRoutineModal({
                 onConfirm({
                   dayKey,
                   sets,
+                  reps,
                   weight
                 })
               }
@@ -444,7 +455,7 @@ export default function Workout() {
     setAddModalOpen(true);
   }
 
-  function addToRoutine({ dayKey, sets, weight }) {
+  function addToRoutine({ dayKey, sets, reps, weight }) {
     if (!modalExercise) return;
     const stored = loadRoutinesByDay();
     const list = Array.isArray(stored?.[dayKey]) ? stored[dayKey] : [];
@@ -456,6 +467,7 @@ export default function Workout() {
       return;
     }
     const nextSets = Number(sets);
+    const nextReps = Number(reps);
     const nextWeight = Number(weight);
     const next = { ...(stored || {}) };
     next[dayKey] = [
@@ -464,6 +476,7 @@ export default function Workout() {
         id: createId(),
         name: modalExercise.name,
         sets: sets === "" ? null : Number.isFinite(nextSets) ? nextSets : null,
+        reps: reps === "" ? null : Number.isFinite(nextReps) ? nextReps : null,
         weight: weight === "" ? null : Number.isFinite(nextWeight) ? nextWeight : null,
         exerciseId: modalExercise.id
       }

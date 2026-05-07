@@ -202,16 +202,19 @@ export default function Home() {
               <p className="text-xs font-extrabold text-[color:var(--c-muted)]">
                 오늘 루틴 ({DAY_LABELS[todayDayKey] || ""})
               </p>
-            {todayRoutines.length ? (
-              <>
-                <ul className="mt-2 space-y-1.5">
+              {todayRoutines.length ? (
+                <>
+                  <ul className="mt-2 space-y-1.5">
                     {todayRoutines.slice(0, 3).map((it) => (
                       <li
                         key={it.id}
                         className="truncate text-sm font-semibold text-[color:var(--c-text)]"
                       >
                         • {it.name || "운동 이름"} · {it.sets ?? "-"}세트 ·{" "}
-                        {it.weight ?? "-"}kg
+                        {it.reps ?? "-"}회
+                        {it.weight == null || it.weight === ""
+                          ? ""
+                          : ` · ${it.weight}`}
                       </li>
                     ))}
                     {todayRoutines.length > 3 ? (

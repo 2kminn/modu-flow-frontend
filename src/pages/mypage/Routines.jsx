@@ -142,6 +142,7 @@ export default function Routines() {
     setDraft({
       name: item.name ?? "",
       sets: String(item.sets ?? ""),
+      reps: String(item.reps ?? ""),
       weight: String(item.weight ?? "")
     });
   }
@@ -154,6 +155,7 @@ export default function Routines() {
   function saveEdit() {
     if (!editingId || !draft) return;
     const nextSets = Number(draft.sets);
+    const nextReps = Number(draft.reps);
     const nextWeight = Number(draft.weight);
     setRoutinesByDay((prev) => {
       const next = { ...(prev || {}) };
@@ -164,6 +166,7 @@ export default function Routines() {
             ...it,
             name: draft.name.trim(),
             sets: draft.sets === "" ? null : Number.isFinite(nextSets) ? nextSets : null,
+            reps: draft.reps === "" ? null : Number.isFinite(nextReps) ? nextReps : null,
             weight:
               draft.weight === "" ? null : Number.isFinite(nextWeight) ? nextWeight : null,
             isNew: false
@@ -203,7 +206,14 @@ export default function Routines() {
   }
 
   function addRoutine() {
-    const newItem = { id: createId(), name: "", sets: null, weight: null, isNew: true };
+    const newItem = {
+      id: createId(),
+      name: "",
+      sets: null,
+      reps: null,
+      weight: null,
+      isNew: true
+    };
     setRoutinesByDay((prev) => {
       const next = { ...(prev || {}) };
       const list = Array.isArray(next[selectedDay]) ? [...next[selectedDay]] : [];
@@ -243,7 +253,7 @@ export default function Routines() {
             </p>
             <p className="mt-1 text-xs font-semibold text-[color:var(--c-muted-2)]">
               {DAYS.find((d) => d.key === selectedDay)?.label || ""} · 운동 / 세트 /
-              무게
+              횟수 / 무게
             </p>
           </div>
           {routineForSelectedDay.length && !editingId ? (
@@ -282,7 +292,7 @@ export default function Routines() {
                               "focus:ring-2 focus:ring-[color:var(--c-focus-ring)] focus:border-[color:var(--c-border-strong)]"
                             ].join(" ")}
                           />
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-3 gap-2">
                             <input
                               value={draft?.sets ?? ""}
                               onChange={(e) =>
@@ -297,6 +307,19 @@ export default function Routines() {
                               placeholder="세트"
                             />
                             <input
+                              value={draft?.reps ?? ""}
+                              onChange={(e) =>
+                                setDraft((prev) => ({ ...(prev || {}), reps: e.target.value }))
+                              }
+                              inputMode="numeric"
+                              className={[
+                                "h-11 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4",
+                                "text-base font-semibold text-[color:var(--c-text)] shadow-sm outline-none transition duration-200",
+                                "focus:ring-2 focus:ring-[color:var(--c-focus-ring)] focus:border-[color:var(--c-border-strong)]"
+                              ].join(" ")}
+                              placeholder="횟수"
+                            />
+                            <input
                               value={draft?.weight ?? ""}
                               onChange={(e) =>
                                 setDraft((prev) => ({ ...(prev || {}), weight: e.target.value }))
@@ -307,7 +330,7 @@ export default function Routines() {
                                 "text-base font-semibold text-[color:var(--c-text)] shadow-sm outline-none transition duration-200",
                                 "focus:ring-2 focus:ring-[color:var(--c-focus-ring)] focus:border-[color:var(--c-border-strong)]"
                               ].join(" ")}
-                              placeholder="무게(kg)"
+                              placeholder="무게"
                             />
                           </div>
                         </div>
@@ -323,7 +346,8 @@ export default function Routines() {
                             )}
                           </p>
                           <p className="mt-1 truncate text-xs font-semibold text-[color:var(--c-muted-2)]">
-                            세트: {it.sets ?? "-"} · 무게: {it.weight ?? "-"}
+                            세트: {it.sets ?? "-"} · 횟수: {it.reps ?? "-"} · 무게:{" "}
+                            {it.weight ?? "-"}
                           </p>
                         </>
                       )}

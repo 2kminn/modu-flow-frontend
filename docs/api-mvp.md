@@ -99,8 +99,8 @@
 루틴 데이터 구조(프론트가 바로 쓰기 좋게):
 
 - 요일 키: `mon|tue|wed|thu|fri|sat|sun`
-- 아이템: `{ id, name, sets, weight, exerciseId? }`
-  - `sets`, `weight`: 숫자 또는 `null`
+- 아이템: `{ id, name, sets, reps, weight, exerciseId? }`
+  - `sets`, `reps`, `weight`: 숫자 또는 `null`
   - `exerciseId`: MVP에서는 선택(프론트는 `name` 기반으로도 동작 가능)
 
 ### 2-1. 요일별 루틴 전체 조회
@@ -115,13 +115,13 @@
 ```json
 {
   "mon": [
-    { "id": "r_1", "name": "Bench Press", "sets": 4, "weight": 60, "exerciseId": "bench-press" }
+    { "id": "r_1", "name": "Bench Press", "sets": 4, "reps": 10, "weight": 60, "exerciseId": "bench-press" }
   ],
   "wed": [
-    { "id": "r_2", "name": "Pull Up", "sets": 4, "weight": 0, "exerciseId": "pullup" }
+    { "id": "r_2", "name": "Pull Up", "sets": 4, "reps": 8, "weight": 0, "exerciseId": "pullup" }
   ],
   "fri": [
-    { "id": "r_3", "name": "Squat", "sets": 5, "weight": 80, "exerciseId": "squat" }
+    { "id": "r_3", "name": "Squat", "sets": 5, "reps": 5, "weight": 80, "exerciseId": "squat" }
   ]
 }
 ```
@@ -138,15 +138,15 @@
 ```json
 {
   "mon": [
-    { "id": "r_1", "name": "Bench Press", "sets": 4, "weight": 60, "exerciseId": "bench-press" }
+    { "id": "r_1", "name": "Bench Press", "sets": 4, "reps": 10, "weight": 60, "exerciseId": "bench-press" }
   ],
   "tue": [],
   "wed": [
-    { "id": "r_2", "name": "Pull Up", "sets": 4, "weight": 0, "exerciseId": "pullup" }
+    { "id": "r_2", "name": "Pull Up", "sets": 4, "reps": 8, "weight": 0, "exerciseId": "pullup" }
   ],
   "thu": [],
   "fri": [
-    { "id": "r_3", "name": "Squat", "sets": 5, "weight": 80, "exerciseId": "squat" }
+    { "id": "r_3", "name": "Squat", "sets": 5, "reps": 5, "weight": 80, "exerciseId": "squat" }
   ],
   "sat": [],
   "sun": []
@@ -362,4 +362,3 @@
 ```json
 { "ok": true }
 ```
-
