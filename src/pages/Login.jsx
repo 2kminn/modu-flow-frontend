@@ -14,8 +14,12 @@ export default function Login() {
     const state = location.state;
     return state?.from?.pathname || "/";
   }, [location.state]);
+  const prefillEmail = useMemo(() => {
+    const state = location.state;
+    return state?.email ? String(state.email) : "";
+  }, [location.state]);
 
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(prefillEmail);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);

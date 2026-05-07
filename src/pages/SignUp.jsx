@@ -3,9 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import FloatingLabelInput from "@/components/ui/FloatingLabelInput";
-import { setAuthToken } from "@/auth/auth";
+import { clearAuthToken } from "@/auth/auth";
 import { Eye, EyeOff } from "lucide-react";
-import { loginWithEmail, signupWithEmail } from "@/api/auth";
+import { signupWithEmail } from "@/api/auth";
 
 export default function SignUp() {
   const navigate = useNavigate();
@@ -48,27 +48,10 @@ export default function SignUp() {
       return;
     }
 
-    if (signupResult.accessToken) {
-      setAuthToken(signupResult.accessToken);
-      setLoading(false);
-      navigate("/", { replace: true });
-      return;
-    }
-
-    const loginResult = await loginWithEmail({ email, password });
+    // Signup succeeded: move user to login screen (no auto-login).
+    clearAuthToken();
     setLoading(false);
-
-    if (!loginResult.ok) {
-      const suffix = loginResult.httpStatus ? ` (HTTP ${loginResult.httpStatus})` : "";
-      setError(
-        `회원가입은 완료됐지만 자동 로그인에 실패했어요${suffix}. 로그인 화면에서 다시 시도해 주세요.`
-      );
-      setDebugInfo(loginResult.debug || null);
-      return;
-    }
-
-    setAuthToken(loginResult.accessToken);
-    navigate("/", { replace: true });
+    navigate("/login", { replace: true, state: { email } });
   }
 
   return (
