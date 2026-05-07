@@ -15,7 +15,7 @@ function resolveBaseUrl() {
   if (typeof window === "undefined") return "";
 
   // In production (e.g. Vercel), we can safely use same-origin rewrites as a fallback.
-  if (!import.meta.env.DEV) return "";
+  if (!import.meta.env.DEV) return "/api/proxy";
 
   const fromGlobal = normalizeBaseUrl(
     window.__MODUFLOW_API_BASE_URL__ ?? window.__MODUFLOW_CONFIG__?.apiBaseUrl
