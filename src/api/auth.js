@@ -10,11 +10,24 @@ function unwrapApiResponse(payload) {
 
 function getErrorMessage(error) {
   const serverMessage =
-    error?.response?.data?.message ||
-    error?.response?.data?.error ||
+    error?.response?.data?.message ??
+    error?.response?.data?.error ??
     error?.response?.data?.code;
-  if (serverMessage) return String(serverMessage);
-  return error?.message ? String(error.message) : "요청에 실패했어요.";
+
+  if (serverMessage != null) {
+    if (typeof serverMessage === "string") return serverMessage;
+    if (typeof serverMessage === "number" || typeof serverMessage === "boolean") {
+      return String(serverMessage);
+    }
+    try {
+      return JSON.stringify(serverMessage);
+    } catch {
+      return "요청에 실패했어요.";
+    }
+  }
+
+  if (error?.message) return String(error.message);
+  return "요청에 실패했어요.";
 }
 
 export async function loginWithEmail({ email, password }) {
@@ -48,4 +61,3 @@ export async function signupWithEmail({ email, password, confirmPassword }) {
     return { ok: false, message: getErrorMessage(e), httpStatus: e?.response?.status ?? null };
   }
 }
-
