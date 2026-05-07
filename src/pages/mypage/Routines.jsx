@@ -346,8 +346,10 @@ export default function Routines() {
                             )}
                           </p>
                           <p className="mt-1 truncate text-xs font-semibold text-[color:var(--c-muted-2)]">
-                            세트: {it.sets ?? "-"} · 횟수: {it.reps ?? "-"} · 무게:{" "}
-                            {it.weight ?? "-"}
+                            세트: {it.sets ?? "-"} · 횟수: {it.reps ?? "-"}
+                            {it.weight == null || it.weight === ""
+                              ? ""
+                              : ` · 무게: ${it.weight}`}
                           </p>
                         </>
                       )}

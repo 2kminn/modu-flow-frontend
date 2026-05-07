@@ -100,7 +100,7 @@ function WorkoutListModal({
                   </div>
 
                   {editingId === it.id ? (
-                    <div className="mt-3 grid grid-cols-2 gap-2">
+                    <div className="mt-3 grid grid-cols-3 gap-2">
                       <input
                         value={draft?.sets ?? ""}
                         onChange={(e) =>
@@ -108,6 +108,19 @@ function WorkoutListModal({
                         }
                         inputMode="numeric"
                         placeholder="세트"
+                        className={[
+                          "h-11 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4",
+                          "text-base font-semibold text-[color:var(--c-text)] shadow-sm outline-none transition duration-200",
+                          "focus:ring-2 focus:ring-[color:var(--c-focus-ring)] focus:border-[color:var(--c-border-strong)]"
+                        ].join(" ")}
+                      />
+                      <input
+                        value={draft?.reps ?? ""}
+                        onChange={(e) =>
+                          setDraft((prev) => ({ ...(prev || {}), reps: e.target.value }))
+                        }
+                        inputMode="numeric"
+                        placeholder="횟수"
                         className={[
                           "h-11 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4",
                           "text-base font-semibold text-[color:var(--c-text)] shadow-sm outline-none transition duration-200",
@@ -127,11 +140,12 @@ function WorkoutListModal({
                           "focus:ring-2 focus:ring-[color:var(--c-focus-ring)] focus:border-[color:var(--c-border-strong)]"
                         ].join(" ")}
                       />
-                      <div className="col-span-2 flex gap-2">
+                      <div className="col-span-3 flex gap-2">
                         <button
                           type="button"
                           onClick={() => {
                             const nextSetsNum = Number(draft?.sets);
+                            const nextRepsNum = Number(draft?.reps);
                             const nextWeightNum = Number(draft?.weight);
                             onUpdateItem?.(it.id, {
                               sets:
@@ -139,6 +153,12 @@ function WorkoutListModal({
                                   ? null
                                   : Number.isFinite(nextSetsNum)
                                     ? nextSetsNum
+                                    : null,
+                              reps:
+                                draft?.reps === ""
+                                  ? null
+                                  : Number.isFinite(nextRepsNum)
+                                    ? nextRepsNum
                                     : null,
                               weight:
                                 draft?.weight === ""
@@ -169,7 +189,10 @@ function WorkoutListModal({
                   ) : (
                     <div className="mt-3 flex items-center justify-between gap-2">
                       <span className="rounded-2xl bg-[color:var(--c-surface-2)] px-3 py-2 text-xs font-extrabold text-[color:var(--c-text)]">
-                        세트: {it.sets ?? "-"} · 무게: {it.weight ?? "-"}kg
+                        세트: {it.sets ?? "-"} · 횟수: {it.reps ?? "-"}
+                        {it.weight == null || it.weight === ""
+                          ? ""
+                          : ` · 무게: ${it.weight}kg`}
                       </span>
                       <div className="flex shrink-0 gap-2">
                         <button
@@ -178,6 +201,7 @@ function WorkoutListModal({
                             setEditingId(it.id);
                             setDraft({
                               sets: String(it.sets ?? ""),
+                              reps: String(it.reps ?? ""),
                               weight: String(it.weight ?? "")
                             });
                           }}
@@ -187,7 +211,14 @@ function WorkoutListModal({
                         </button>
                         <button
                           type="button"
-                          onClick={() => onDeleteItem?.(it.id)}
+                          onClick={() => {
+                            const ok =
+                              typeof window === "undefined"
+                                ? true
+                                : window.confirm("정말 삭제할까요?");
+                            if (!ok) return;
+                            onDeleteItem?.(it.id);
+                          }}
                           className="h-10 rounded-2xl border border-red-500/25 bg-red-500/10 px-3 text-xs font-extrabold text-red-600 transition hover:bg-red-500/15 active:scale-[0.98] dark:text-red-300"
                         >
                           삭제
