@@ -17,10 +17,12 @@ export default function SignUp() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [debugInfo, setDebugInfo] = useState(null);
 
   async function onSubmit(e) {
     e.preventDefault();
     setError(null);
+    setDebugInfo(null);
 
     if (!email.trim() || !password || !confirmPassword) {
       setError("모든 항목을 입력해 주세요.");
@@ -33,14 +35,16 @@ export default function SignUp() {
 
     setLoading(true);
     const signupResult = await signupWithEmail({
-      email: email.trim(),
+      email,
       password,
       confirmPassword
     });
 
     if (!signupResult.ok) {
       setLoading(false);
-      setError(signupResult.message || "회원가입에 실패했어요.");
+      const suffix = signupResult.httpStatus ? ` (HTTP ${signupResult.httpStatus})` : "";
+      setError(`${signupResult.message || "회원가입에 실패했어요."}${suffix}`);
+      setDebugInfo(signupResult.debug || null);
       return;
     }
 
@@ -51,12 +55,15 @@ export default function SignUp() {
       return;
     }
 
-    const loginResult = await loginWithEmail({ email: email.trim(), password });
+    const loginResult = await loginWithEmail({ email, password });
     setLoading(false);
 
     if (!loginResult.ok) {
-      setError("회원가입은 완료됐지만 자동 로그인에 실패했어요. 로그인 화면에서 다시 시도해 주세요.");
-      navigate("/login", { replace: true });
+      const suffix = loginResult.httpStatus ? ` (HTTP ${loginResult.httpStatus})` : "";
+      setError(
+        `회원가입은 완료됐지만 자동 로그인에 실패했어요${suffix}. 로그인 화면에서 다시 시도해 주세요.`
+      );
+      setDebugInfo(loginResult.debug || null);
       return;
     }
 
@@ -140,6 +147,12 @@ export default function SignUp() {
           <p className="rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface-2)] px-4 py-3 text-sm font-semibold text-[color:var(--c-text)]">
             {error}
           </p>
+        ) : null}
+
+        {import.meta.env.DEV && debugInfo?.response ? (
+          <pre className="max-h-48 overflow-auto rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] p-3 text-[11px] font-semibold text-[color:var(--c-muted-2)]">
+            {JSON.stringify(debugInfo.response, null, 2)}
+          </pre>
         ) : null}
 
         <Button type="submit" disabled={loading}>

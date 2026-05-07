@@ -20,14 +20,17 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [debugInfo, setDebugInfo] = useState(null);
 
   function onSocialLogin(provider) {
     setError(`${provider} 로그인은 아직 준비 중이에요.`);
+    setDebugInfo(null);
   }
 
   async function onSubmit(e) {
     e.preventDefault();
     setError(null);
+    setDebugInfo(null);
 
     if (!email.trim() || !password) {
       setError("이메일과 비밀번호를 입력해 주세요.");
@@ -35,11 +38,13 @@ export default function Login() {
     }
 
     setLoading(true);
-    const result = await loginWithEmail({ email: email.trim(), password });
+    const result = await loginWithEmail({ email, password });
     setLoading(false);
 
     if (!result.ok) {
-      setError(result.message || "로그인에 실패했어요.");
+      const suffix = result.httpStatus ? ` (HTTP ${result.httpStatus})` : "";
+      setError(`${result.message || "로그인에 실패했어요."}${suffix}`);
+      setDebugInfo(result.debug || null);
       return;
     }
 
@@ -97,6 +102,12 @@ export default function Login() {
           <p className="rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface-2)] px-4 py-3 text-sm font-semibold text-[color:var(--c-text)]">
             {error}
           </p>
+        ) : null}
+
+        {import.meta.env.DEV && debugInfo?.response ? (
+          <pre className="max-h-48 overflow-auto rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] p-3 text-[11px] font-semibold text-[color:var(--c-muted-2)]">
+            {JSON.stringify(debugInfo.response, null, 2)}
+          </pre>
         ) : null}
 
         <div className="text-center text-sm">

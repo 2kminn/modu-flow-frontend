@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    { "source": "/auth/:path*", "destination": "http://3.39.194.42:8080/auth/:path*" },
+    { "source": "/attendance/:path*", "destination": "http://3.39.194.42:8080/attendance/:path*" },
+    { "source": "/records/:path*", "destination": "http://3.39.194.42:8080/records/:path*" },
+    { "source": "/v3/:path*", "destination": "http://3.39.194.42:8080/v3/:path*" }
+  ]
+}
+
