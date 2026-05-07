@@ -31,18 +31,17 @@ export default function Login() {
     setDebugInfo(null);
   }
 
-  async function onSubmit(e) {
-    e.preventDefault();
+  async function runLogin(nextEmail, nextPassword) {
     setError(null);
     setDebugInfo(null);
 
-    if (!email.trim() || !password) {
+    if (!String(nextEmail || "").trim() || !nextPassword) {
       setError("이메일과 비밀번호를 입력해 주세요.");
       return;
     }
 
     setLoading(true);
-    const result = await loginWithEmail({ email, password });
+    const result = await loginWithEmail({ email: nextEmail, password: nextPassword });
     setLoading(false);
 
     if (!result.ok) {
@@ -54,6 +53,11 @@ export default function Login() {
 
     setAuthToken(result.accessToken);
     navigate(fromPath, { replace: true });
+  }
+
+  async function onSubmit(e) {
+    e.preventDefault();
+    await runLogin(email, password);
   }
 
   return (
@@ -123,6 +127,22 @@ export default function Login() {
         <Button type="submit" disabled={loading}>
           {loading ? "로그인 중..." : "로그인"}
         </Button>
+
+        {import.meta.env.DEV ? (
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={loading}
+            onClick={() => {
+              // DEV convenience: bypass backend auth and just set a dummy token.
+              // This is only for local/testing flows.
+              setAuthToken("dev-test-token");
+              navigate(fromPath, { replace: true });
+            }}
+          >
+            테스트 로그인
+          </Button>
+        ) : null}
 
         <div className="pt-2">
           <div className="flex items-center gap-3">
