@@ -211,10 +211,10 @@ export default function Home() {
                         className="truncate text-sm font-semibold text-[color:var(--c-text)]"
                       >
                         • {it.name || "운동 이름"} · {it.sets ?? "-"}세트 ·{" "}
-                        {it.reps ?? "-"}회
+                        {it.workoutCount ?? "-"}회
                         {it.weight == null || it.weight === ""
                           ? ""
-                          : ` · ${it.weight}`}
+                          : ` · ${it.weight}kg`}
                       </li>
                     ))}
                     {todayRoutines.length > 3 ? (

@@ -1,7 +1,8 @@
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
+import { fetchRoutines, saveRoutines } from "@/api/routines";
 
 const STORAGE_KEY = "moduflow:routines-by-day:v1";
 const STORAGE_SELECTED_DAY_KEY = "moduflow:routines-selected-day:v1";
@@ -116,8 +117,67 @@ export default function Routines() {
   });
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState(null);
+  const didHydrateFromServerRef = useRef(false);
+  const skipNextAutosaveRef = useRef(false);
 
   const routineForSelectedDay = routinesByDay?.[selectedDay] || [];
+
+  // Load routines from backend (silent; keeps existing UI)
+  useEffect(() => {
+    let cancelled = false;
+    async function run() {
+      try {
+        const serverData = await fetchRoutines();
+        if (cancelled) return;
+        if (serverData && Object.keys(serverData).length) {
+          setRoutinesByDay((prev) => {
+            // Merge: preserve local-only fields (e.g. `workoutCount`) when possible.
+            const next = { ...(serverData || {}) };
+            Object.entries(prev || {}).forEach(([dayKey, list]) => {
+              if (!Array.isArray(list)) return;
+              const byId = new Map(list.map((it) => [it?.id, it]));
+              next[dayKey] = Array.isArray(next[dayKey]) ? next[dayKey] : [];
+              next[dayKey] = next[dayKey].map((it) => {
+                const local = byId.get(it?.id);
+                return local ? { ...it, workoutCount: local.workoutCount ?? it.workoutCount ?? null } : it;
+              });
+              // If server has no items for the day but local does, keep local.
+              if (!next[dayKey].length && list.length) next[dayKey] = list;
+            });
+            return next;
+          });
+          // Avoid immediately PUT'ing right after hydration.
+          skipNextAutosaveRef.current = true;
+        }
+        didHydrateFromServerRef.current = true;
+      } catch (e) {
+        // Fallback to localStorage only; no UI changes.
+        console.warn("[routines] fetch failed:", e);
+        didHydrateFromServerRef.current = true;
+      }
+    }
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Background autosave to backend (debounced; silent)
+  useEffect(() => {
+    if (!didHydrateFromServerRef.current) return;
+    if (skipNextAutosaveRef.current) {
+      skipNextAutosaveRef.current = false;
+      return;
+    }
+    const t = window.setTimeout(async () => {
+      try {
+        await saveRoutines(routinesByDay);
+      } catch (e) {
+        console.warn("[routines] save failed:", e);
+      }
+    }, 900);
+    return () => window.clearTimeout(t);
+  }, [routinesByDay]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -142,7 +202,7 @@ export default function Routines() {
     setDraft({
       name: item.name ?? "",
       sets: String(item.sets ?? ""),
-      reps: String(item.reps ?? ""),
+      workoutCount: String(item.workoutCount ?? ""),
       weight: String(item.weight ?? "")
     });
   }
@@ -155,7 +215,7 @@ export default function Routines() {
   function saveEdit() {
     if (!editingId || !draft) return;
     const nextSets = Number(draft.sets);
-    const nextReps = Number(draft.reps);
+    const nextworkoutCount = Number(draft.workoutCount);
     const nextWeight = Number(draft.weight);
     setRoutinesByDay((prev) => {
       const next = { ...(prev || {}) };
@@ -166,7 +226,7 @@ export default function Routines() {
             ...it,
             name: draft.name.trim(),
             sets: draft.sets === "" ? null : Number.isFinite(nextSets) ? nextSets : null,
-            reps: draft.reps === "" ? null : Number.isFinite(nextReps) ? nextReps : null,
+            workoutCount: draft.workoutCount === "" ? null : Number.isFinite(nextworkoutCount) ? nextworkoutCount : null,
             weight:
               draft.weight === "" ? null : Number.isFinite(nextWeight) ? nextWeight : null,
             isNew: false
@@ -210,7 +270,7 @@ export default function Routines() {
       id: createId(),
       name: "",
       sets: null,
-      reps: null,
+      workoutCount: null,
       weight: null,
       isNew: true
     };
@@ -307,9 +367,9 @@ export default function Routines() {
                               placeholder="세트"
                             />
                             <input
-                              value={draft?.reps ?? ""}
+                              value={draft?.workoutCount ?? ""}
                               onChange={(e) =>
-                                setDraft((prev) => ({ ...(prev || {}), reps: e.target.value }))
+                                setDraft((prev) => ({ ...(prev || {}), workoutCount: e.target.value }))
                               }
                               inputMode="numeric"
                               className={[
@@ -346,7 +406,7 @@ export default function Routines() {
                             )}
                           </p>
                           <p className="mt-1 truncate text-xs font-semibold text-[color:var(--c-muted-2)]">
-                            세트: {it.sets ?? "-"} · 횟수: {it.reps ?? "-"}
+                            세트: {it.sets ?? "-"} · 횟수: {it.workoutCount ?? "-"}
                             {it.weight == null || it.weight === ""
                               ? ""
                               : ` · 무게: ${it.weight}`}
