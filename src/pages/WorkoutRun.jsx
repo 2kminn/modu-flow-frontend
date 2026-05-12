@@ -3,6 +3,12 @@ import Card from "@/components/ui/Card";
 import { Camera, CameraOff, ChevronLeft, ChevronRight, RefreshCw, RotateCcw } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  closeNativeCamera,
+  isAndroidWebViewBridgeAvailable,
+  onNativeEvent,
+  openNativeCamera
+} from "@/native/androidBridge";
 
 const ROUTINE_STORAGE_KEY = "moduflow:routines-by-day:v1";
 
@@ -107,7 +113,7 @@ export default function WorkoutRun() {
   const streamRef = useRef(null);
 
   const [cameraOn, setCameraOn] = useState(true);
-  const [cameraState, setCameraState] = useState("idle"); // idle | ready | denied | error
+  const [cameraState, setCameraState] = useState("idle"); // idle | ready | denied | error | native
   const [facingMode, setFacingMode] = useState("user"); // user | environment
 
   const todayKey = useMemo(() => dayKeyFromDate(new Date()), []);
@@ -126,9 +132,21 @@ export default function WorkoutRun() {
   useEffect(() => {
     if (!cameraOn) return;
     let mounted = true;
+    const useNativeCamera = isAndroidWebViewBridgeAvailable();
 
     async function startCamera() {
       try {
+        if (useNativeCamera) {
+          setCameraState("idle");
+          const ok = openNativeCamera({
+            type: "camera:open",
+            facingMode,
+            screen: "workout:run"
+          });
+          if (mounted) setCameraState(ok ? "native" : "error");
+          return;
+        }
+
         if (!navigator.mediaDevices?.getUserMedia) {
           if (mounted) setCameraState("error");
           return;
@@ -164,6 +182,9 @@ export default function WorkoutRun() {
 
     return () => {
       mounted = false;
+      if (useNativeCamera) {
+        closeNativeCamera({ screen: "workout:run" });
+      }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
@@ -178,6 +199,19 @@ export default function WorkoutRun() {
     return () => window.clearInterval(id);
   }, [cameraOn, cameraState]);
 
+  useEffect(() => {
+    // Optional: Native can push status back to the web via CustomEvent.
+    // detail example:
+    // { type: "camera", status: "ready" | "denied" | "error" | "closed" }
+    return onNativeEvent((detail) => {
+      if (!detail || detail.type !== "camera") return;
+      if (detail.status === "ready") setCameraState("native");
+      else if (detail.status === "denied") setCameraState("denied");
+      else if (detail.status === "error") setCameraState("error");
+      else if (detail.status === "closed") setCameraState("idle");
+    });
+  }, []);
+
   function goPrev() {
     setIndex((prev) => Math.max(0, prev - 1));
   }
@@ -191,6 +225,7 @@ export default function WorkoutRun() {
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
+    closeNativeCamera({ screen: "workout:run" });
     navigate("/");
   }
 
@@ -223,20 +258,22 @@ export default function WorkoutRun() {
       <div className="absolute inset-0">
         {cameraOn ? (
           <>
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="h-full w-full object-cover"
-            />
+            {cameraState === "native" ? null : (
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="h-full w-full object-cover"
+              />
+            )}
             <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/10 to-black/85" />
           </>
         ) : (
           <div className="absolute inset-0 bg-gradient-to-b from-black via-black to-black" />
         )}
 
-        {cameraOn && cameraState !== "ready" ? (
+        {cameraOn && cameraState !== "ready" && cameraState !== "native" ? (
           <div className="absolute inset-0 grid place-items-center px-6">
             <div className="w-full max-w-[420px] rounded-3xl border border-white/10 bg-black/60 p-5 text-white backdrop-blur">
               <p className="text-sm font-semibold text-white/80">
@@ -422,4 +459,3 @@ export default function WorkoutRun() {
     </div>
   );
 }
-

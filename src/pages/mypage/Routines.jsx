@@ -131,7 +131,7 @@ export default function Routines() {
         if (cancelled) return;
         if (serverData && Object.keys(serverData).length) {
           setRoutinesByDay((prev) => {
-            // Merge: preserve local-only fields (e.g. `workoutCount`) when possible.
+            // Merge: preserve local-only fields (e.g. `reps`) when possible.
             const next = { ...(serverData || {}) };
             Object.entries(prev || {}).forEach(([dayKey, list]) => {
               if (!Array.isArray(list)) return;
@@ -139,7 +139,7 @@ export default function Routines() {
               next[dayKey] = Array.isArray(next[dayKey]) ? next[dayKey] : [];
               next[dayKey] = next[dayKey].map((it) => {
                 const local = byId.get(it?.id);
-                return local ? { ...it, workoutCount: local.workoutCount ?? it.workoutCount ?? null } : it;
+                return local ? { ...it, reps: local.reps ?? it.reps ?? null } : it;
               });
               // If server has no items for the day but local does, keep local.
               if (!next[dayKey].length && list.length) next[dayKey] = list;
@@ -202,7 +202,7 @@ export default function Routines() {
     setDraft({
       name: item.name ?? "",
       sets: String(item.sets ?? ""),
-      workoutCount: String(item.workoutCount ?? ""),
+      reps: String(item.reps ?? ""),
       weight: String(item.weight ?? "")
     });
   }
@@ -215,7 +215,7 @@ export default function Routines() {
   function saveEdit() {
     if (!editingId || !draft) return;
     const nextSets = Number(draft.sets);
-    const nextworkoutCount = Number(draft.workoutCount);
+    const nextReps = Number(draft.reps);
     const nextWeight = Number(draft.weight);
     setRoutinesByDay((prev) => {
       const next = { ...(prev || {}) };
@@ -226,7 +226,7 @@ export default function Routines() {
             ...it,
             name: draft.name.trim(),
             sets: draft.sets === "" ? null : Number.isFinite(nextSets) ? nextSets : null,
-            workoutCount: draft.workoutCount === "" ? null : Number.isFinite(nextworkoutCount) ? nextworkoutCount : null,
+            reps: draft.reps === "" ? null : Number.isFinite(nextReps) ? nextReps : null,
             weight:
               draft.weight === "" ? null : Number.isFinite(nextWeight) ? nextWeight : null,
             isNew: false
@@ -270,7 +270,7 @@ export default function Routines() {
       id: createId(),
       name: "",
       sets: null,
-      workoutCount: null,
+      reps: null,
       weight: null,
       isNew: true
     };
@@ -367,9 +367,9 @@ export default function Routines() {
                               placeholder="세트"
                             />
                             <input
-                              value={draft?.workoutCount ?? ""}
+                              value={draft?.reps ?? ""}
                               onChange={(e) =>
-                                setDraft((prev) => ({ ...(prev || {}), workoutCount: e.target.value }))
+                                setDraft((prev) => ({ ...(prev || {}), reps: e.target.value }))
                               }
                               inputMode="numeric"
                               className={[
@@ -406,7 +406,7 @@ export default function Routines() {
                             )}
                           </p>
                           <p className="mt-1 truncate text-xs font-semibold text-[color:var(--c-muted-2)]">
-                            세트: {it.sets ?? "-"} · 횟수: {it.workoutCount ?? "-"}
+                            세트: {it.sets ?? "-"} · 횟수: {it.reps ?? "-"}
                             {it.weight == null || it.weight === ""
                               ? ""
                               : ` · 무게: ${it.weight}`}

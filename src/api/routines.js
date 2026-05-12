@@ -41,20 +41,32 @@ export async function fetchRoutines() {
   return {};
 }
 
-// Backend RoutineItemDto supports: { id, name, sets, weight, exerciseId, workoutCount }
+// Backend RoutineItemDto supports: { id, name, sets, weight, exerciseId, reps }
 function toBackendRoutineItem(item) {
   if (!item || typeof item !== "object") return null;
-  const { id, name, sets, weight, exerciseId, workoutCount } = item;
-  return { id, name, sets, weight, exerciseId, workoutCount };
+  const { id, name, sets, weight, exerciseId, reps } = item;
+  const normalizedName = typeof name === "string" ? name.trim() : "";
+  if (!normalizedName) return null;
+  return {
+    id,
+    name: normalizedName,
+    sets,
+    weight,
+    exerciseId,
+    reps
+  };
 }
 
-export async function saveRoutines(routinesByDay) {
-  const payload = Object.entries(routinesByDay ?? {}).reduce((acc, [dayKey, list]) => {
+export function buildRoutinesPayload(routinesByDay) {
+  return Object.entries(routinesByDay ?? {}).reduce((acc, [dayKey, list]) => {
     const items = Array.isArray(list) ? list : [];
     acc[dayKey] = items.map(toBackendRoutineItem).filter(Boolean);
     return acc;
   }, {});
+}
 
+export async function saveRoutines(routinesByDay) {
+  const payload = buildRoutinesPayload(routinesByDay);
   const res = await apiClient.put("/api/v1/routines", payload);
   cacheRoutinesToLocalStorage(routinesByDay);
   return res?.data;

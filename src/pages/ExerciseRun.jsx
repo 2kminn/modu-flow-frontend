@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import {
+  closeNativeCamera,
+  isAndroidWebViewBridgeAvailable,
+  onNativeEvent,
+  openNativeCamera
+} from "@/native/androidBridge";
 
 const EXERCISE_NAME = {
   squat: "스쿼트",
@@ -16,7 +22,7 @@ export default function ExerciseRun() {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
 
-  const [cameraState, setCameraState] = useState("idle"); // idle | ready | denied | error
+  const [cameraState, setCameraState] = useState("idle"); // idle | ready | denied | error | native
 
   const [count, setCount] = useState(8);
   const [accuracy, setAccuracy] = useState(92);
@@ -24,9 +30,22 @@ export default function ExerciseRun() {
 
   useEffect(() => {
     let mounted = true;
+    const useNativeCamera = isAndroidWebViewBridgeAvailable();
 
     async function startCamera() {
       try {
+        if (useNativeCamera) {
+          setCameraState("idle");
+          const ok = openNativeCamera({
+            type: "camera:open",
+            facingMode: "user",
+            screen: "exercise:run",
+            exerciseId
+          });
+          if (mounted) setCameraState(ok ? "native" : "error");
+          return;
+        }
+
         if (!navigator.mediaDevices?.getUserMedia) {
           if (mounted) setCameraState("error");
           return;
@@ -61,11 +80,22 @@ export default function ExerciseRun() {
 
     return () => {
       mounted = false;
+      if (useNativeCamera) closeNativeCamera({ screen: "exercise:run", exerciseId });
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
       }
     };
+  }, [exerciseId]);
+
+  useEffect(() => {
+    return onNativeEvent((detail) => {
+      if (!detail || detail.type !== "camera") return;
+      if (detail.status === "ready") setCameraState("native");
+      else if (detail.status === "denied") setCameraState("denied");
+      else if (detail.status === "error") setCameraState("error");
+      else if (detail.status === "closed") setCameraState("idle");
+    });
   }, []);
 
   useEffect(() => {
@@ -103,17 +133,19 @@ export default function ExerciseRun() {
   return (
     <div className="fixed inset-0 bg-black">
       <div className="absolute inset-0">
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className="h-full w-full object-cover"
-        />
+        {cameraState === "native" ? null : (
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="h-full w-full object-cover"
+          />
+        )}
 
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/10 to-black/80" />
 
-        {cameraState !== "ready" ? (
+        {cameraState !== "ready" && cameraState !== "native" ? (
           <div className="absolute inset-0 grid place-items-center px-6">
             <div className="w-full max-w-[420px] rounded-3xl border border-white/10 bg-black/60 p-5 text-white backdrop-blur">
               <p className="text-sm font-semibold text-white/80">

@@ -2,6 +2,7 @@ import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { openNativeScreen } from "@/native/deeplink";
 
 const ROUTINE_STORAGE_KEY = "moduflow:routines-by-day:v1";
 const AUTO_ATTENDANCE_STORAGE_KEY = "moduflow:auto-attendance:v1";
@@ -211,7 +212,7 @@ export default function Home() {
                         className="truncate text-sm font-semibold text-[color:var(--c-text)]"
                       >
                         • {it.name || "운동 이름"} · {it.sets ?? "-"}세트 ·{" "}
-                        {it.workoutCount ?? "-"}회
+                        {it.reps ?? "-"}회
                         {it.weight == null || it.weight === ""
                           ? ""
                           : ` · ${it.weight}kg`}
@@ -261,7 +262,12 @@ export default function Home() {
                 className="py-5 text-lg"
                 onClick={() => {
                   if (todayRoutines.length) {
-                    navigate("/workout/run");
+                    const opened = openNativeScreen({
+                      path: "/workout/run",
+                      params: { source: "pwa" },
+                      fallbackUrl: `${window.location.origin}/workout/run`
+                    });
+                    if (!opened) navigate("/workout/run");
                   } else {
                     setStartNotice(
                       "루틴이 설정되지 않았습니다."
