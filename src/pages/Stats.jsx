@@ -265,7 +265,38 @@ export default function Stats() {
       const raw = window.localStorage.getItem(WORKOUT_HISTORY_STORAGE_KEY);
       if (!raw) return {};
       const parsed = JSON.parse(raw);
-      return parsed && typeof parsed === "object" ? parsed : {};
+      if (!parsed || typeof parsed !== "object") return {};
+      const out = Object.create(null);
+      const dateKeyRe = /^\d{4}-\d{2}-\d{2}$/;
+      for (const [k, v] of Object.entries(parsed)) {
+        if (!dateKeyRe.test(k)) continue;
+        if (!Array.isArray(v)) continue;
+        out[k] = v
+          .filter((it) => it && typeof it === "object")
+          .map((it) => ({
+            id: typeof it.id === "string" ? it.id : "",
+            name: typeof it.name === "string" ? it.name : "",
+            note: typeof it.note === "string" ? it.note : "",
+            sets:
+              typeof it.sets === "number"
+                ? it.sets
+                : it.sets == null
+                  ? null
+                  : Number(it.sets),
+            weight:
+              typeof it.weight === "number"
+                ? it.weight
+                : it.weight == null
+                  ? null
+                  : Number(it.weight)
+          }))
+          .map((it) => ({
+            ...it,
+            sets: Number.isFinite(it.sets) ? it.sets : null,
+            weight: Number.isFinite(it.weight) ? it.weight : null
+          }));
+      }
+      return out;
     } catch {
       return {};
     }
@@ -284,7 +315,14 @@ export default function Stats() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      window.localStorage.setItem(WORKOUT_HISTORY_STORAGE_KEY, JSON.stringify(recordsByDate));
+      const out = Object.create(null);
+      const dateKeyRe = /^\d{4}-\d{2}-\d{2}$/;
+      for (const [k, v] of Object.entries(recordsByDate || {})) {
+        if (!dateKeyRe.test(k)) continue;
+        if (!Array.isArray(v)) continue;
+        out[k] = v.filter((it) => it && typeof it === "object");
+      }
+      window.localStorage.setItem(WORKOUT_HISTORY_STORAGE_KEY, JSON.stringify(out));
     } catch {
       // ignore
     }

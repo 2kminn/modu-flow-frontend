@@ -11,6 +11,7 @@ import {
 } from "@/native/androidBridge";
 
 const ROUTINE_STORAGE_KEY = "moduflow:routines-by-day:v1";
+const DAY_KEYS = new Set(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]);
 
 const EXERCISE_INFO = [
   {
@@ -86,7 +87,14 @@ function loadRoutinesByDay() {
     const raw = window.localStorage.getItem(ROUTINE_STORAGE_KEY);
     if (!raw) return {};
     const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : {};
+    if (!parsed || typeof parsed !== "object") return {};
+    const out = Object.create(null);
+    for (const [dayKey, list] of Object.entries(parsed)) {
+      if (!DAY_KEYS.has(dayKey)) continue;
+      if (!Array.isArray(list)) continue;
+      out[dayKey] = list.filter((it) => it && typeof it === "object");
+    }
+    return out;
   } catch {
     return {};
   }

@@ -15,10 +15,42 @@ const DAYS = [
   { key: "sat", label: "토" },
   { key: "sun", label: "일" }
 ];
+const DAY_KEYS = new Set(DAYS.map((d) => d.key));
 
 function createId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function coerceNumberOrNull(v) {
+  if (v == null || v === "") return null;
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function sanitizeRoutine(item) {
+  if (!item || typeof item !== "object") return null;
+  const id = typeof item.id === "string" && item.id ? item.id : createId();
+  const name = typeof item.name === "string" ? item.name : "";
+  return {
+    id,
+    name,
+    sets: coerceNumberOrNull(item.sets),
+    reps: coerceNumberOrNull(item.reps),
+    weight: coerceNumberOrNull(item.weight),
+    isNew: Boolean(item.isNew)
+  };
+}
+
+function sanitizeRoutinesByDay(raw) {
+  const out = Object.create(null);
+  if (!raw || typeof raw !== "object") return out;
+  for (const [dayKey, list] of Object.entries(raw)) {
+    if (!DAY_KEYS.has(dayKey)) continue;
+    if (!Array.isArray(list)) continue;
+    out[dayKey] = list.map(sanitizeRoutine).filter(Boolean);
+  }
+  return out;
 }
 
 function loadSelectedDay(fallback) {
@@ -38,7 +70,7 @@ function loadRoutinesByDay() {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
     const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : {};
+    return sanitizeRoutinesByDay(parsed);
   } catch {
     return {};
   }
@@ -104,9 +136,9 @@ export default function Routines() {
     loadSelectedDay(todayKey)
   );
   const [routinesByDay, setRoutinesByDay] = useState(() => {
-    const stored = loadRoutinesByDay();
+    const stored = sanitizeRoutinesByDay(loadRoutinesByDay());
     if (Object.keys(stored).length > 0) return stored;
-    return {};
+    return Object.create(null);
   });
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState(null);
@@ -122,11 +154,13 @@ export default function Routines() {
       try {
         const serverData = await fetchRoutines();
         if (cancelled) return;
-        if (serverData && Object.keys(serverData).length) {
+        const safeServerData = sanitizeRoutinesByDay(serverData);
+        if (safeServerData && Object.keys(safeServerData).length) {
           setRoutinesByDay((prev) => {
             // Merge: preserve local-only fields (e.g. `reps`) when possible.
-            const next = { ...(serverData || {}) };
-            Object.entries(prev || {}).forEach(([dayKey, list]) => {
+            const safePrev = sanitizeRoutinesByDay(prev);
+            const next = { ...(safeServerData || {}) };
+            Object.entries(safePrev || {}).forEach(([dayKey, list]) => {
               if (!Array.isArray(list)) return;
               const byId = new Map(list.map((it) => [it?.id, it]));
               next[dayKey] = Array.isArray(next[dayKey]) ? next[dayKey] : [];
@@ -164,7 +198,7 @@ export default function Routines() {
     }
     const t = window.setTimeout(async () => {
       try {
-        await saveRoutines(routinesByDay);
+        await saveRoutines(sanitizeRoutinesByDay(routinesByDay));
       } catch (e) {
         console.warn("[routines] save failed:", e);
       }
@@ -184,7 +218,10 @@ export default function Routines() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(routinesByDay));
+      window.localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(sanitizeRoutinesByDay(routinesByDay))
+      );
     } catch {
       // ignore
     }

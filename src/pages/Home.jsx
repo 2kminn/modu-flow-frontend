@@ -15,6 +15,7 @@ const DAY_LABELS = {
   sat: "토",
   sun: "일"
 };
+const DAY_KEYS = new Set(Object.keys(DAY_LABELS));
 const EXERCISE_NAME_TO_ID = {
   squat: "squat",
   "스쿼트": "squat",
@@ -38,7 +39,30 @@ function loadRoutinesByDay() {
     const raw = window.localStorage.getItem(ROUTINE_STORAGE_KEY);
     if (!raw) return {};
     const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : {};
+    if (!parsed || typeof parsed !== "object") return {};
+    const out = Object.create(null);
+    for (const [dayKey, list] of Object.entries(parsed)) {
+      if (!DAY_KEYS.has(dayKey)) continue;
+      if (!Array.isArray(list)) continue;
+      out[dayKey] = list
+        .filter((it) => it && typeof it === "object")
+        .map((it) => ({
+          id: typeof it.id === "string" ? it.id : "",
+          name: typeof it.name === "string" ? it.name : "",
+          sets: typeof it.sets === "number" ? it.sets : it.sets == null ? null : Number(it.sets),
+          reps: typeof it.reps === "number" ? it.reps : it.reps == null ? null : Number(it.reps),
+          weight:
+            typeof it.weight === "number" ? it.weight : it.weight == null ? null : Number(it.weight),
+          exerciseId: typeof it.exerciseId === "string" ? it.exerciseId : null
+        }))
+        .map((it) => ({
+          ...it,
+          sets: Number.isFinite(it.sets) ? it.sets : null,
+          reps: Number.isFinite(it.reps) ? it.reps : null,
+          weight: Number.isFinite(it.weight) ? it.weight : null
+        }));
+    }
+    return out;
   } catch {
     return {};
   }

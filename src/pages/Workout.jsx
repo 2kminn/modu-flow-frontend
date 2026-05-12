@@ -139,7 +139,15 @@ function loadRoutinesByDay() {
     const raw = window.localStorage.getItem(ROUTINE_STORAGE_KEY);
     if (!raw) return {};
     const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : {};
+    if (!parsed || typeof parsed !== "object") return {};
+    const out = Object.create(null);
+    const dayKeys = new Set(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]);
+    for (const [dayKey, list] of Object.entries(parsed)) {
+      if (!dayKeys.has(dayKey)) continue;
+      if (!Array.isArray(list)) continue;
+      out[dayKey] = list.filter((it) => it && typeof it === "object");
+    }
+    return out;
   } catch {
     return {};
   }
@@ -148,7 +156,16 @@ function loadRoutinesByDay() {
 function saveRoutinesByDay(next) {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(ROUTINE_STORAGE_KEY, JSON.stringify(next));
+    const dayKeys = new Set(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]);
+    const out = Object.create(null);
+    if (next && typeof next === "object") {
+      for (const [dayKey, list] of Object.entries(next)) {
+        if (!dayKeys.has(dayKey)) continue;
+        if (!Array.isArray(list)) continue;
+        out[dayKey] = list.filter((it) => it && typeof it === "object");
+      }
+    }
+    window.localStorage.setItem(ROUTINE_STORAGE_KEY, JSON.stringify(out));
   } catch {
     // ignore
   }

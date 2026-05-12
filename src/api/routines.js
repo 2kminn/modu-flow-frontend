@@ -16,7 +16,15 @@ export function loadRoutinesFromLocalStorage() {
     const raw = window.localStorage.getItem(ROUTINE_STORAGE_KEY);
     if (!raw) return {};
     const parsed = safeJsonParse(raw);
-    return parsed && typeof parsed === "object" ? parsed : {};
+    if (!parsed || typeof parsed !== "object") return {};
+    const out = Object.create(null);
+    const dayKeys = new Set(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]);
+    for (const [dayKey, list] of Object.entries(parsed)) {
+      if (!dayKeys.has(dayKey)) continue;
+      if (!Array.isArray(list)) continue;
+      out[dayKey] = list.filter((it) => it && typeof it === "object");
+    }
+    return out;
   } catch {
     return {};
   }
