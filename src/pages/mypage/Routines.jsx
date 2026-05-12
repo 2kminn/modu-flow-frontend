@@ -106,14 +106,7 @@ export default function Routines() {
   const [routinesByDay, setRoutinesByDay] = useState(() => {
     const stored = loadRoutinesByDay();
     if (Object.keys(stored).length > 0) return stored;
-    return {
-      mon: [
-        { id: createId(), name: "Bench Press", sets: 4, weight: 60 },
-        { id: createId(), name: "Incline DB Press", sets: 3, weight: 24 }
-      ],
-      wed: [{ id: createId(), name: "Pull Up", sets: 4, weight: 0 }],
-      fri: [{ id: createId(), name: "Squat", sets: 5, weight: 80 }]
-    };
+    return {};
   });
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState(null);
