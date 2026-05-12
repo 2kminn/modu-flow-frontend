@@ -166,8 +166,8 @@
 기록 데이터 구조(Stats 기준):
 
 - 날짜 단위 기록: `date`에 여러 운동 `items[]`
-- item: `{ id, name, note?, sets, weight }`
-  - `sets`, `weight`: 숫자 또는 `null`
+- item: `{ id, name, note?, sets, reps, weight }`
+  - `sets`, `reps`, `weight`: 숫자 또는 `null`
   - `note`: 선택
 
 ### 3-1. 기간 내 운동기록 조회(캘린더 표시용)
@@ -186,14 +186,14 @@
     {
       "date": "2026-05-02",
       "items": [
-        { "id": "w_1", "name": "스쿼트", "note": "하체", "sets": 4, "weight": 60 },
-        { "id": "w_2", "name": "플랭크", "note": "코어", "sets": 3, "weight": 0 }
+        { "id": "w_1", "name": "스쿼트", "note": "하체", "sets": 4, "reps": 10, "weight": 60 },
+        { "id": "w_2", "name": "플랭크", "note": "코어", "sets": 3, "reps": 30, "weight": 0 }
       ]
     },
     {
       "date": "2026-05-01",
       "items": [
-        { "id": "w_3", "name": "푸쉬업", "note": "가슴 · 삼두", "sets": 3, "weight": 0 }
+        { "id": "w_3", "name": "푸쉬업", "note": "가슴 · 삼두", "sets": 3, "reps": 15, "weight": 0 }
       ]
     }
   ]
@@ -214,7 +214,7 @@
 {
   "date": "2026-05-02",
   "items": [
-    { "id": "w_1", "name": "스쿼트", "note": "하체", "sets": 4, "weight": 60 }
+    { "id": "w_1", "name": "스쿼트", "note": "하체", "sets": 4, "reps": 10, "weight": 60 }
   ]
 }
 ```
@@ -232,8 +232,8 @@
 ```json
 {
   "items": [
-    { "id": "w_1", "name": "스쿼트", "note": "하체", "sets": 4, "weight": 60 },
-    { "id": "w_2", "name": "플랭크", "note": "코어", "sets": 3, "weight": 0 }
+    { "id": "w_1", "name": "스쿼트", "note": "하체", "sets": 4, "reps": 10, "weight": 60 },
+    { "id": "w_2", "name": "플랭크", "note": "코어", "sets": 3, "reps": 30, "weight": 0 }
   ]
 }
 ```
@@ -248,16 +248,16 @@
 
 ### 3-4. 운동기록 아이템 수정(Stats 모달 “수정/저장”)
 
-- 기능 설명: 특정 날짜의 특정 운동 item의 `sets/weight`를 수정
+- 기능 설명: 특정 날짜의 특정 운동 item의 `sets/reps/weight`를 수정
 - HTTP Method + URL: `PATCH /api/v1/workouts/{date}/items/{itemId}`
 - Request
   - Path
     - `date`: `YYYY-MM-DD`
     - `itemId`: 문자열
-  - Body (`sets`, `weight`는 숫자 또는 `null`)
+  - Body (`sets`, `reps`, `weight`는 숫자 또는 `null`)
 
 ```json
-{ "sets": 5, "weight": 62.5 }
+{ "sets": 5, "reps": 8, "weight": 62.5 }
 ```
 
 - Response (예시 JSON)
@@ -265,7 +265,7 @@
 ```json
 {
   "date": "2026-05-02",
-  "item": { "id": "w_1", "name": "스쿼트", "note": "하체", "sets": 5, "weight": 62.5 }
+  "item": { "id": "w_1", "name": "스쿼트", "note": "하체", "sets": 5, "reps": 8, "weight": 62.5 }
 }
 ```
 

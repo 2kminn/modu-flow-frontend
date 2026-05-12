@@ -41,11 +41,11 @@ export async function fetchRoutines() {
   return {};
 }
 
-// Backend RoutineItemDto supports: { id, name, sets, weight, exerciseId }
+// Backend RoutineItemDto supports: { id, name, sets, weight, exerciseId, workoutCount }
 function toBackendRoutineItem(item) {
   if (!item || typeof item !== "object") return null;
-  const { id, name, sets, weight, exerciseId } = item;
-  return { id, name, sets, weight, exerciseId };
+  const { id, name, sets, weight, exerciseId, workoutCount } = item;
+  return { id, name, sets, weight, exerciseId, workoutCount };
 }
 
 export async function saveRoutines(routinesByDay) {
@@ -59,4 +59,3 @@ export async function saveRoutines(routinesByDay) {
   cacheRoutinesToLocalStorage(routinesByDay);
   return res?.data;
 }
-

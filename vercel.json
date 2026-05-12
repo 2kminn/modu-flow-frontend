@@ -1,6 +1,8 @@
 {
   "functions": {
     "api/auth/login.js": { "maxDuration": 10 },
-    "api/auth/signup.js": { "maxDuration": 10 }
+    "api/auth/signup.js": { "maxDuration": 10 },
+    "api/api/v1/routines.js": { "maxDuration": 10 },
+    "api/api/v1/routines/items/[itemId]/count.js": { "maxDuration": 10 }
   }
 }
