@@ -101,3 +101,24 @@ export async function signupWithEmail({ email, password, confirmPassword }) {
     };
   }
 }
+
+export async function changePassword({ currentPassword, newPassword, confirmPassword }) {
+  try {
+    const res = await apiClient.patch("/api/v1/auth/password", {
+      currentPassword,
+      newPassword,
+      confirmPassword
+    });
+    return {
+      ok: true,
+      debug: { response: res?.data ?? null }
+    };
+  } catch (e) {
+    return {
+      ok: false,
+      message: getErrorMessage(e),
+      httpStatus: e?.response?.status ?? null,
+      debug: { response: e?.response?.data ?? null }
+    };
+  }
+}
