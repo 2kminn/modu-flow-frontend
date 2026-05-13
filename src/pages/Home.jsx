@@ -1,10 +1,12 @@
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import { Dumbbell, Pencil, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { openNativeScreen } from "@/native/deeplink";
 
 const ROUTINE_STORAGE_KEY = "moduflow:routines-by-day:v1";
+const ROUTINE_SELECTED_DAY_STORAGE_KEY = "moduflow:routines-selected-day:v1";
 const AUTO_ATTENDANCE_STORAGE_KEY = "moduflow:auto-attendance:v1";
 const DAY_LABELS = {
   mon: "월",
@@ -153,6 +155,7 @@ export default function Home() {
   const weightCongestionLevel = "low";
   const todayDayKey = useMemo(() => dayKeyFromDate(new Date()), []);
   const [startNotice, setStartNotice] = useState(null);
+  const [showRoutineOptions, setShowRoutineOptions] = useState(false);
   const hasAnyRoutine = useMemo(() => {
     const stored = loadRoutinesByDay();
     return Object.values(stored || {}).some(
@@ -188,6 +191,23 @@ export default function Home() {
     const t = window.setTimeout(() => setStartNotice(null), 2200);
     return () => window.clearTimeout(t);
   }, [startNotice]);
+
+  function goToManualRoutineAdd() {
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem(ROUTINE_SELECTED_DAY_STORAGE_KEY, todayDayKey);
+      } catch {
+        // ignore
+      }
+    }
+    setShowRoutineOptions(false);
+    navigate("/mypage/routines");
+  }
+
+  function goToWorkoutSelection() {
+    setShowRoutineOptions(false);
+    navigate("/workout");
+  }
 
   return (
     <>
@@ -248,14 +268,22 @@ export default function Home() {
                       </li>
                     ) : null}
                   </ul>
-                  <div className="mt-3">
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="py-3 text-sm"
+                      onClick={() => setShowRoutineOptions(true)}
+                    >
+                      루틴 추가
+                    </Button>
                     <Button
                       type="button"
                       variant="secondary"
                       className="py-3 text-sm"
                       onClick={() => navigate("/mypage/routines")}
                     >
-                      루틴 수정하기
+                      루틴 수정
                     </Button>
                   </div>
                 </>
@@ -271,7 +299,7 @@ export default function Home() {
                       type="button"
                       variant="secondary"
                       className="py-3 text-sm"
-                      onClick={() => navigate("/mypage/routines")}
+                      onClick={() => setShowRoutineOptions(true)}
                     >
                       루틴 추가하기
                     </Button>
@@ -345,6 +373,63 @@ export default function Home() {
         <div className="pointer-events-none fixed inset-x-0 bottom-24 z-[60] px-4">
           <div className="mx-auto w-full max-w-md rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 py-3 text-center text-sm font-extrabold text-[color:var(--c-text)] shadow-lg">
             {startNotice}
+          </div>
+        </div>
+      ) : null}
+
+      {showRoutineOptions ? (
+        <div className="fixed inset-0 z-[70] bg-black/40 px-4 py-6">
+          <button
+            type="button"
+            aria-label="루틴 추가 선택 닫기"
+            className="absolute inset-0 h-full w-full cursor-default"
+            onClick={() => setShowRoutineOptions(false)}
+          />
+          <div className="relative mx-auto flex min-h-full w-full max-w-md items-start">
+            <Card className="w-full space-y-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-[color:var(--c-muted)]">
+                    루틴 추가
+                  </p>
+                  <p className="mt-1 text-lg font-extrabold text-[color:var(--c-text)]">
+                    추가 방식을 선택해 주세요
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="닫기"
+                  onClick={() => setShowRoutineOptions(false)}
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-[color:var(--c-muted)] transition hover:bg-[color:var(--c-surface-2)] hover:text-[color:var(--c-text)]"
+                >
+                  <X size={18} aria-hidden="true" />
+                </button>
+              </div>
+
+              <div className="grid gap-2">
+                <Button
+                  type="button"
+                  className="justify-start gap-3 py-4 text-left"
+                  onClick={goToWorkoutSelection}
+                >
+                  <Dumbbell size={20} aria-hidden="true" />
+                  <span className="min-w-0 flex-1">
+                    운동 페이지로 이동하기
+                  </span>
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="justify-start gap-3 py-4 text-left"
+                  onClick={goToManualRoutineAdd}
+                >
+                  <Pencil size={20} aria-hidden="true" />
+                  <span className="min-w-0 flex-1">
+                    수동으로 추가하기
+                  </span>
+                </Button>
+              </div>
+            </Card>
           </div>
         </div>
       ) : null}
