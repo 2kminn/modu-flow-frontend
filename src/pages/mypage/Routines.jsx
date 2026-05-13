@@ -5,7 +5,6 @@ import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import { fetchRoutines, saveRoutines } from "@/api/routines";
 
 const STORAGE_KEY = "moduflow:routines-by-day:v1";
-const STORAGE_SELECTED_DAY_KEY = "moduflow:routines-selected-day:v1";
 const DAYS = [
   { key: "mon", label: "월" },
   { key: "tue", label: "화" },
@@ -51,17 +50,6 @@ function sanitizeRoutinesByDay(raw) {
     out[dayKey] = list.map(sanitizeRoutine).filter(Boolean);
   }
   return out;
-}
-
-function loadSelectedDay(fallback) {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = window.localStorage.getItem(STORAGE_SELECTED_DAY_KEY);
-    if (!raw) return fallback;
-    return DAYS.some((d) => d.key === raw) ? raw : fallback;
-  } catch {
-    return fallback;
-  }
 }
 
 function loadRoutinesByDay() {
@@ -132,9 +120,7 @@ function IconButton({ label, onClick, children, tone = "default" }) {
 
 export default function Routines() {
   const todayKey = useMemo(() => dayKeyFromDate(new Date()), []);
-  const [selectedDay, setSelectedDay] = useState(() =>
-    loadSelectedDay(todayKey)
-  );
+  const [selectedDay, setSelectedDay] = useState(todayKey);
   const [routinesByDay, setRoutinesByDay] = useState(() => {
     const stored = sanitizeRoutinesByDay(loadRoutinesByDay());
     if (Object.keys(stored).length > 0) return stored;
@@ -146,6 +132,7 @@ export default function Routines() {
   const skipNextAutosaveRef = useRef(false);
 
   const routineForSelectedDay = routinesByDay?.[selectedDay] || [];
+  const selectedDayLabel = DAYS.find((d) => d.key === selectedDay)?.label || "";
 
   // Load routines from backend (silent; keeps existing UI)
   useEffect(() => {
@@ -205,15 +192,6 @@ export default function Routines() {
     }, 900);
     return () => window.clearTimeout(t);
   }, [routinesByDay]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(STORAGE_SELECTED_DAY_KEY, selectedDay);
-    } catch {
-      // ignore
-    }
-  }, [selectedDay]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -342,8 +320,7 @@ export default function Routines() {
               루틴 목록
             </p>
             <p className="mt-1 text-xs font-semibold text-[color:var(--c-muted-2)]">
-              {DAYS.find((d) => d.key === selectedDay)?.label || ""} · 운동 / 세트 /
-              횟수 / 무게
+              {selectedDayLabel} · 운동 / 세트 / 횟수 / 무게
             </p>
           </div>
           {routineForSelectedDay.length && !editingId ? (
@@ -490,11 +467,15 @@ export default function Routines() {
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-2">
+        <div>
           <Button
             type="button"
             variant="secondary"
             onClick={() => {
+              if (typeof window !== "undefined") {
+                const ok = window.confirm(`${selectedDayLabel}요일 루틴을 초기화할까요?`);
+                if (!ok) return;
+              }
               setRoutinesByDay((prev) => {
                 const next = { ...(prev || {}) };
                 delete next[selectedDay];
@@ -503,10 +484,7 @@ export default function Routines() {
               cancelEdit();
             }}
           >
-            해당 요일 초기화
-          </Button>
-          <Button type="button" onClick={() => setSelectedDay(todayKey)}>
-            오늘로 이동
+            {selectedDayLabel}요일 루틴 초기화
           </Button>
         </div>
       </Card>

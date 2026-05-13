@@ -6,7 +6,6 @@ import { useNavigate } from "react-router-dom";
 import { openNativeScreen } from "@/native/deeplink";
 
 const ROUTINE_STORAGE_KEY = "moduflow:routines-by-day:v1";
-const ROUTINE_SELECTED_DAY_STORAGE_KEY = "moduflow:routines-selected-day:v1";
 const AUTO_ATTENDANCE_STORAGE_KEY = "moduflow:auto-attendance:v1";
 const DAY_LABELS = {
   mon: "월",
@@ -193,13 +192,6 @@ export default function Home() {
   }, [startNotice]);
 
   function goToManualRoutineAdd() {
-    if (typeof window !== "undefined") {
-      try {
-        window.localStorage.setItem(ROUTINE_SELECTED_DAY_STORAGE_KEY, todayDayKey);
-      } catch {
-        // ignore
-      }
-    }
     setShowRoutineOptions(false);
     navigate("/mypage/routines");
   }

@@ -106,11 +106,15 @@ export default function MyPage() {
             type="button"
             variant="secondary"
             onClick={() => {
+              if (typeof window !== "undefined") {
+                const ok = window.confirm("로그아웃하시겠어요?");
+                if (!ok) return;
+              }
               clearAuthToken();
               navigate("/login", { replace: true });
             }}
           >
-            로그아웃(더미)
+            로그아웃
           </Button>
         </div>
       </Card>
