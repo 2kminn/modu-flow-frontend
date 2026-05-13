@@ -5,7 +5,7 @@ import Button from "@/components/ui/Button";
 import FloatingLabelInput from "@/components/ui/FloatingLabelInput";
 import { setAuthToken } from "@/auth/auth";
 import { Eye, EyeOff } from "lucide-react";
-import { loginWithEmail } from "@/api/auth";
+import { getSocialLoginUrl, loginWithEmail, SOCIAL_LOGIN_RETURN_TO_KEY } from "@/api/auth";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -27,8 +27,22 @@ export default function Login() {
   const [debugInfo, setDebugInfo] = useState(null);
 
   function onSocialLogin(provider) {
-    setError(`${provider} 로그인은 아직 준비 중이에요.`);
+    setError(null);
     setDebugInfo(null);
+    const result = getSocialLoginUrl(provider);
+
+    if (!result.ok) {
+      setError(result.message || "소셜 로그인을 시작할 수 없어요.");
+      return;
+    }
+
+    try {
+      window.sessionStorage.setItem(SOCIAL_LOGIN_RETURN_TO_KEY, fromPath);
+    } catch {
+      // ignore
+    }
+
+    window.location.assign(result.url);
   }
 
   async function runLogin(nextEmail, nextPassword) {

@@ -1,5 +1,8 @@
 import { apiClient, getApiBaseUrl } from "@/api/client";
 
+const SOCIAL_PROVIDERS = new Set(["google", "kakao", "naver"]);
+export const SOCIAL_LOGIN_RETURN_TO_KEY = "moduflow:social-login-return-to:v1";
+
 function unwrapApiResponse(payload) {
   if (!payload) return payload;
   if (payload?.data && Object.prototype.hasOwnProperty.call(payload, "status")) {
@@ -71,6 +74,29 @@ export async function loginWithEmail({ email, password }) {
       debug: { response: e?.response?.data ?? null }
     };
   }
+}
+
+export function getSocialLoginUrl(provider) {
+  const normalizedProvider = String(provider || "").trim().toLowerCase();
+  if (!SOCIAL_PROVIDERS.has(normalizedProvider)) {
+    return {
+      ok: false,
+      message: "지원하지 않는 소셜 로그인 provider예요."
+    };
+  }
+
+  const baseUrl = getApiBaseUrl();
+  if (!baseUrl) {
+    return {
+      ok: false,
+      message: "소셜 로그인을 시작하려면 VITE_API_BASE_URL 설정이 필요해요."
+    };
+  }
+
+  return {
+    ok: true,
+    url: `${baseUrl}/oauth2/authorization/${normalizedProvider}`
+  };
 }
 
 export async function signupWithEmail({ email, password, confirmPassword }) {

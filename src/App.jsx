@@ -4,6 +4,7 @@ import AuthLayout from "@/layouts/AuthLayout";
 import RootLayout from "@/layouts/RootLayout";
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
+import OAuthCallback from "@/pages/OAuthCallback";
 import ForgotPassword from "@/pages/ForgotPassword";
 import MyPage from "@/pages/MyPage";
 import SignUp from "@/pages/SignUp";
@@ -20,6 +21,7 @@ export default function App() {
     <Routes>
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<Login />} />
+        <Route path="/oauth/callback" element={<OAuthCallback />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/signup" element={<SignUp />} />
       </Route>
