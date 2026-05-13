@@ -208,12 +208,12 @@ function ExerciseModal({ open, exercise, onClose, onRequestAdd, addDisabled }) {
       role="dialog"
       aria-modal="true"
       aria-label={`${exercise.name} 상세`}
-      className="fixed inset-0 z-50 overflow-y-auto bg-black/50 p-4"
+      className="fixed -top-24 bottom-[calc(72px+env(safe-area-inset-bottom))] inset-x-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 px-4 py-4 pt-28"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="mx-auto flex w-full max-w-md flex-col overflow-hidden rounded-3xl bg-[color:var(--c-surface)] shadow-xl max-h-[calc(100vh-2rem)]">
+      <div className="mx-auto flex w-full max-w-md flex-col overflow-hidden rounded-3xl bg-[color:var(--c-surface)] shadow-xl max-h-[calc(100dvh-72px-env(safe-area-inset-bottom)-2rem)]">
         <div className="flex items-start justify-between gap-3 border-b border-[color:var(--c-border)] p-4">
           <div className="min-w-0">
             <p className="truncate text-base font-extrabold text-[color:var(--c-text)]">
@@ -307,12 +307,12 @@ function AddToRoutineModal({
       role="dialog"
       aria-modal="true"
       aria-label="루틴 추가 설정"
-      className="fixed inset-0 z-50 overflow-y-auto bg-black/50 p-4"
+      className="fixed -top-24 bottom-[calc(72px+env(safe-area-inset-bottom))] inset-x-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 px-4 py-4 pt-28"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="mx-auto flex w-full max-w-md flex-col overflow-hidden rounded-3xl bg-[color:var(--c-surface)] shadow-xl max-h-[calc(100vh-2rem)]">
+      <div className="mx-auto flex w-full max-w-md flex-col overflow-hidden rounded-3xl bg-[color:var(--c-surface)] shadow-xl max-h-[calc(100dvh-72px-env(safe-area-inset-bottom)-2rem)]">
         <div className="flex items-start justify-between gap-3 border-b border-[color:var(--c-border)] p-4">
           <div className="min-w-0">
             <p className="truncate text-base font-extrabold text-[color:var(--c-text)]">

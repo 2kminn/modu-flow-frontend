@@ -370,14 +370,14 @@ export default function Home() {
       ) : null}
 
       {showRoutineOptions ? (
-        <div className="fixed inset-0 z-[70] bg-black/40 px-4 py-6">
+        <div className="fixed -top-24 bottom-[calc(72px+env(safe-area-inset-bottom))] inset-x-0 z-[70] flex items-center justify-center bg-black/40 px-4 pt-24">
           <button
             type="button"
             aria-label="루틴 추가 선택 닫기"
             className="absolute inset-0 h-full w-full cursor-default"
             onClick={() => setShowRoutineOptions(false)}
           />
-          <div className="relative mx-auto flex min-h-full w-full max-w-md items-start">
+          <div className="relative mx-auto flex w-full max-w-md items-center">
             <Card className="w-full space-y-4">
               <div className="flex items-start justify-between gap-3">
                 <div>

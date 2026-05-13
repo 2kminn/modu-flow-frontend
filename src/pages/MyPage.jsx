@@ -1,6 +1,7 @@
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { clearAuthToken } from "@/auth/auth";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 
@@ -32,8 +33,50 @@ function MenuRow({ label, description, onClick }) {
   );
 }
 
+function LogoutConfirmDialog({ onCancel, onConfirm }) {
+  return (
+    <div
+      className="fixed -top-24 bottom-[calc(72px+env(safe-area-inset-bottom))] inset-x-0 z-50 flex items-center justify-center bg-black/45 px-4 pt-24"
+      role="presentation"
+      onClick={onCancel}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="logout-dialog-title"
+        aria-describedby="logout-dialog-description"
+        className="w-full max-w-sm rounded-3xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] p-5 shadow-xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <h2
+          id="logout-dialog-title"
+          className="text-lg font-extrabold text-[color:var(--c-text)]"
+        >
+          로그아웃하시겠어요?
+        </h2>
+        <p
+          id="logout-dialog-description"
+          className="mt-2 text-sm font-semibold leading-6 text-[color:var(--c-muted)]"
+        >
+          현재 계정에서 로그아웃하고 로그인 화면으로 이동합니다.
+        </p>
+
+        <div className="mt-5 grid grid-cols-2 gap-2">
+          <Button type="button" variant="secondary" onClick={onCancel}>
+            취소
+          </Button>
+          <Button type="button" onClick={onConfirm}>
+            로그아웃
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MyPage() {
   const navigate = useNavigate();
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const user = {
     name: "사용자",
     bio: "초급 · 주 3회 · 목표: 근력 향상"
@@ -43,6 +86,11 @@ export default function MyPage() {
     { label: "루틴 설정", to: "/mypage/routines", description: "자주 하는 루틴 관리" },
     { label: "비밀번호 변경", to: "/mypage/password", description: "보안 설정" }
   ];
+
+  const handleLogout = () => {
+    clearAuthToken();
+    navigate("/login", { replace: true });
+  };
 
   return (
     <section className="space-y-4">
@@ -105,19 +153,19 @@ export default function MyPage() {
           <Button
             type="button"
             variant="secondary"
-            onClick={() => {
-              if (typeof window !== "undefined") {
-                const ok = window.confirm("로그아웃하시겠어요?");
-                if (!ok) return;
-              }
-              clearAuthToken();
-              navigate("/login", { replace: true });
-            }}
+            onClick={() => setIsLogoutDialogOpen(true)}
           >
             로그아웃
           </Button>
         </div>
       </Card>
+
+      {isLogoutDialogOpen ? (
+        <LogoutConfirmDialog
+          onCancel={() => setIsLogoutDialogOpen(false)}
+          onConfirm={handleLogout}
+        />
+      ) : null}
     </section>
   );
 }
