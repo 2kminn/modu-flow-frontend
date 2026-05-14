@@ -2,7 +2,16 @@
   "functions": {
     "api/auth/login.js": { "maxDuration": 10 },
     "api/auth/signup.js": { "maxDuration": 10 },
-    "api/v1/[...path].js": { "maxDuration": 10 },
+    "api/v1/auth/login.js": { "maxDuration": 10 },
+    "api/v1/auth/signup.js": { "maxDuration": 10 },
+    "api/v1/auth/password.js": { "maxDuration": 10 },
+    "api/v1/routines.js": { "maxDuration": 10 },
+    "api/v1/routines/items/[itemId]/count.js": { "maxDuration": 10 },
+    "api/v1/workouts.js": { "maxDuration": 10 },
+    "api/v1/workouts/counts.js": { "maxDuration": 10 },
+    "api/v1/workouts/[date].js": { "maxDuration": 10 },
+    "api/v1/workouts/[date]/count.js": { "maxDuration": 10 },
+    "api/v1/workouts/[date]/items/[itemId].js": { "maxDuration": 10 },
     "api/api/v1/auth/password.js": { "maxDuration": 10 },
     "api/api/v1/routines.js": { "maxDuration": 10 },
     "api/api/v1/routines/items/[itemId]/count.js": { "maxDuration": 10 }
