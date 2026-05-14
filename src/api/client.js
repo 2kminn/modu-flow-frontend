@@ -11,6 +11,10 @@ function normalizeBaseUrl(value) {
 
 function resolveBaseUrl() {
   const envUrl = normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL);
+  if (typeof window !== "undefined" && window.location?.protocol === "https:") {
+    if (!envUrl && !import.meta.env.DEV) return "/api";
+    if (envUrl.startsWith("http://")) return "/api";
+  }
   if (envUrl) return envUrl;
 
   if (typeof window === "undefined") return "";
@@ -28,6 +32,8 @@ function resolveBaseUrl() {
   } catch {
     // ignore
   }
+
+  if (!import.meta.env.DEV) return "/api";
 
   return "";
 }

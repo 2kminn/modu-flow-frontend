@@ -2,8 +2,15 @@
   "functions": {
     "api/auth/login.js": { "maxDuration": 10 },
     "api/auth/signup.js": { "maxDuration": 10 },
+    "api/api/v1/auth/login.js": { "maxDuration": 10 },
+    "api/api/v1/auth/signup.js": { "maxDuration": 10 },
     "api/api/v1/auth/password.js": { "maxDuration": 10 },
     "api/api/v1/routines.js": { "maxDuration": 10 },
-    "api/api/v1/routines/items/[itemId]/count.js": { "maxDuration": 10 }
+    "api/api/v1/routines/items/[itemId]/count.js": { "maxDuration": 10 },
+    "api/oauth2/authorization/[provider].js": { "maxDuration": 10 },
+    "api/attendance.js": { "maxDuration": 10 },
+    "api/attendance/checkout/[id].js": { "maxDuration": 10 },
+    "api/attendance/congestion.js": { "maxDuration": 10 },
+    "api/attendance/congestion/recent.js": { "maxDuration": 10 }
   }
 }
