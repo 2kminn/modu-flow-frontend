@@ -119,6 +119,47 @@ function IconButton({ label, onClick, children, tone = "default" }) {
   );
 }
 
+function ResetRoutineConfirmDialog({ dayLabel, onCancel, onConfirm }) {
+  return (
+    <div
+      className="fixed -top-24 bottom-[calc(72px+env(safe-area-inset-bottom))] inset-x-0 z-50 flex items-center justify-center bg-black/45 px-4 pt-24"
+      role="presentation"
+      onClick={onCancel}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="reset-routine-dialog-title"
+        aria-describedby="reset-routine-dialog-description"
+        className="w-full max-w-sm rounded-3xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] p-5 shadow-xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <h2
+          id="reset-routine-dialog-title"
+          className="text-lg font-extrabold text-[color:var(--c-text)]"
+        >
+          {dayLabel}요일 루틴을 초기화할까요?
+        </h2>
+        <p
+          id="reset-routine-dialog-description"
+          className="mt-2 text-sm font-semibold leading-6 text-[color:var(--c-muted)]"
+        >
+          선택한 요일의 루틴이 모두 삭제됩니다.
+        </p>
+
+        <div className="mt-5 grid grid-cols-2 gap-2">
+          <Button type="button" variant="secondary" onClick={onCancel}>
+            취소
+          </Button>
+          <Button type="button" onClick={onConfirm}>
+            초기화
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Routines() {
   const todayKey = useMemo(() => dayKeyFromDate(new Date()), []);
   const [selectedDay, setSelectedDay] = useState(todayKey);
@@ -130,6 +171,7 @@ export default function Routines() {
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState(null);
   const [draftError, setDraftError] = useState("");
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const didHydrateFromServerRef = useRef(false);
   const skipNextAutosaveRef = useRef(false);
 
@@ -300,6 +342,16 @@ export default function Routines() {
       return next;
     });
     startEdit(newItem);
+  }
+
+  function resetSelectedDay() {
+    setRoutinesByDay((prev) => {
+      const next = { ...(prev || {}) };
+      delete next[selectedDay];
+      return next;
+    });
+    cancelEdit();
+    setIsResetDialogOpen(false);
   }
 
   return (
@@ -487,23 +539,20 @@ export default function Routines() {
           <Button
             type="button"
             variant="secondary"
-            onClick={() => {
-              if (typeof window !== "undefined") {
-                const ok = window.confirm(`${selectedDayLabel}요일 루틴을 초기화할까요?`);
-                if (!ok) return;
-              }
-              setRoutinesByDay((prev) => {
-                const next = { ...(prev || {}) };
-                delete next[selectedDay];
-                return next;
-              });
-              cancelEdit();
-            }}
+            onClick={() => setIsResetDialogOpen(true)}
           >
             {selectedDayLabel}요일 루틴 초기화
           </Button>
         </div>
       </Card>
+
+      {isResetDialogOpen ? (
+        <ResetRoutineConfirmDialog
+          dayLabel={selectedDayLabel}
+          onCancel={() => setIsResetDialogOpen(false)}
+          onConfirm={resetSelectedDay}
+        />
+      ) : null}
     </section>
   );
 }
