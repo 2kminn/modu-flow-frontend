@@ -3,6 +3,7 @@ import Card from "@/components/ui/Card";
 import WeeklyWorkoutChart from "@/components/charts/WeeklyWorkoutChart";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { validateWorkoutItemDraft } from "@/api/validation";
 
 const WORKOUT_HISTORY_STORAGE_KEY = "moduflow:workout-history:v1";
 
@@ -41,11 +42,13 @@ function WorkoutListModal({
 }) {
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState(null);
+  const [draftError, setDraftError] = useState("");
 
   useEffect(() => {
     if (!open) return;
     setEditingId(null);
     setDraft(null);
+    setDraftError("");
   }, [open]);
 
   useEffect(() => {
@@ -144,31 +147,26 @@ function WorkoutListModal({
                         <button
                           type="button"
                           onClick={() => {
-                            const nextSetsNum = Number(draft?.sets);
-                            const nextRepsNum = Number(draft?.reps);
-                            const nextWeightNum = Number(draft?.weight);
+                            const validation = validateWorkoutItemDraft({
+                              id: it.id,
+                              name: it.name,
+                              note: it.note,
+                              sets: draft?.sets,
+                              reps: draft?.reps,
+                              weight: draft?.weight
+                            });
+                            if (!validation.ok) {
+                              setDraftError(validation.message);
+                              return;
+                            }
                             onUpdateItem?.(it.id, {
-                              sets:
-                                draft?.sets === ""
-                                  ? null
-                                  : Number.isFinite(nextSetsNum)
-                                    ? nextSetsNum
-                                    : null,
-                              reps:
-                                draft?.reps === ""
-                                  ? null
-                                  : Number.isFinite(nextRepsNum)
-                                    ? nextRepsNum
-                                    : null,
-                              weight:
-                                draft?.weight === ""
-                                  ? null
-                                  : Number.isFinite(nextWeightNum)
-                                    ? nextWeightNum
-                                    : null
+                              sets: validation.item.sets,
+                              reps: validation.item.reps,
+                              weight: validation.item.weight
                             });
                             setEditingId(null);
                             setDraft(null);
+                            setDraftError("");
                           }}
                           className="h-11 flex-1 rounded-2xl bg-[color:var(--c-text)] px-4 text-sm font-extrabold text-[color:var(--c-bg)] shadow-sm transition active:scale-[0.98]"
                         >
@@ -179,12 +177,18 @@ function WorkoutListModal({
                           onClick={() => {
                             setEditingId(null);
                             setDraft(null);
+                            setDraftError("");
                           }}
                           className="h-11 flex-1 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-sm font-extrabold text-[color:var(--c-text)] shadow-sm transition hover:bg-[color:var(--c-surface-2)] active:scale-[0.98]"
                         >
                           취소
                         </button>
                       </div>
+                      {draftError ? (
+                        <p className="col-span-3 text-xs font-semibold text-red-500">
+                          {draftError}
+                        </p>
+                      ) : null}
                     </div>
                   ) : (
                     <div className="mt-3 flex items-center justify-between gap-2">
@@ -199,6 +203,7 @@ function WorkoutListModal({
                           type="button"
                           onClick={() => {
                             setEditingId(it.id);
+                            setDraftError("");
                             setDraft({
                               sets: String(it.sets ?? ""),
                               reps: String(it.reps ?? ""),
@@ -283,6 +288,12 @@ export default function Stats() {
                 : it.sets == null
                   ? null
                   : Number(it.sets),
+            reps:
+              typeof it.reps === "number"
+                ? it.reps
+                : it.reps == null
+                  ? null
+                  : Number(it.reps),
             weight:
               typeof it.weight === "number"
                 ? it.weight
@@ -293,6 +304,7 @@ export default function Stats() {
           .map((it) => ({
             ...it,
             sets: Number.isFinite(it.sets) ? it.sets : null,
+            reps: Number.isFinite(it.reps) ? it.reps : null,
             weight: Number.isFinite(it.weight) ? it.weight : null
           }));
       }

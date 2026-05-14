@@ -2,6 +2,7 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { Dumbbell, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { validateWorkoutItemDraft } from "@/api/validation";
 
 const ROUTINE_STORAGE_KEY = "moduflow:routines-by-day:v1";
 
@@ -282,6 +283,7 @@ function AddToRoutineModal({
   const [sets, setSets] = useState("");
   const [reps, setReps] = useState("");
   const [weight, setWeight] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -289,6 +291,7 @@ function AddToRoutineModal({
     setSets("");
     setReps("");
     setWeight("");
+    setError("");
   }, [open, initialDayKey]);
 
   useEffect(() => {
@@ -403,17 +406,33 @@ function AddToRoutineModal({
           <div className="grid gap-2">
             <Button
               type="button"
-              onClick={() =>
+              onClick={() => {
+                const validation = validateWorkoutItemDraft({
+                  name: exercise.name,
+                  exerciseId: exercise.id,
+                  sets,
+                  reps,
+                  weight
+                });
+                if (!validation.ok) {
+                  setError(validation.message);
+                  return;
+                }
                 onConfirm({
                   dayKey,
                   sets,
                   reps,
                   weight
-                })
-              }
+                });
+              }}
             >
               추가하기
             </Button>
+            {error ? (
+              <p className="text-xs font-semibold text-red-500">
+                {error}
+              </p>
+            ) : null}
             <Button type="button" variant="secondary" onClick={onClose}>
               취소
             </Button>
@@ -483,19 +502,27 @@ export default function Workout() {
       setToast("이미 루틴에 추가된 운동이에요.");
       return;
     }
-    const nextSets = Number(sets);
-    const nextReps = Number(reps);
-    const nextWeight = Number(weight);
+    const validation = validateWorkoutItemDraft({
+      name: modalExercise.name,
+      exerciseId: modalExercise.id,
+      sets,
+      reps,
+      weight
+    });
+    if (!validation.ok) {
+      setToast(validation.message);
+      return;
+    }
     const next = { ...(stored || {}) };
     next[dayKey] = [
       ...list,
       {
         id: createId(),
-        name: modalExercise.name,
-        sets: sets === "" ? null : Number.isFinite(nextSets) ? nextSets : null,
-        reps: reps === "" ? null : Number.isFinite(nextReps) ? nextReps : null,
-        weight: weight === "" ? null : Number.isFinite(nextWeight) ? nextWeight : null,
-        exerciseId: modalExercise.id
+        name: validation.item.name,
+        sets: validation.item.sets,
+        reps: validation.item.reps,
+        weight: validation.item.weight,
+        exerciseId: validation.item.exerciseId
       }
     ];
     saveRoutinesByDay(next);

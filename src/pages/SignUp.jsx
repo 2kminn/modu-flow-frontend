@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import FloatingLabelInput from "@/components/ui/FloatingLabelInput";
-import { clearAuthToken } from "@/auth/auth";
+import { setAuthToken } from "@/auth/auth";
 import { Eye, EyeOff } from "lucide-react";
 import { signupWithEmail } from "@/api/auth";
 
@@ -32,12 +32,15 @@ export default function SignUp() {
       setError("비밀번호가 일치하지 않아요.");
       return;
     }
+    if (password.length < 8) {
+      setError("비밀번호는 최소 8자 이상이어야 합니다.");
+      return;
+    }
 
     setLoading(true);
     const signupResult = await signupWithEmail({
       email,
-      password,
-      confirmPassword
+      password
     });
 
     if (!signupResult.ok) {
@@ -48,10 +51,9 @@ export default function SignUp() {
       return;
     }
 
-    // Signup succeeded: move user to login screen (no auto-login).
-    clearAuthToken();
+    setAuthToken(signupResult.accessToken);
     setLoading(false);
-    navigate("/login", { replace: true, state: { email } });
+    navigate("/", { replace: true });
   }
 
   return (

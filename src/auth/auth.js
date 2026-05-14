@@ -1,4 +1,14 @@
 const TOKEN_KEY = "auth_token";
+export const AUTH_CHANGED_EVENT = "moduflow:auth-changed";
+
+function notifyAuthChanged() {
+  if (typeof window === "undefined") return;
+  try {
+    window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
+  } catch {
+    // ignore
+  }
+}
 
 function safeGet(storage) {
   try {
@@ -38,9 +48,11 @@ export function getAuthToken() {
 export function setAuthToken(token) {
   safeSet(sessionStorage, token);
   safeRemove(localStorage);
+  notifyAuthChanged();
 }
 
 export function clearAuthToken() {
   safeRemove(sessionStorage);
   safeRemove(localStorage);
+  notifyAuthChanged();
 }

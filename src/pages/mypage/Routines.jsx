@@ -3,6 +3,7 @@ import Card from "@/components/ui/Card";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import { fetchRoutines, saveRoutines } from "@/api/routines";
+import { validateWorkoutItemDraft } from "@/api/validation";
 
 const STORAGE_KEY = "moduflow:routines-by-day:v1";
 const DAYS = [
@@ -37,6 +38,7 @@ function sanitizeRoutine(item) {
     sets: coerceNumberOrNull(item.sets),
     reps: coerceNumberOrNull(item.reps),
     weight: coerceNumberOrNull(item.weight),
+    exerciseId: typeof item.exerciseId === "string" ? item.exerciseId : undefined,
     isNew: Boolean(item.isNew)
   };
 }
@@ -128,6 +130,7 @@ export default function Routines() {
   });
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState(null);
+  const [draftError, setDraftError] = useState("");
   const didHydrateFromServerRef = useRef(false);
   const skipNextAutosaveRef = useRef(false);
 
@@ -207,6 +210,7 @@ export default function Routines() {
 
   function startEdit(item) {
     setEditingId(item.id);
+    setDraftError("");
     setDraft({
       name: item.name ?? "",
       sets: String(item.sets ?? ""),
@@ -218,13 +222,22 @@ export default function Routines() {
   function finishEdit() {
     setEditingId(null);
     setDraft(null);
+    setDraftError("");
   }
 
   function saveEdit() {
     if (!editingId || !draft) return;
-    const nextSets = Number(draft.sets);
-    const nextReps = Number(draft.reps);
-    const nextWeight = Number(draft.weight);
+    const validation = validateWorkoutItemDraft({
+      id: editingId,
+      name: draft.name,
+      sets: draft.sets,
+      reps: draft.reps,
+      weight: draft.weight
+    });
+    if (!validation.ok) {
+      setDraftError(validation.message);
+      return;
+    }
     setRoutinesByDay((prev) => {
       const next = { ...(prev || {}) };
       const list = Array.isArray(next[selectedDay]) ? [...next[selectedDay]] : [];
@@ -232,11 +245,10 @@ export default function Routines() {
         it.id === editingId
           ? {
             ...it,
-            name: draft.name.trim(),
-            sets: draft.sets === "" ? null : Number.isFinite(nextSets) ? nextSets : null,
-            reps: draft.reps === "" ? null : Number.isFinite(nextReps) ? nextReps : null,
-            weight:
-              draft.weight === "" ? null : Number.isFinite(nextWeight) ? nextWeight : null,
+            name: validation.item.name,
+            sets: validation.item.sets,
+            reps: validation.item.reps,
+            weight: validation.item.weight,
             isNew: false
           }
           : it
@@ -353,6 +365,7 @@ export default function Routines() {
                               setDraft((prev) => ({ ...(prev || {}), name: e.target.value }))
                             }
                             placeholder="운동 이름"
+                            maxLength={100}
                             className={[
                               "h-11 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4",
                               "text-base font-semibold text-[color:var(--c-text)] shadow-sm outline-none transition duration-200",
@@ -366,6 +379,8 @@ export default function Routines() {
                                 setDraft((prev) => ({ ...(prev || {}), sets: e.target.value }))
                               }
                               inputMode="numeric"
+                              min="0"
+                              max="999"
                               className={[
                                 "h-11 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4",
                                 "text-base font-semibold text-[color:var(--c-text)] shadow-sm outline-none transition duration-200",
@@ -379,6 +394,8 @@ export default function Routines() {
                                 setDraft((prev) => ({ ...(prev || {}), reps: e.target.value }))
                               }
                               inputMode="numeric"
+                              min="0"
+                              max="999"
                               className={[
                                 "h-11 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4",
                                 "text-base font-semibold text-[color:var(--c-text)] shadow-sm outline-none transition duration-200",
@@ -392,6 +409,7 @@ export default function Routines() {
                                 setDraft((prev) => ({ ...(prev || {}), weight: e.target.value }))
                               }
                               inputMode="numeric"
+                              min="0"
                               className={[
                                 "h-11 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4",
                                 "text-base font-semibold text-[color:var(--c-text)] shadow-sm outline-none transition duration-200",
@@ -400,6 +418,11 @@ export default function Routines() {
                               placeholder="무게"
                             />
                           </div>
+                          {draftError ? (
+                            <p className="text-xs font-semibold text-red-500">
+                              {draftError}
+                            </p>
+                          ) : null}
                         </div>
                       ) : (
                         <>

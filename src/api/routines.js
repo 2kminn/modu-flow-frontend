@@ -1,4 +1,5 @@
 import { apiClient } from "@/api/client";
+import { validateWorkoutItemDraft } from "@/api/validation";
 
 const ROUTINE_STORAGE_KEY = "moduflow:routines-by-day:v1";
 
@@ -52,12 +53,12 @@ export async function fetchRoutines() {
 // Backend RoutineItemDto supports: { id, name, sets, weight, exerciseId, reps }
 function toBackendRoutineItem(item) {
   if (!item || typeof item !== "object") return null;
-  const { id, name, sets, weight, exerciseId, reps } = item;
-  const normalizedName = typeof name === "string" ? name.trim() : "";
-  if (!normalizedName) return null;
+  const result = validateWorkoutItemDraft(item);
+  if (!result.ok) throw new Error(result.message);
+  const { id, name, sets, weight, exerciseId, reps } = result.item;
   return {
     id,
-    name: normalizedName,
+    name,
     sets,
     weight,
     exerciseId,
