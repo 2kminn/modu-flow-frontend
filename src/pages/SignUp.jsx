@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import FloatingLabelInput from "@/components/ui/FloatingLabelInput";
-import { clearAuthToken } from "@/auth/auth";
+import { setAuthToken } from "@/auth/auth";
 import { Eye, EyeOff } from "lucide-react";
 import { signupWithEmail } from "@/api/auth";
 
@@ -48,10 +48,9 @@ export default function SignUp() {
       return;
     }
 
-    // Signup succeeded: move user to login screen (no auto-login).
-    clearAuthToken();
+    setAuthToken(signupResult.accessToken);
     setLoading(false);
-    navigate("/login", { replace: true, state: { email } });
+    navigate("/", { replace: true });
   }
 
   return (

@@ -2,6 +2,7 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { Dumbbell, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { validateWorkoutItemDraft } from "@/api/validation";
 
 const ROUTINE_STORAGE_KEY = "moduflow:routines-by-day:v1";
 
@@ -483,19 +484,27 @@ export default function Workout() {
       setToast("이미 루틴에 추가된 운동이에요.");
       return;
     }
-    const nextSets = Number(sets);
-    const nextReps = Number(reps);
-    const nextWeight = Number(weight);
+    const validation = validateWorkoutItemDraft({
+      name: modalExercise.name,
+      exerciseId: modalExercise.id,
+      sets,
+      reps,
+      weight
+    });
+    if (!validation.ok) {
+      setToast(validation.message);
+      return;
+    }
     const next = { ...(stored || {}) };
     next[dayKey] = [
       ...list,
       {
         id: createId(),
-        name: modalExercise.name,
-        sets: sets === "" ? null : Number.isFinite(nextSets) ? nextSets : null,
-        reps: reps === "" ? null : Number.isFinite(nextReps) ? nextReps : null,
-        weight: weight === "" ? null : Number.isFinite(nextWeight) ? nextWeight : null,
-        exerciseId: modalExercise.id
+        name: validation.item.name,
+        sets: validation.item.sets,
+        reps: validation.item.reps,
+        weight: validation.item.weight,
+        exerciseId: validation.item.exerciseId
       }
     ];
     saveRoutinesByDay(next);

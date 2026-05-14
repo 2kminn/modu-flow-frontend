@@ -13,7 +13,7 @@ applyTheme(getStoredTheme() ?? "light");
 
 // Optional runtime override:
 //   https://your-frontend/login?apiBaseUrl=http://3.39.194.42:8080
-// This helps when mobile/production build doesn't have VITE_API_BASE_URL baked in.
+// This helps local/mobile testing override the build-time VITE_API_BASE_URL.
 try {
   const params = new URLSearchParams(window.location.search);
   const apiBaseUrl = params.get("apiBaseUrl");
