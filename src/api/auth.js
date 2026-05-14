@@ -1,4 +1,4 @@
-import { apiClient, getApiBaseUrl, getApiErrorMessage } from "@/api/client";
+import { apiClient, getApiBaseUrl } from "@/api/client";
 
 const SOCIAL_PROVIDERS = new Set(["google", "kakao", "naver"]);
 export const SOCIAL_LOGIN_RETURN_TO_KEY = "moduflow:social-login-return-to:v1";
@@ -12,13 +12,31 @@ function unwrapApiResponse(payload) {
 }
 
 function getErrorMessage(error) {
-  return getApiErrorMessage(error);
+  const serverMessage =
+    error?.response?.data?.message ??
+    error?.response?.data?.error ??
+    error?.response?.data?.code;
+
+  if (serverMessage != null) {
+    if (typeof serverMessage === "string") return serverMessage;
+    if (typeof serverMessage === "number" || typeof serverMessage === "boolean") {
+      return String(serverMessage);
+    }
+    try {
+      return JSON.stringify(serverMessage);
+    } catch {
+      return "요청에 실패했어요.";
+    }
+  }
+
+  if (error?.message) return String(error.message);
+  return "요청에 실패했어요.";
 }
 
 export async function loginWithEmail({ email, password }) {
   try {
     const normalizedEmail = String(email || "").trim().toLowerCase();
-    const res = await apiClient.post("/api/v1/auth/login", { email: normalizedEmail, password });
+    const res = await apiClient.post("/auth/login", { email: normalizedEmail, password });
     const data = unwrapApiResponse(res?.data);
     const accessToken = data?.accessToken;
     if (!accessToken) {
@@ -32,10 +50,9 @@ export async function loginWithEmail({ email, password }) {
     return {
       ok: true,
       accessToken,
-      user: data?.user ?? null,
       tokenType: data?.tokenType,
       expiresInSeconds: data?.expiresInSeconds,
-      email: data?.email ?? data?.user?.email,
+      email: data?.email,
       debug: { response: res?.data ?? null }
     };
   } catch (e) {
@@ -82,30 +99,23 @@ export function getSocialLoginUrl(provider) {
   };
 }
 
-export async function signupWithEmail({ email, password }) {
+export async function signupWithEmail({ email, password, confirmPassword }) {
   try {
     const normalizedEmail = String(email || "").trim().toLowerCase();
-    const res = await apiClient.post("/api/v1/auth/signup", {
+    const res = await apiClient.post("/auth/signup", {
       email: normalizedEmail,
-      password
+      password,
+      confirmPassword
     });
     const data = unwrapApiResponse(res?.data);
     const accessToken = data?.accessToken;
-    if (!accessToken) {
-      return {
-        ok: false,
-        message: "회원가입 응답에 accessToken이 없어요.",
-        httpStatus: res?.status ?? null,
-        debug: { response: res?.data ?? null }
-      };
-    }
+    // Some backends issue token on signup; if not, we still treat signup as success.
     return {
       ok: true,
-      accessToken,
-      user: data?.user ?? null,
+      accessToken: accessToken ?? null,
       tokenType: data?.tokenType,
       expiresInSeconds: data?.expiresInSeconds,
-      email: data?.email ?? data?.user?.email,
+      email: data?.email,
       debug: { response: res?.data ?? null }
     };
   } catch (e) {
@@ -123,7 +133,7 @@ export async function changePassword({ currentPassword, newPassword, confirmPass
     const res = await apiClient.patch("/api/v1/auth/password", {
       currentPassword,
       newPassword,
-      newPasswordConfirm: confirmPassword
+      confirmPassword
     });
     return {
       ok: true,

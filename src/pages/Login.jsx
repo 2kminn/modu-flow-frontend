@@ -12,10 +12,8 @@ export default function Login() {
   const location = useLocation();
   const fromPath = useMemo(() => {
     const state = location.state;
-    const queryRedirect = new URLSearchParams(location.search).get("redirect");
-    if (queryRedirect?.startsWith("/") && !queryRedirect.startsWith("//")) return queryRedirect;
     return state?.from?.pathname || "/";
-  }, [location.search, location.state]);
+  }, [location.state]);
   const prefillEmail = useMemo(() => {
     const state = location.state;
     return state?.email ? String(state.email) : "";

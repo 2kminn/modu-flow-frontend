@@ -1,5 +1,5 @@
 import { proxyToBackend } from "../../_proxy.js";
 
 export default async function handler(req, res) {
-  return proxyToBackend(req, res, "api/v1/auth/signup");
+  return proxyToBackend(req, res, "api/v1/routines");
 }
