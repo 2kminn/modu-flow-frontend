@@ -30,6 +30,8 @@ function resolveBaseUrl() {
     // ignore
   }
 
+  if (window.location?.protocol === "https:") return "";
+
   return normalizeBaseUrl(DEFAULT_API_BASE_URL);
 }
 
