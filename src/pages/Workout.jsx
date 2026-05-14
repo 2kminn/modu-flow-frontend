@@ -1,20 +1,12 @@
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import { Dumbbell, Search, X } from "lucide-react";
+import ExerciseMuscleImage from "@/components/ExerciseMuscleImage";
+import { CATEGORIES, EXERCISES } from "@/data/exercises";
+import { Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { validateWorkoutItemDraft } from "@/api/validation";
 
 const ROUTINE_STORAGE_KEY = "moduflow:routines-by-day:v1";
-
-const CATEGORIES = [
-  { key: "all", label: "전체" },
-  { key: "chest", label: "가슴" },
-  { key: "back", label: "등" },
-  { key: "legs", label: "하체" },
-  { key: "shoulders", label: "어깨" },
-  { key: "arms", label: "팔" },
-  { key: "abs", label: "복근" }
-];
 
 const DAYS = [
   { key: "mon", label: "월" },
@@ -24,105 +16,6 @@ const DAYS = [
   { key: "fri", label: "금" },
   { key: "sat", label: "토" },
   { key: "sun", label: "일" }
-];
-
-const EXERCISES = [
-  {
-    id: "pushup",
-    name: "푸쉬업",
-    category: "chest",
-    difficulty: "초급",
-    description: "가슴과 삼두를 함께 강화하는 대표적인 맨몸 운동이에요.",
-    targetMuscle: "가슴 · 삼두 · 코어"
-  },
-  {
-    id: "bench-press",
-    name: "벤치프레스",
-    category: "chest",
-    difficulty: "중급",
-    description: "가슴 근육을 집중적으로 자극하는 대표적인 웨이트 운동이에요.",
-    targetMuscle: "가슴 · 삼두 · 전면 어깨"
-  },
-  {
-    id: "pullup",
-    name: "풀업",
-    category: "back",
-    difficulty: "고급",
-    description: "상체 당기는 힘을 키우는 고전적인 운동이에요.",
-    targetMuscle: "광배 · 이두 · 코어"
-  },
-  {
-    id: "seated-row",
-    name: "시티드 로우",
-    category: "back",
-    difficulty: "초급",
-    description: "등 중앙을 안정적으로 강화할 수 있어요.",
-    targetMuscle: "등(중부) · 이두"
-  },
-  {
-    id: "squat",
-    name: "스쿼트",
-    category: "legs",
-    difficulty: "중급",
-    description: "하체와 코어를 함께 강화하는 전신 운동이에요.",
-    targetMuscle: "대퇴사두 · 둔근 · 코어"
-  },
-  {
-    id: "lunge",
-    name: "런지",
-    category: "legs",
-    difficulty: "초급",
-    description: "균형과 하체 근력을 함께 잡을 수 있어요.",
-    targetMuscle: "둔근 · 햄스트링 · 대퇴사두"
-  },
-  {
-    id: "overhead-press",
-    name: "오버헤드 프레스",
-    category: "shoulders",
-    difficulty: "중급",
-    description: "어깨 전반을 키우는 기본 프레스 동작이에요.",
-    targetMuscle: "어깨 · 삼두"
-  },
-  {
-    id: "lateral-raise",
-    name: "사이드 레터럴 레이즈",
-    category: "shoulders",
-    difficulty: "초급",
-    description: "측면 어깨(삼각근 측면)를 집중적으로 자극해요.",
-    targetMuscle: "측면 어깨"
-  },
-  {
-    id: "biceps-curl",
-    name: "바이셉 컬",
-    category: "arms",
-    difficulty: "초급",
-    description: "이두근을 단순하고 확실하게 자극할 수 있어요.",
-    targetMuscle: "이두"
-  },
-  {
-    id: "triceps-pushdown",
-    name: "트라이셉스 푸시다운",
-    category: "arms",
-    difficulty: "초급",
-    description: "삼두를 안전하게 자극하기 좋은 케이블 운동이에요.",
-    targetMuscle: "삼두"
-  },
-  {
-    id: "plank",
-    name: "플랭크",
-    category: "abs",
-    difficulty: "초급",
-    description: "코어 안정성을 길러주는 정적 운동이에요.",
-    targetMuscle: "코어"
-  },
-  {
-    id: "crunch",
-    name: "크런치",
-    category: "abs",
-    difficulty: "초급",
-    description: "복근(상복부)을 집중적으로 수축해요.",
-    targetMuscle: "복근"
-  }
 ];
 
 function dayKeyFromDate(date) {
@@ -235,16 +128,14 @@ function ExerciseModal({ open, exercise, onClose, onRequestAdd, addDisabled }) {
         </div>
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
-          <div className="rounded-3xl border border-[color:var(--c-border)] bg-gradient-to-br from-[color:var(--c-surface-2)] to-[color:var(--c-surface)] p-6">
-            <div className="flex items-center justify-between">
-              <div className="grid h-12 w-12 place-items-center rounded-3xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)]">
-                <Dumbbell size={20} aria-hidden="true" />
-              </div>
+          <div className="space-y-3">
+            <ExerciseMuscleImage
+              name={exercise.name}
+              areas={exercise.muscleAreas}
+            />
+            <div className="flex justify-end">
               <DifficultyPill difficulty={exercise.difficulty} />
             </div>
-            <p className="mt-4 text-sm font-semibold text-[color:var(--c-muted)]">
-              동작 예시(이미지/영상)는 추후 업데이트 예정이에요.
-            </p>
           </div>
 
           <Card className="space-y-2">
@@ -605,9 +496,11 @@ export default function Workout() {
               >
                 <Card className="p-0">
                   <div className="flex items-center gap-4 p-4">
-                    <div className="grid h-14 w-14 place-items-center rounded-3xl border border-[color:var(--c-border)] bg-[color:var(--c-surface-2)] text-[color:var(--c-text)]">
-                      <Dumbbell size={22} aria-hidden="true" />
-                    </div>
+                    <ExerciseMuscleImage
+                      compact
+                      name={ex.name}
+                      areas={ex.muscleAreas}
+                    />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-3">
                         <p className="truncate text-base font-extrabold">

@@ -1,0 +1,170 @@
+export const CATEGORIES = [
+  { key: "all", label: "전체" },
+  { key: "chest", label: "가슴" },
+  { key: "back", label: "등" },
+  { key: "legs", label: "하체" },
+  { key: "shoulders", label: "어깨" },
+  { key: "arms", label: "팔" },
+  { key: "abs", label: "복근" }
+];
+
+export const EXERCISES = [
+  {
+    id: "pushup",
+    name: "푸쉬업",
+    title: "푸쉬업",
+    category: "chest",
+    difficulty: "초급",
+    description: "가슴과 삼두를 함께 강화하는 대표적인 맨몸 운동이에요.",
+    targetMuscle: "가슴 · 삼두 · 코어",
+    target: "가슴 · 삼두 · 코어",
+    tip: "몸을 일직선으로 유지하고 팔꿈치를 45도 각도로 굽혀요.",
+    defaultPlan: "3세트 · 8~12회",
+    muscleAreas: ["chest", "triceps", "abs"]
+  },
+  {
+    id: "bench-press",
+    name: "벤치프레스",
+    title: "벤치프레스",
+    category: "chest",
+    difficulty: "중급",
+    description: "가슴 근육을 집중적으로 자극하는 대표적인 웨이트 운동이에요.",
+    targetMuscle: "가슴 · 삼두 · 전면 어깨",
+    target: "가슴 · 삼두 · 전면 어깨",
+    tip: "견갑을 모아 가슴을 열고, 손목이 꺾이지 않게 바를 밀어 올려요.",
+    defaultPlan: "3~4세트 · 6~10회",
+    muscleAreas: ["chest", "triceps", "shoulders"]
+  },
+  {
+    id: "pullup",
+    name: "풀업",
+    title: "풀업",
+    category: "back",
+    difficulty: "고급",
+    description: "상체 당기는 힘을 키우는 고전적인 운동이에요.",
+    targetMuscle: "광배 · 이두 · 코어",
+    target: "광배 · 이두 · 코어",
+    tip: "어깨를 귀에서 멀리 내리고, 가슴을 바 쪽으로 끌어올려요.",
+    defaultPlan: "3세트 · 가능한 반복",
+    muscleAreas: ["lats", "biceps", "abs"]
+  },
+  {
+    id: "seated-row",
+    name: "시티드 로우",
+    title: "시티드 로우",
+    category: "back",
+    difficulty: "초급",
+    description: "등 중앙을 안정적으로 강화할 수 있어요.",
+    targetMuscle: "등(중부) · 이두",
+    target: "등(중부) · 이두",
+    tip: "허리를 세우고 팔보다 팔꿈치로 뒤를 당긴다는 느낌을 유지해요.",
+    defaultPlan: "3세트 · 10~12회",
+    muscleAreas: ["upperBack", "biceps"]
+  },
+  {
+    id: "squat",
+    name: "스쿼트",
+    title: "스쿼트",
+    category: "legs",
+    difficulty: "중급",
+    description: "하체와 코어를 함께 강화하는 전신 운동이에요.",
+    targetMuscle: "대퇴사두 · 둔근 · 코어",
+    target: "하체 · 둔근 · 코어",
+    tip: "무릎이 안쪽으로 모이지 않게, 가슴을 열고 내려가요.",
+    defaultPlan: "3세트 · 10~15회",
+    muscleAreas: ["quads", "glutes", "abs"]
+  },
+  {
+    id: "lunge",
+    name: "런지",
+    title: "런지",
+    category: "legs",
+    difficulty: "초급",
+    description: "균형과 하체 근력을 함께 잡을 수 있어요.",
+    targetMuscle: "둔근 · 햄스트링 · 대퇴사두",
+    target: "하체 · 균형",
+    tip: "앞무릎은 발끝 위에, 상체는 곧게 유지해요.",
+    defaultPlan: "2~3세트 · 좌/우 10회",
+    muscleAreas: ["quads", "hamstrings", "glutes"]
+  },
+  {
+    id: "overhead-press",
+    name: "오버헤드 프레스",
+    title: "오버헤드 프레스",
+    category: "shoulders",
+    difficulty: "중급",
+    description: "어깨 전반을 키우는 기본 프레스 동작이에요.",
+    targetMuscle: "어깨 · 삼두",
+    target: "어깨 · 삼두",
+    tip: "갈비뼈가 들리지 않게 복부에 힘을 주고 머리 위로 곧게 밀어요.",
+    defaultPlan: "3세트 · 6~10회",
+    muscleAreas: ["shoulders", "triceps", "abs"]
+  },
+  {
+    id: "lateral-raise",
+    name: "사이드 레터럴 레이즈",
+    title: "사이드 레터럴 레이즈",
+    category: "shoulders",
+    difficulty: "초급",
+    description: "측면 어깨(삼각근 측면)를 집중적으로 자극해요.",
+    targetMuscle: "측면 어깨",
+    target: "측면 어깨",
+    tip: "팔꿈치를 살짝 굽히고 어깨 높이까지만 천천히 들어 올려요.",
+    defaultPlan: "3세트 · 12~15회",
+    muscleAreas: ["shoulders"]
+  },
+  {
+    id: "biceps-curl",
+    name: "바이셉 컬",
+    title: "바이셉 컬",
+    category: "arms",
+    difficulty: "초급",
+    description: "이두근을 단순하고 확실하게 자극할 수 있어요.",
+    targetMuscle: "이두",
+    target: "이두",
+    tip: "팔꿈치를 몸 옆에 고정하고 반동 없이 팔을 접어요.",
+    defaultPlan: "3세트 · 10~12회",
+    muscleAreas: ["biceps"]
+  },
+  {
+    id: "triceps-pushdown",
+    name: "트라이셉스 푸시다운",
+    title: "트라이셉스 푸시다운",
+    category: "arms",
+    difficulty: "초급",
+    description: "삼두를 안전하게 자극하기 좋은 케이블 운동이에요.",
+    targetMuscle: "삼두",
+    target: "삼두",
+    tip: "팔꿈치를 몸 옆에 붙이고 아래로 끝까지 밀어 삼두를 수축해요.",
+    defaultPlan: "3세트 · 10~15회",
+    muscleAreas: ["triceps"]
+  },
+  {
+    id: "plank",
+    name: "플랭크",
+    title: "플랭크",
+    category: "abs",
+    difficulty: "초급",
+    description: "코어 안정성을 길러주는 정적 운동이에요.",
+    targetMuscle: "코어",
+    target: "코어 · 어깨 안정화",
+    tip: "허리가 꺾이지 않게 복부에 힘을 주고 버텨요.",
+    defaultPlan: "3세트 · 30~60초",
+    muscleAreas: ["abs", "shoulders"]
+  },
+  {
+    id: "crunch",
+    name: "크런치",
+    title: "크런치",
+    category: "abs",
+    difficulty: "초급",
+    description: "복근(상복부)을 집중적으로 수축해요.",
+    targetMuscle: "복근",
+    target: "복근",
+    tip: "목을 당기지 말고 갈비뼈를 골반 쪽으로 말아 올려요.",
+    defaultPlan: "3세트 · 12~20회",
+    muscleAreas: ["abs"]
+  }
+];
+
+export const EXERCISE_BY_ID = Object.fromEntries(EXERCISES.map((exercise) => [exercise.id, exercise]));

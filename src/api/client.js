@@ -2,6 +2,7 @@ import axios from "axios";
 import { getAuthToken, clearAuthToken } from "@/auth/auth";
 
 const STORAGE_API_BASE_URL_KEY = "moduflow:api-base-url:v1";
+const DEFAULT_API_BASE_URL = "http://3.39.194.42:8080";
 export const API_ERROR_EVENT = "moduflow:api-error";
 
 function normalizeBaseUrl(value) {
@@ -29,7 +30,7 @@ function resolveBaseUrl() {
     // ignore
   }
 
-  return "";
+  return normalizeBaseUrl(DEFAULT_API_BASE_URL);
 }
 
 export function getApiBaseUrl() {

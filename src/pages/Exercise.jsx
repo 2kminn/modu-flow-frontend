@@ -2,40 +2,15 @@ import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-
-const EXERCISES = {
-  squat: {
-    title: "스쿼트",
-    tip: "무릎이 안쪽으로 모이지 않게, 가슴을 열고 내려가요.",
-    target: "하체 · 둔근 · 코어",
-    defaultPlan: "3세트 · 10~15회"
-  },
-  pushup: {
-    title: "푸쉬업",
-    tip: "몸을 일직선으로 유지하고 팔꿈치를 45도 각도로 굽혀요.",
-    target: "가슴 · 삼두 · 코어",
-    defaultPlan: "3세트 · 8~12회"
-  },
-  lunge: {
-    title: "런지",
-    tip: "앞무릎은 발끝 위에, 상체는 곧게 유지해요.",
-    target: "하체 · 균형",
-    defaultPlan: "2~3세트 · 좌/우 10회"
-  },
-  plank: {
-    title: "플랭크",
-    tip: "허리가 꺾이지 않게 복부에 힘을 주고 버텨요.",
-    target: "코어 · 어깨 안정화",
-    defaultPlan: "3세트 · 30~60초"
-  }
-};
+import ExerciseMuscleImage from "@/components/ExerciseMuscleImage";
+import { EXERCISE_BY_ID } from "@/data/exercises";
 
 export default function Exercise() {
   const navigate = useNavigate();
   const { exerciseId } = useParams();
 
   const ex = useMemo(() => {
-    return EXERCISES[exerciseId] ?? null;
+    return EXERCISE_BY_ID[exerciseId] ?? null;
   }, [exerciseId]);
 
   if (!ex) {
@@ -71,7 +46,8 @@ export default function Exercise() {
       </div>
 
       <Card>
-        <p className="text-sm font-semibold text-[color:var(--c-muted)]">운동</p>
+        <ExerciseMuscleImage name={ex.title} areas={ex.muscleAreas} />
+        <p className="mt-4 text-sm font-semibold text-[color:var(--c-muted)]">운동</p>
         <p className="mt-1 text-2xl font-extrabold">{ex.title}</p>
         <p className="mt-3 rounded-2xl bg-[color:var(--c-surface-2)] px-4 py-3 text-sm font-semibold text-[color:var(--c-text)]">
           팁: {ex.tip}

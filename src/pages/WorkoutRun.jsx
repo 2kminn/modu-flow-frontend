@@ -1,8 +1,10 @@
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import ExerciseMuscleImage from "@/components/ExerciseMuscleImage";
 import { Camera, CameraOff, ChevronLeft, ChevronRight, RefreshCw, RotateCcw } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { EXERCISES } from "@/data/exercises";
 import {
   closeNativeCamera,
   isAndroidWebViewBridgeAvailable,
@@ -12,69 +14,6 @@ import {
 
 const ROUTINE_STORAGE_KEY = "moduflow:routines-by-day:v1";
 const DAY_KEYS = new Set(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]);
-
-const EXERCISE_INFO = [
-  {
-    id: "pushup",
-    name: "푸쉬업",
-    description: "가슴과 삼두를 함께 강화하는 대표적인 맨몸 운동이에요."
-  },
-  {
-    id: "bench-press",
-    name: "벤치프레스",
-    description: "가슴 근육을 집중적으로 자극하는 대표적인 웨이트 운동이에요."
-  },
-  {
-    id: "pullup",
-    name: "풀업",
-    description: "상체 당기는 힘을 키우는 고전적인 운동이에요."
-  },
-  {
-    id: "seated-row",
-    name: "시티드 로우",
-    description: "등 중앙을 안정적으로 강화할 수 있어요."
-  },
-  {
-    id: "squat",
-    name: "스쿼트",
-    description: "하체와 코어를 함께 강화하는 전신 운동이에요."
-  },
-  {
-    id: "lunge",
-    name: "런지",
-    description: "균형과 하체 근력을 함께 잡을 수 있어요."
-  },
-  {
-    id: "overhead-press",
-    name: "오버헤드 프레스",
-    description: "어깨 전반을 키우는 기본 프레스 동작이에요."
-  },
-  {
-    id: "lateral-raise",
-    name: "사이드 레터럴 레이즈",
-    description: "측면 어깨(삼각근 측면)를 집중적으로 자극해요."
-  },
-  {
-    id: "biceps-curl",
-    name: "바이셉 컬",
-    description: "이두근을 단순하고 확실하게 자극할 수 있어요."
-  },
-  {
-    id: "triceps-pushdown",
-    name: "트라이셉스 푸시다운",
-    description: "삼두를 안전하게 자극하기 좋은 케이블 운동이에요."
-  },
-  {
-    id: "plank",
-    name: "플랭크",
-    description: "코어 안정성을 길러주는 정적 운동이에요."
-  },
-  {
-    id: "crunch",
-    name: "크런치",
-    description: "복근(상복부)을 집중적으로 수축해요."
-  }
-];
 
 function dayKeyFromDate(date) {
   const map = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
@@ -102,12 +41,12 @@ function loadRoutinesByDay() {
 
 function resolveExerciseInfo(item) {
   const byId = item?.exerciseId
-    ? EXERCISE_INFO.find((ex) => ex.id === item.exerciseId)
+    ? EXERCISES.find((ex) => ex.id === item.exerciseId)
     : null;
   if (byId) return byId;
   const name = typeof item?.name === "string" ? item.name.trim() : "";
   if (!name) return null;
-  return EXERCISE_INFO.find((ex) => ex.name === name) || null;
+  return EXERCISES.find((ex) => ex.name === name) || null;
 }
 
 function analyzePosture() {
@@ -376,17 +315,26 @@ export default function WorkoutRun() {
 
               <div
                 key={currentItem?.id ?? index}
-                className="mt-2 transition duration-200 ease-out"
+                className="mt-2 flex items-start gap-3 transition duration-200 ease-out"
               >
-                <p className="text-xl font-extrabold leading-tight">
-                  {currentItem?.name || "운동 이름"}
-                </p>
-                <p className="mt-1 text-sm font-semibold text-white/75">
-                  {currentInfo?.description || "운동 설명은 준비 중이에요."}
-                </p>
-                <p className="mt-3 text-xs font-semibold text-white/70">
-                  세트: {currentItem?.sets ?? "-"} · 무게: {currentItem?.weight ?? "-"}kg
-                </p>
+                {currentInfo ? (
+                  <ExerciseMuscleImage
+                    compact
+                    name={currentInfo.name}
+                    areas={currentInfo.muscleAreas}
+                  />
+                ) : null}
+                <div className="min-w-0 flex-1">
+                  <p className="text-xl font-extrabold leading-tight">
+                    {currentItem?.name || "운동 이름"}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-white/75">
+                    {currentInfo?.description || "운동 설명은 준비 중이에요."}
+                  </p>
+                  <p className="mt-3 text-xs font-semibold text-white/70">
+                    세트: {currentItem?.sets ?? "-"} · 무게: {currentItem?.weight ?? "-"}kg
+                  </p>
+                </div>
               </div>
             </div>
 
