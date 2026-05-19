@@ -91,6 +91,7 @@ export async function proxyToBackend(req, res, backendPath) {
     res.setHeader("Content-Type", "application/json; charset=utf-8");
     res.end(
       JSON.stringify({
+        code: "PROXY_CONFIGURATION_ERROR",
         message: "Proxy misconfigured: BACKEND_ORIGIN is required in this environment."
       })
     );
@@ -129,8 +130,8 @@ export async function proxyToBackend(req, res, backendPath) {
     res.setHeader("Content-Type", "application/json; charset=utf-8");
     res.end(
       JSON.stringify({
-        message: "Upstream request failed",
-        error: String(e?.message || e)
+        code: "UPSTREAM_REQUEST_FAILED",
+        message: String(e?.message || e) || "Upstream request failed"
       })
     );
   }

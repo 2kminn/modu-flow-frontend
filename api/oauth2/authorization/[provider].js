@@ -13,7 +13,12 @@ export default async function handler(req, res) {
   if (!allowed.has(normalizedProvider)) {
     res.statusCode = 400;
     res.setHeader("Content-Type", "application/json; charset=utf-8");
-    res.end(JSON.stringify({ message: "Unsupported OAuth provider." }));
+    res.end(
+      JSON.stringify({
+        code: "VALIDATION_ERROR",
+        message: "Unsupported OAuth provider."
+      })
+    );
     return;
   }
 

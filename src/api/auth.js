@@ -3,19 +3,11 @@ import { apiClient, getApiBaseUrl, getApiErrorMessage } from "@/api/client";
 const SOCIAL_PROVIDERS = new Set(["google", "kakao", "naver"]);
 export const SOCIAL_LOGIN_RETURN_TO_KEY = "moduflow:social-login-return-to:v1";
 
-function unwrapApiResponse(payload) {
-  if (!payload) return payload;
-  if (payload?.data && Object.prototype.hasOwnProperty.call(payload, "status")) {
-    return payload.data;
-  }
-  return payload;
-}
-
 export async function loginWithEmail({ email, password }) {
   try {
     const normalizedEmail = String(email || "").trim().toLowerCase();
     const res = await apiClient.post("/api/v1/auth/login", { email: normalizedEmail, password });
-    const data = unwrapApiResponse(res?.data);
+    const data = res?.data;
     const accessToken = data?.accessToken;
     if (!accessToken) {
       return {
@@ -85,7 +77,7 @@ export async function signupWithEmail({ email, password }) {
       email: normalizedEmail,
       password
     });
-    const data = unwrapApiResponse(res?.data);
+    const data = res?.data;
     const accessToken = data?.accessToken;
     if (!accessToken) {
       return {
@@ -128,7 +120,7 @@ export async function changePassword({ currentPassword, newPassword, confirmPass
   } catch (e) {
     return {
       ok: false,
-      message: getErrorMessage(e),
+      message: getApiErrorMessage(e),
       httpStatus: e?.response?.status ?? null,
       debug: { response: e?.response?.data ?? null }
     };

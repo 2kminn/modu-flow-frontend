@@ -36,7 +36,6 @@ function getJwtIdentity(token) {
   return (
     payload.sub ??
     payload.userId ??
-    payload.user_id ??
     payload.id ??
     payload.email ??
     payload.username ??

@@ -117,7 +117,7 @@ export const apiClient = axios.create({
 apiClient.interceptors.request.use((config) => {
   if (!apiClient.defaults.baseURL && !config.baseURL) {
     const url = String(config.url || "");
-    if (url.startsWith("/api/") || url.startsWith("/attendance")) {
+    if (url.startsWith("/api/")) {
       const error = new Error("API 주소(VITE_API_BASE_URL)가 설정되지 않았어요.");
       error.userMessage = error.message;
       emitApiError(error.userMessage);

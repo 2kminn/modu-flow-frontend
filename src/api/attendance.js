@@ -1,39 +1,32 @@
 import { apiClient } from "@/api/client";
 
-function unwrapApiData(payload) {
-  if (payload && typeof payload === "object" && Object.prototype.hasOwnProperty.call(payload, "data")) {
-    return payload.data;
-  }
-  return payload;
-}
-
 export async function checkInAttendance({ gymName }) {
-  const res = await apiClient.post("/attendance", { gymName });
-  return unwrapApiData(res?.data);
+  const res = await apiClient.post("/api/v1/attendance", { gymName });
+  return res?.data;
 }
 
 export async function fetchAttendance({ gymName } = {}) {
-  const res = await apiClient.get("/attendance", {
+  const res = await apiClient.get("/api/v1/attendance", {
     params: gymName ? { gymName } : undefined
   });
-  return unwrapApiData(res?.data);
+  return res?.data;
 }
 
 export async function checkOutAttendance(id) {
-  const res = await apiClient.patch(`/attendance/checkout/${id}`);
-  return unwrapApiData(res?.data);
+  const res = await apiClient.patch(`/api/v1/attendance/checkout/${id}`);
+  return res?.data;
 }
 
 export async function fetchCongestion({ gymName }) {
-  const res = await apiClient.get("/attendance/congestion", {
+  const res = await apiClient.get("/api/v1/attendance/congestion", {
     params: { gymName }
   });
-  return unwrapApiData(res?.data);
+  return res?.data;
 }
 
 export async function fetchRecentCongestion({ gymName }) {
-  const res = await apiClient.get("/attendance/congestion/recent", {
+  const res = await apiClient.get("/api/v1/attendance/congestion/recent", {
     params: { gymName }
   });
-  return unwrapApiData(res?.data);
+  return res?.data;
 }
