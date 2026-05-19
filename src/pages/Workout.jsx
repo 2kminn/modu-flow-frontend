@@ -5,7 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 import { validateWorkoutItemDraft } from "@/api/validation";
 import {
   cacheRoutinesToLocalStorage,
-  loadRoutinesFromLocalStorage
+  fetchRoutines,
+  loadRoutinesFromLocalStorage,
+  saveRoutines
 } from "@/api/routines";
 
 const CATEGORIES = [
@@ -240,6 +242,7 @@ function AddToRoutineModal({
   open,
   exercise,
   initialDayKey,
+  saving,
   onClose,
   onConfirm
 }) {
@@ -368,6 +371,7 @@ function AddToRoutineModal({
           <div className="grid gap-2">
             <Button
               type="button"
+              disabled={saving}
               onClick={() =>
                 onConfirm({
                   dayKey,
@@ -377,9 +381,9 @@ function AddToRoutineModal({
                 })
               }
             >
-              추가하기
+              {saving ? "추가 중..." : "추가하기"}
             </Button>
-            <Button type="button" variant="secondary" onClick={onClose}>
+            <Button type="button" variant="secondary" disabled={saving} onClick={onClose}>
               취소
             </Button>
           </div>
@@ -395,6 +399,7 @@ export default function Workout() {
   const [listVisible, setListVisible] = useState(true);
   const [modalExerciseId, setModalExerciseId] = useState(null);
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [savingRoutine, setSavingRoutine] = useState(false);
   const [toast, setToast] = useState(null);
 
   useEffect(() => {
@@ -437,17 +442,8 @@ export default function Workout() {
     setAddModalOpen(true);
   }
 
-  function addToRoutine({ dayKey, sets, reps, weight }) {
-    if (!modalExercise) return;
-    const stored = loadRoutinesFromLocalStorage();
-    const list = Array.isArray(stored?.[dayKey]) ? stored[dayKey] : [];
-    const duplicated = list.some(
-      (it) => it?.exerciseId === modalExercise.id || it?.name === modalExercise.name
-    );
-    if (duplicated) {
-      setToast("이미 루틴에 추가된 운동이에요.");
-      return;
-    }
+  async function addToRoutine({ dayKey, sets, reps, weight }) {
+    if (!modalExercise || savingRoutine) return;
     const validation = validateWorkoutItemDraft({
       name: modalExercise.name,
       exerciseId: modalExercise.id,
@@ -459,22 +455,42 @@ export default function Workout() {
       setToast(validation.message);
       return;
     }
-    const next = { ...(stored || {}) };
-    next[dayKey] = [
-      ...list,
-      {
-        id: createId(),
-        name: validation.item.name,
-        sets: validation.item.sets,
-        reps: validation.item.reps,
-        weight: validation.item.weight,
-        exerciseId: validation.item.exerciseId
+    setSavingRoutine(true);
+    let latestRoutines = null;
+    try {
+      const stored = await fetchRoutines();
+      latestRoutines = stored;
+      const list = Array.isArray(stored?.[dayKey]) ? stored[dayKey] : [];
+      const duplicated = list.some(
+        (it) => it?.exerciseId === modalExercise.id || it?.name === modalExercise.name
+      );
+      if (duplicated) {
+        setToast("이미 루틴에 추가된 운동이에요.");
+        return;
       }
-    ];
-    cacheRoutinesToLocalStorage(next);
-    setToast("루틴에 추가되었습니다.");
-    setAddModalOpen(false);
-    setModalExerciseId(null);
+      const next = { ...(stored || {}) };
+      next[dayKey] = [
+        ...list,
+        {
+          id: createId(),
+          name: validation.item.name,
+          sets: validation.item.sets,
+          reps: validation.item.reps,
+          weight: validation.item.weight,
+          exerciseId: validation.item.exerciseId
+        }
+      ];
+      cacheRoutinesToLocalStorage(next);
+      await saveRoutines(next);
+      setToast("루틴에 추가되었습니다.");
+      setAddModalOpen(false);
+      setModalExerciseId(null);
+    } catch (e) {
+      if (latestRoutines) cacheRoutinesToLocalStorage(latestRoutines);
+      setToast(e?.userMessage || e?.message || "루틴 추가에 실패했어요.");
+    } finally {
+      setSavingRoutine(false);
+    }
   }
 
   return (
@@ -594,6 +610,7 @@ export default function Workout() {
         open={addModalOpen}
         exercise={modalExercise}
         initialDayKey={dayKeyFromDate(new Date())}
+        saving={savingRoutine}
         onClose={() => setAddModalOpen(false)}
         onConfirm={addToRoutine}
       />

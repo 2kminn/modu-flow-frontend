@@ -4,7 +4,7 @@ import { Dumbbell, Pencil, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { openNativeScreen } from "@/native/deeplink";
-import { loadRoutinesFromLocalStorage } from "@/api/routines";
+import { fetchRoutines, loadRoutinesFromLocalStorage } from "@/api/routines";
 
 const AUTO_ATTENDANCE_STORAGE_KEY = "moduflow:auto-attendance:v1";
 const DAY_LABELS = {
@@ -36,6 +36,17 @@ function dayKeyFromDate(date) {
 function resolveExerciseId(name) {
   if (typeof name !== "string") return null;
   return EXERCISE_NAME_TO_ID[name.trim().toLowerCase()] || null;
+}
+
+function normalizeRoutinesByDay(raw) {
+  if (!raw || typeof raw !== "object") return {};
+  const out = Object.create(null);
+  for (const [dayKey, list] of Object.entries(raw)) {
+    if (!Object.prototype.hasOwnProperty.call(DAY_LABELS, dayKey)) continue;
+    if (!Array.isArray(list)) continue;
+    out[dayKey] = list.filter((it) => it && typeof it === "object");
+  }
+  return out;
 }
 
 function CongestionPill({ level, title }) {
@@ -119,17 +130,18 @@ export default function Home() {
   const todayDayKey = useMemo(() => dayKeyFromDate(new Date()), []);
   const [startNotice, setStartNotice] = useState(null);
   const [showRoutineOptions, setShowRoutineOptions] = useState(false);
+  const [routinesByDay, setRoutinesByDay] = useState(() =>
+    normalizeRoutinesByDay(loadRoutinesFromLocalStorage())
+  );
   const hasAnyRoutine = useMemo(() => {
-    const stored = loadRoutinesFromLocalStorage();
-    return Object.values(stored || {}).some(
+    return Object.values(routinesByDay || {}).some(
       (list) => Array.isArray(list) && list.length > 0
     );
-  }, []);
+  }, [routinesByDay]);
   const todayRoutines = useMemo(() => {
-    const stored = loadRoutinesFromLocalStorage();
-    const list = stored?.[todayDayKey];
+    const list = routinesByDay?.[todayDayKey];
     return Array.isArray(list) ? list : [];
-  }, [todayDayKey]);
+  }, [routinesByDay, todayDayKey]);
   const firstExerciseId = useMemo(() => {
     if (!todayRoutines.length) return null;
     return resolveExerciseId(todayRoutines[0]?.name);
@@ -140,6 +152,26 @@ export default function Home() {
     if (!raw) return false;
     return raw === "true";
   });
+
+  useEffect(() => {
+    let cancelled = false;
+    async function syncRoutines() {
+      try {
+        const serverData = await fetchRoutines();
+        if (cancelled) return;
+        setRoutinesByDay(normalizeRoutinesByDay(serverData));
+      } catch (e) {
+        console.warn("[home routines] fetch failed:", e);
+      }
+    }
+
+    syncRoutines();
+    window.addEventListener("focus", syncRoutines);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", syncRoutines);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
