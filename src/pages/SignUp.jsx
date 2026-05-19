@@ -48,7 +48,7 @@ export default function SignUp() {
       return;
     }
 
-    setAuthToken(signupResult.accessToken);
+    setAuthToken(signupResult.accessToken, signupResult.email || email);
     setLoading(false);
     navigate("/", { replace: true });
   }

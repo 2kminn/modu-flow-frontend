@@ -65,7 +65,7 @@ export default function Login() {
       return;
     }
 
-    setAuthToken(result.accessToken);
+    setAuthToken(result.accessToken, result.email);
     navigate(fromPath, { replace: true });
   }
 
@@ -150,7 +150,7 @@ export default function Login() {
             onClick={() => {
               // DEV convenience: bypass backend auth and just set a dummy token.
               // This is only for local/testing flows.
-              setAuthToken("dev-test-token");
+              setAuthToken("dev-test-token", "dev-test");
               navigate(fromPath, { replace: true });
             }}
           >

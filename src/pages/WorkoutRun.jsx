@@ -9,9 +9,7 @@ import {
   onNativeEvent,
   openNativeCamera
 } from "@/native/androidBridge";
-
-const ROUTINE_STORAGE_KEY = "moduflow:routines-by-day:v1";
-const DAY_KEYS = new Set(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]);
+import { loadRoutinesFromLocalStorage } from "@/api/routines";
 
 const EXERCISE_INFO = [
   {
@@ -81,25 +79,6 @@ function dayKeyFromDate(date) {
   return map[date.getDay()];
 }
 
-function loadRoutinesByDay() {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = window.localStorage.getItem(ROUTINE_STORAGE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") return {};
-    const out = Object.create(null);
-    for (const [dayKey, list] of Object.entries(parsed)) {
-      if (!DAY_KEYS.has(dayKey)) continue;
-      if (!Array.isArray(list)) continue;
-      out[dayKey] = list.filter((it) => it && typeof it === "object");
-    }
-    return out;
-  } catch {
-    return {};
-  }
-}
-
 function resolveExerciseInfo(item) {
   const byId = item?.exerciseId
     ? EXERCISE_INFO.find((ex) => ex.id === item.exerciseId)
@@ -126,7 +105,7 @@ export default function WorkoutRun() {
 
   const todayKey = useMemo(() => dayKeyFromDate(new Date()), []);
   const routineList = useMemo(() => {
-    const stored = loadRoutinesByDay();
+    const stored = loadRoutinesFromLocalStorage();
     const list = stored?.[todayKey];
     return Array.isArray(list) ? list : [];
   }, [todayKey]);

@@ -3,8 +3,10 @@ import Button from "@/components/ui/Button";
 import { Dumbbell, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { validateWorkoutItemDraft } from "@/api/validation";
-
-const ROUTINE_STORAGE_KEY = "moduflow:routines-by-day:v1";
+import {
+  cacheRoutinesToLocalStorage,
+  loadRoutinesFromLocalStorage
+} from "@/api/routines";
 
 const CATEGORIES = [
   { key: "all", label: "전체" },
@@ -132,44 +134,6 @@ function dayKeyFromDate(date) {
 
 function createId() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function loadRoutinesByDay() {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = window.localStorage.getItem(ROUTINE_STORAGE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") return {};
-    const out = Object.create(null);
-    const dayKeys = new Set(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]);
-    for (const [dayKey, list] of Object.entries(parsed)) {
-      if (!dayKeys.has(dayKey)) continue;
-      if (!Array.isArray(list)) continue;
-      out[dayKey] = list.filter((it) => it && typeof it === "object");
-    }
-    return out;
-  } catch {
-    return {};
-  }
-}
-
-function saveRoutinesByDay(next) {
-  if (typeof window === "undefined") return;
-  try {
-    const dayKeys = new Set(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]);
-    const out = Object.create(null);
-    if (next && typeof next === "object") {
-      for (const [dayKey, list] of Object.entries(next)) {
-        if (!dayKeys.has(dayKey)) continue;
-        if (!Array.isArray(list)) continue;
-        out[dayKey] = list.filter((it) => it && typeof it === "object");
-      }
-    }
-    window.localStorage.setItem(ROUTINE_STORAGE_KEY, JSON.stringify(out));
-  } catch {
-    // ignore
-  }
 }
 
 function DifficultyPill({ difficulty }) {
@@ -462,7 +426,7 @@ export default function Workout() {
 
   const addDisabled = useMemo(() => {
     if (!modalExercise) return false;
-    const stored = loadRoutinesByDay();
+    const stored = loadRoutinesFromLocalStorage();
     const todayKey = dayKeyFromDate(new Date());
     const list = Array.isArray(stored?.[todayKey]) ? stored[todayKey] : [];
     return list.some((it) => it?.exerciseId === modalExercise.id || it?.name === modalExercise.name);
@@ -475,7 +439,7 @@ export default function Workout() {
 
   function addToRoutine({ dayKey, sets, reps, weight }) {
     if (!modalExercise) return;
-    const stored = loadRoutinesByDay();
+    const stored = loadRoutinesFromLocalStorage();
     const list = Array.isArray(stored?.[dayKey]) ? stored[dayKey] : [];
     const duplicated = list.some(
       (it) => it?.exerciseId === modalExercise.id || it?.name === modalExercise.name
@@ -507,7 +471,7 @@ export default function Workout() {
         exerciseId: validation.item.exerciseId
       }
     ];
-    saveRoutinesByDay(next);
+    cacheRoutinesToLocalStorage(next);
     setToast("루틴에 추가되었습니다.");
     setAddModalOpen(false);
     setModalExerciseId(null);

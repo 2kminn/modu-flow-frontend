@@ -2,10 +2,15 @@ import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
-import { fetchRoutines, saveRoutines } from "@/api/routines";
+import {
+  cacheRoutinesToLocalStorage,
+  fetchRoutines,
+  loadRoutinesFromLocalStorage,
+  removeLegacyRoutineCache,
+  saveRoutines
+} from "@/api/routines";
 import { validateWorkoutItemDraft } from "@/api/validation";
 
-const STORAGE_KEY = "moduflow:routines-by-day:v1";
 const DAYS = [
   { key: "mon", label: "월" },
   { key: "tue", label: "화" },
@@ -51,18 +56,6 @@ function sanitizeRoutinesByDay(raw) {
     out[dayKey] = list.map(sanitizeRoutine).filter(Boolean);
   }
   return out;
-}
-
-function loadRoutinesByDay() {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    return sanitizeRoutinesByDay(parsed);
-  } catch {
-    return {};
-  }
 }
 
 function dayKeyFromDate(date) {
@@ -164,7 +157,7 @@ export default function Routines() {
   const todayKey = useMemo(() => dayKeyFromDate(new Date()), []);
   const [selectedDay, setSelectedDay] = useState(todayKey);
   const [routinesByDay, setRoutinesByDay] = useState(() => {
-    const stored = sanitizeRoutinesByDay(loadRoutinesByDay());
+    const stored = sanitizeRoutinesByDay(loadRoutinesFromLocalStorage());
     if (Object.keys(stored).length > 0) return stored;
     return Object.create(null);
   });
@@ -238,15 +231,8 @@ export default function Routines() {
   }, [routinesByDay]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(sanitizeRoutinesByDay(routinesByDay))
-      );
-    } catch {
-      // ignore
-    }
+    cacheRoutinesToLocalStorage(sanitizeRoutinesByDay(routinesByDay));
+    removeLegacyRoutineCache();
   }, [routinesByDay]);
 
   function startEdit(item) {

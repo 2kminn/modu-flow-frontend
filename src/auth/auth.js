@@ -1,24 +1,25 @@
 const TOKEN_KEY = "auth_token";
+const ACCOUNT_KEY = "auth_account";
 
-function safeGet(storage) {
+function safeGet(storage, key = TOKEN_KEY) {
   try {
-    return storage.getItem(TOKEN_KEY);
+    return storage.getItem(key);
   } catch {
     return null;
   }
 }
 
-function safeSet(storage, token) {
+function safeSet(storage, key, value) {
   try {
-    storage.setItem(TOKEN_KEY, token);
+    storage.setItem(key, value);
   } catch {
     // ignore
   }
 }
 
-function safeRemove(storage) {
+function safeRemove(storage, key = TOKEN_KEY) {
   try {
-    storage.removeItem(TOKEN_KEY);
+    storage.removeItem(key);
   } catch {
     // ignore
   }
@@ -35,12 +36,22 @@ export function getAuthToken() {
   return null;
 }
 
-export function setAuthToken(token) {
-  safeSet(sessionStorage, token);
+export function getStoredAuthIdentity() {
+  return safeGet(sessionStorage, ACCOUNT_KEY) || null;
+}
+
+export function setAuthToken(token, accountHint) {
+  safeSet(sessionStorage, TOKEN_KEY, token);
+  const identity = String(accountHint || "").trim().toLowerCase();
+  if (identity) safeSet(sessionStorage, ACCOUNT_KEY, identity);
+  else safeRemove(sessionStorage, ACCOUNT_KEY);
   safeRemove(localStorage);
+  safeRemove(localStorage, ACCOUNT_KEY);
 }
 
 export function clearAuthToken() {
   safeRemove(sessionStorage);
+  safeRemove(sessionStorage, ACCOUNT_KEY);
   safeRemove(localStorage);
+  safeRemove(localStorage, ACCOUNT_KEY);
 }
