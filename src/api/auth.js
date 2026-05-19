@@ -3,6 +3,10 @@ import { apiClient, getApiBaseUrl, getApiErrorMessage } from "@/api/client";
 const SOCIAL_PROVIDERS = new Set(["google", "kakao", "naver"]);
 export const SOCIAL_LOGIN_RETURN_TO_KEY = "moduflow:social-login-return-to:v1";
 
+function normalizeOrigin(value) {
+  return String(value || "").trim().replace(/\/+$/, "");
+}
+
 export async function loginWithEmail({ email, password }) {
   try {
     const normalizedEmail = String(email || "").trim().toLowerCase();
@@ -56,7 +60,9 @@ export function getSocialLoginUrl(provider) {
     };
   }
 
-  const baseUrl = getApiBaseUrl();
+  const baseUrl =
+    normalizeOrigin(import.meta.env.VITE_API_BASE_URL) ||
+    getApiBaseUrl();
   const path = `/oauth2/authorization/${normalizedProvider}`;
 
   return {
