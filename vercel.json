@@ -1,6 +1,12 @@
 {
+  "rewrites": [
+    {
+      "source": "/api/v1/:path*",
+      "destination": "/api/proxy?path=:path*"
+    }
+  ],
   "functions": {
-    "api/api/v1/[...path].js": { "maxDuration": 10 },
+    "api/proxy.js": { "maxDuration": 10 },
     "api/oauth2/authorization/[provider].js": { "maxDuration": 10 }
   }
 }

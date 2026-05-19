@@ -12,8 +12,8 @@ function normalizeBaseUrl(value) {
 function resolveBaseUrl() {
   const envUrl = normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL);
   if (typeof window !== "undefined" && window.location?.protocol === "https:") {
-    if (!envUrl && !import.meta.env.DEV) return "/api";
-    if (envUrl.startsWith("http://")) return "/api";
+    if (!envUrl && !import.meta.env.DEV) return "";
+    if (envUrl.startsWith("http://")) return "";
   }
   if (envUrl) return envUrl;
 
@@ -33,7 +33,7 @@ function resolveBaseUrl() {
     // ignore
   }
 
-  if (!import.meta.env.DEV) return "/api";
+  if (!import.meta.env.DEV) return "";
 
   return "";
 }
@@ -117,7 +117,7 @@ export const apiClient = axios.create({
 apiClient.interceptors.request.use((config) => {
   if (!apiClient.defaults.baseURL && !config.baseURL) {
     const url = String(config.url || "");
-    if (url.startsWith("/api/")) {
+    if (import.meta.env.DEV && url.startsWith("/api/")) {
       const error = new Error("API 주소(VITE_API_BASE_URL)가 설정되지 않았어요.");
       error.userMessage = error.message;
       emitApiError(error.userMessage);

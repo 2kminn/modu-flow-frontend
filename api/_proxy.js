@@ -11,6 +11,23 @@ function joinUrl(origin, path) {
   return `${o}/${p}`;
 }
 
+function appendQueryParams(url, query) {
+  if (!query || typeof query !== "object") return url;
+  const out = new URL(url);
+  for (const [key, value] of Object.entries(query)) {
+    if (key === "path") continue;
+    if (value == null) continue;
+    if (Array.isArray(value)) {
+      value.forEach((it) => {
+        if (it != null) out.searchParams.append(key, String(it));
+      });
+      continue;
+    }
+    out.searchParams.append(key, String(value));
+  }
+  return out.toString();
+}
+
 function resolveBackendOrigin() {
   const fromEnv = normalizeOrigin(process.env.BACKEND_ORIGIN);
   if (fromEnv) return fromEnv;
@@ -97,7 +114,7 @@ export async function proxyToBackend(req, res, backendPath) {
     );
     return;
   }
-  const targetUrl = joinUrl(origin, backendPath);
+  const targetUrl = appendQueryParams(joinUrl(origin, backendPath), req.query);
 
   const headers = { ...req.headers };
   delete headers.host;
