@@ -57,16 +57,11 @@ export function getSocialLoginUrl(provider) {
   }
 
   const baseUrl = getApiBaseUrl();
-  if (!baseUrl) {
-    return {
-      ok: false,
-      message: "소셜 로그인을 시작하려면 VITE_API_BASE_URL 설정이 필요해요."
-    };
-  }
+  const prefix = baseUrl || "";
 
   return {
     ok: true,
-    url: `${baseUrl}/oauth2/authorization/${normalizedProvider}`
+    url: `${prefix}/oauth2/authorization/${normalizedProvider}`
   };
 }
 

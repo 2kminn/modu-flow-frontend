@@ -3,8 +3,8 @@ import Card from "@/components/ui/Card";
 import { Dumbbell, Pencil, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { openNativeScreen } from "@/native/deeplink";
 import { fetchRoutines, loadRoutinesFromLocalStorage } from "@/api/routines";
+import { startNativeWorkout } from "@/native/androidBridge";
 
 const AUTO_ATTENDANCE_STORAGE_KEY = "moduflow:auto-attendance:v1";
 const DAY_LABELS = {
@@ -36,6 +36,13 @@ function dayKeyFromDate(date) {
 function resolveExerciseId(name) {
   if (typeof name !== "string") return null;
   return EXERCISE_NAME_TO_ID[name.trim().toLowerCase()] || null;
+}
+
+function resolveRoutineExerciseId(item) {
+  if (typeof item?.exerciseId === "string" && item.exerciseId.trim()) {
+    return item.exerciseId.trim();
+  }
+  return resolveExerciseId(item?.name);
 }
 
 function normalizeRoutinesByDay(raw) {
@@ -142,9 +149,8 @@ export default function Home() {
     const list = routinesByDay?.[todayDayKey];
     return Array.isArray(list) ? list : [];
   }, [routinesByDay, todayDayKey]);
-  const firstExerciseId = useMemo(() => {
-    if (!todayRoutines.length) return null;
-    return resolveExerciseId(todayRoutines[0]?.name);
+  const todayExerciseIds = useMemo(() => {
+    return todayRoutines.map(resolveRoutineExerciseId).filter(Boolean);
   }, [todayRoutines]);
   const [autoAttendanceEnabled, setAutoAttendanceEnabled] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -302,12 +308,8 @@ export default function Home() {
                 className="py-5 text-lg"
                 onClick={() => {
                   if (todayRoutines.length) {
-                    const opened = openNativeScreen({
-                      path: "/workout/run",
-                      params: { source: "pwa" },
-                      fallbackUrl: `${window.location.origin}/workout/run`
-                    });
-                    if (!opened) navigate("/workout/run");
+                    const started = startNativeWorkout(todayExerciseIds);
+                    if (!started) navigate("/workout/run");
                   } else {
                     setStartNotice(
                       "루틴이 설정되지 않았습니다."
