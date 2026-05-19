@@ -57,11 +57,11 @@ export function getSocialLoginUrl(provider) {
   }
 
   const baseUrl = getApiBaseUrl();
-  const prefix = baseUrl || "";
+  const path = `/oauth2/authorization/${normalizedProvider}`;
 
   return {
     ok: true,
-    url: `${prefix}/oauth2/authorization/${normalizedProvider}`
+    url: baseUrl ? `${baseUrl}${path}` : `/api${path}`
   };
 }
 
