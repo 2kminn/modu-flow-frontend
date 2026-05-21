@@ -1,5 +1,5 @@
 // Default is only meant for local/dev. In production, always set BACKEND_ORIGIN.
-const DEFAULT_BACKEND_ORIGIN = "http://3.39.194.42:8080";
+const DEFAULT_BACKEND_ORIGIN = "https://3-39-194-42.sslip.io";
 
 function normalizeOrigin(value) {
   return String(value || "").trim().replace(/\/+$/, "");

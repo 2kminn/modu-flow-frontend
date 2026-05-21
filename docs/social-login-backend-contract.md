@@ -25,7 +25,7 @@
 예시:
 
 ```text
-https://api.example.com/oauth2/authorization/google
+https://3-39-194-42.sslip.io/oauth2/authorization/google
 ```
 
 ## Backend Responsibilities
@@ -78,7 +78,7 @@ https://frontend.example.com/oauth/callback?error={message}
 프론트 `.env.local`:
 
 ```text
-VITE_API_BASE_URL=http://localhost:8080
+VITE_API_BASE_URL=https://3-39-194-42.sslip.io
 ```
 
 백엔드 성공 redirect:

@@ -14,7 +14,7 @@ npm run dev
 1) `.env.local` 생성(권장) 또는 `.env` 수정
 
 ```bash
-VITE_API_BASE_URL=https://api.example.com
+VITE_API_BASE_URL=https://3-39-194-42.sslip.io
 ```
 
 2) 개발 서버 재시작

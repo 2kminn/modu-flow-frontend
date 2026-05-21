@@ -7,13 +7,23 @@ import { DEV_TEST_AUTH_TOKEN, setAuthToken } from "@/auth/auth";
 import { Eye, EyeOff } from "lucide-react";
 import { getSocialLoginUrl, loginWithEmail, SOCIAL_LOGIN_RETURN_TO_KEY } from "@/api/auth";
 
+function safeRedirectPath(value) {
+  if (!value || typeof value !== "string") return "/";
+  if (!value.startsWith("/") || value.startsWith("//")) return "/";
+  return value;
+}
+
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const fromPath = useMemo(() => {
     const state = location.state;
-    return state?.from?.pathname || "/";
-  }, [location.state]);
+    if (state?.from?.pathname) {
+      return safeRedirectPath(`${state.from.pathname}${state.from.search || ""}`);
+    }
+    const params = new URLSearchParams(location.search);
+    return safeRedirectPath(params.get("redirect"));
+  }, [location.search, location.state]);
   const prefillEmail = useMemo(() => {
     const state = location.state;
     return state?.email ? String(state.email) : "";
@@ -42,7 +52,7 @@ export default function Login() {
       // ignore
     }
 
-    window.location.assign(result.url);
+    window.location.href = result.url;
   }
 
   async function runLogin(nextEmail, nextPassword) {

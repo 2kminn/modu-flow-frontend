@@ -2,6 +2,7 @@ import axios from "axios";
 import { getAuthToken, clearAuthToken } from "@/auth/auth";
 
 const STORAGE_API_BASE_URL_KEY = "moduflow:api-base-url:v1";
+export const DEFAULT_API_BASE_URL = "https://3-39-194-42.sslip.io";
 export const API_ERROR_EVENT = "moduflow:api-error";
 
 function normalizeBaseUrl(value) {
@@ -9,33 +10,35 @@ function normalizeBaseUrl(value) {
   return String(value).trim().replace(/\/+$/, "");
 }
 
+function isHttpsPage() {
+  return typeof window !== "undefined" && window.location?.protocol === "https:";
+}
+
+function canUseBaseUrl(value) {
+  return Boolean(value && !(isHttpsPage() && value.startsWith("http://")));
+}
+
 function resolveBaseUrl() {
   const envUrl = normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL);
-  if (typeof window !== "undefined" && window.location?.protocol === "https:") {
-    if (!envUrl && !import.meta.env.DEV) return "";
-    if (envUrl.startsWith("http://")) return "";
-  }
-  if (envUrl) return envUrl;
+  if (canUseBaseUrl(envUrl)) return envUrl;
 
   if (typeof window === "undefined") return "";
 
   const fromGlobal = normalizeBaseUrl(
     window.__MODUFLOW_API_BASE_URL__ ?? window.__MODUFLOW_CONFIG__?.apiBaseUrl
   );
-  if (fromGlobal) return fromGlobal;
+  if (canUseBaseUrl(fromGlobal)) return fromGlobal;
 
   try {
     const fromStorage = normalizeBaseUrl(
       window.localStorage.getItem(STORAGE_API_BASE_URL_KEY)
     );
-    if (fromStorage) return fromStorage;
+    if (canUseBaseUrl(fromStorage)) return fromStorage;
   } catch {
     // ignore
   }
 
-  if (!import.meta.env.DEV) return "";
-
-  return "";
+  return DEFAULT_API_BASE_URL;
 }
 
 export function getApiBaseUrl() {
@@ -46,12 +49,15 @@ export function setApiBaseUrl(nextBaseUrl) {
   if (typeof window === "undefined") return;
   const value = normalizeBaseUrl(nextBaseUrl);
   try {
-    if (!value) window.localStorage.removeItem(STORAGE_API_BASE_URL_KEY);
-    else window.localStorage.setItem(STORAGE_API_BASE_URL_KEY, value);
+    if (!value || !canUseBaseUrl(value)) {
+      window.localStorage.removeItem(STORAGE_API_BASE_URL_KEY);
+    } else {
+      window.localStorage.setItem(STORAGE_API_BASE_URL_KEY, value);
+    }
   } catch {
     // ignore
   }
-  apiClient.defaults.baseURL = value || undefined;
+  apiClient.defaults.baseURL = canUseBaseUrl(value) ? value : DEFAULT_API_BASE_URL;
 }
 
 export function getApiErrorMessage(error, fallback = "요청에 실패했어요.") {

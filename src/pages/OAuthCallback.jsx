@@ -58,7 +58,7 @@ export default function OAuthCallback() {
     }
 
     const token = normalizeToken(
-      params.get("accessToken") || params.get("token")
+      params.get("accessToken") || params.get("token") || params.get("access_token")
     );
 
     if (!token) {

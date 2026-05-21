@@ -12,7 +12,7 @@ registerServiceWorker();
 applyTheme(getStoredTheme() ?? "light");
 
 // Optional runtime override:
-//   https://your-frontend/login?apiBaseUrl=http://3.39.194.42:8080
+//   https://your-frontend/login?apiBaseUrl=https://3-39-194-42.sslip.io
 // This helps local/mobile testing override the build-time VITE_API_BASE_URL.
 try {
   const params = new URLSearchParams(window.location.search);
