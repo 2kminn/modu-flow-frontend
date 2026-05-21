@@ -38,7 +38,8 @@ const EXERCISES = [
     category: "chest",
     difficulty: "초급",
     description: "가슴과 삼두를 함께 강화하는 대표적인 맨몸 운동이에요.",
-    targetMuscle: "가슴 · 삼두 · 코어"
+    targetMuscle: "가슴 · 삼두 · 코어",
+    targetMuscles: ["chest", "triceps", "shoulder"]
   },
   {
     id: "bench-press",
@@ -46,7 +47,8 @@ const EXERCISES = [
     category: "chest",
     difficulty: "중급",
     description: "가슴 근육을 집중적으로 자극하는 대표적인 웨이트 운동이에요.",
-    targetMuscle: "가슴 · 삼두 · 전면 어깨"
+    targetMuscle: "가슴 · 삼두 · 전면 어깨",
+    targetMuscles: ["chest", "triceps", "shoulder"]
   },
   {
     id: "pullup",
@@ -54,7 +56,8 @@ const EXERCISES = [
     category: "back",
     difficulty: "고급",
     description: "상체 당기는 힘을 키우는 고전적인 운동이에요.",
-    targetMuscle: "광배 · 이두 · 코어"
+    targetMuscle: "광배 · 이두 · 코어",
+    targetMuscles: ["back", "biceps"]
   },
   {
     id: "seated-row",
@@ -62,7 +65,8 @@ const EXERCISES = [
     category: "back",
     difficulty: "초급",
     description: "등 중앙을 안정적으로 강화할 수 있어요.",
-    targetMuscle: "등(중부) · 이두"
+    targetMuscle: "등(중부) · 이두",
+    targetMuscles: ["back", "biceps"]
   },
   {
     id: "squat",
@@ -70,7 +74,8 @@ const EXERCISES = [
     category: "legs",
     difficulty: "중급",
     description: "하체와 코어를 함께 강화하는 전신 운동이에요.",
-    targetMuscle: "대퇴사두 · 둔근 · 코어"
+    targetMuscle: "대퇴사두 · 둔근 · 코어",
+    targetMuscles: ["quad", "glute", "hamstring"]
   },
   {
     id: "lunge",
@@ -78,7 +83,8 @@ const EXERCISES = [
     category: "legs",
     difficulty: "초급",
     description: "균형과 하체 근력을 함께 잡을 수 있어요.",
-    targetMuscle: "둔근 · 햄스트링 · 대퇴사두"
+    targetMuscle: "둔근 · 햄스트링 · 대퇴사두",
+    targetMuscles: ["quad", "glute", "hamstring"]
   },
   {
     id: "overhead-press",
@@ -86,7 +92,8 @@ const EXERCISES = [
     category: "shoulders",
     difficulty: "중급",
     description: "어깨 전반을 키우는 기본 프레스 동작이에요.",
-    targetMuscle: "어깨 · 삼두"
+    targetMuscle: "어깨 · 삼두",
+    targetMuscles: ["shoulder", "triceps"]
   },
   {
     id: "lateral-raise",
@@ -94,7 +101,8 @@ const EXERCISES = [
     category: "shoulders",
     difficulty: "초급",
     description: "측면 어깨(삼각근 측면)를 집중적으로 자극해요.",
-    targetMuscle: "측면 어깨"
+    targetMuscle: "측면 어깨",
+    targetMuscles: ["shoulder"]
   },
   {
     id: "biceps-curl",
@@ -102,7 +110,8 @@ const EXERCISES = [
     category: "arms",
     difficulty: "초급",
     description: "이두근을 단순하고 확실하게 자극할 수 있어요.",
-    targetMuscle: "이두"
+    targetMuscle: "이두",
+    targetMuscles: ["biceps"]
   },
   {
     id: "triceps-pushdown",
@@ -110,7 +119,8 @@ const EXERCISES = [
     category: "arms",
     difficulty: "초급",
     description: "삼두를 안전하게 자극하기 좋은 케이블 운동이에요.",
-    targetMuscle: "삼두"
+    targetMuscle: "삼두",
+    targetMuscles: ["triceps"]
   },
   {
     id: "plank",
@@ -118,7 +128,8 @@ const EXERCISES = [
     category: "abs",
     difficulty: "초급",
     description: "코어 안정성을 길러주는 정적 운동이에요.",
-    targetMuscle: "코어"
+    targetMuscle: "코어",
+    targetMuscles: ["abs", "shoulder"]
   },
   {
     id: "crunch",
@@ -126,7 +137,8 @@ const EXERCISES = [
     category: "abs",
     difficulty: "초급",
     description: "복근(상복부)을 집중적으로 수축해요.",
-    targetMuscle: "복근"
+    targetMuscle: "복근",
+    targetMuscles: ["abs"]
   }
 ];
 
@@ -214,7 +226,10 @@ function ExerciseModal({ open, exercise, onClose, onRequestAdd, addDisabled }) {
             </p>
           </div>
 
-          <MuscleTargetMap exerciseId={exercise.id} />
+          <MuscleTargetMap
+            exerciseName={exercise.name}
+            targetMuscles={exercise.targetMuscles}
+          />
 
           <Card className="space-y-2">
             <p className="text-sm font-extrabold text-[color:var(--c-text)]">
