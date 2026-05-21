@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import FloatingLabelInput from "@/components/ui/FloatingLabelInput";
-import { setAuthToken } from "@/auth/auth";
+import { DEV_TEST_AUTH_TOKEN, setAuthToken } from "@/auth/auth";
 import { Eye, EyeOff } from "lucide-react";
 import { getSocialLoginUrl, loginWithEmail, SOCIAL_LOGIN_RETURN_TO_KEY } from "@/api/auth";
 
@@ -150,7 +150,7 @@ export default function Login() {
             onClick={() => {
               // DEV convenience: bypass backend auth and just set a dummy token.
               // This is only for local/testing flows.
-              setAuthToken("dev-test-token", "dev-test");
+              setAuthToken(DEV_TEST_AUTH_TOKEN, "dev-test");
               navigate(fromPath, { replace: true });
             }}
           >

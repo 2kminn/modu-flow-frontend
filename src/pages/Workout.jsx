@@ -1,5 +1,6 @@
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
+import MuscleTargetMap from "@/components/exercise/MuscleTargetMap";
 import { Dumbbell, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { validateWorkoutItemDraft } from "@/api/validation";
@@ -212,6 +213,8 @@ function ExerciseModal({ open, exercise, onClose, onRequestAdd, addDisabled }) {
               동작 예시(이미지/영상)는 추후 업데이트 예정이에요.
             </p>
           </div>
+
+          <MuscleTargetMap exerciseId={exercise.id} />
 
           <Card className="space-y-2">
             <p className="text-sm font-extrabold text-[color:var(--c-text)]">

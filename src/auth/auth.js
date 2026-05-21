@@ -1,5 +1,6 @@
 const TOKEN_KEY = "auth_token";
 const ACCOUNT_KEY = "auth_account";
+export const DEV_TEST_AUTH_TOKEN = "dev-test-token";
 
 function safeGet(storage, key = TOKEN_KEY) {
   try {
@@ -34,6 +35,10 @@ export function getAuthToken() {
     safeRemove(localStorage);
   }
   return null;
+}
+
+export function isDevTestAuthToken(token = getAuthToken()) {
+  return Boolean(import.meta.env.DEV && token === DEV_TEST_AUTH_TOKEN);
 }
 
 export function getStoredAuthIdentity() {

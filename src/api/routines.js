@@ -1,6 +1,6 @@
 import { apiClient } from "@/api/client";
 import { validateWorkoutItemDraft } from "@/api/validation";
-import { getAuthToken, getStoredAuthIdentity } from "@/auth/auth";
+import { getAuthToken, getStoredAuthIdentity, isDevTestAuthToken } from "@/auth/auth";
 
 const ROUTINE_STORAGE_KEY = "moduflow:routines-by-day:v1";
 const ROUTINE_STORAGE_KEY_PREFIX = "moduflow:routines-by-day:v1:";
@@ -111,6 +111,10 @@ export function removeLegacyRoutineCache() {
 }
 
 export async function fetchRoutines() {
+  if (isDevTestAuthToken()) {
+    return loadRoutinesFromLocalStorage();
+  }
+
   const res = await apiClient.get("/api/v1/routines");
   const data = res?.data;
   if (data && typeof data === "object") {
@@ -153,6 +157,11 @@ export function buildRoutinesPayload(routinesByDay) {
 
 export async function saveRoutines(routinesByDay) {
   const payload = buildRoutinesPayload(routinesByDay);
+  if (isDevTestAuthToken()) {
+    cacheRoutinesToLocalStorage(routinesByDay);
+    return payload;
+  }
+
   const res = await apiClient.put("/api/v1/routines", payload);
   cacheRoutinesToLocalStorage(routinesByDay);
   return res?.data;
