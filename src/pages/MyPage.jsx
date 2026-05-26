@@ -3,9 +3,9 @@ import Card from "@/components/ui/Card";
 import { clearAuthToken } from "@/auth/auth";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight } from "lucide-react";
+import { CalendarCheck, ChevronRight, Lock, LogOut, UserCircle } from "lucide-react";
 
-function MenuRow({ label, description, onClick }) {
+function MenuRow({ label, description, onClick, icon: Icon }) {
   return (
     <button
       type="button"
@@ -16,15 +16,22 @@ function MenuRow({ label, description, onClick }) {
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--c-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--c-surface)]"
       ].join(" ")}
     >
-      <div className="min-w-0">
-        <p className="truncate text-sm font-extrabold text-[color:var(--c-text)]">
-          {label}
-        </p>
-        {description ? (
-          <p className="mt-1 truncate text-xs font-semibold text-[color:var(--c-muted-2)]">
-            {description}
-          </p>
+      <div className="flex min-w-0 items-center gap-3">
+        {Icon ? (
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)]">
+            <Icon size={18} aria-hidden="true" />
+          </span>
         ) : null}
+        <div className="min-w-0">
+          <p className="truncate text-sm font-extrabold text-[color:var(--c-text)]">
+            {label}
+          </p>
+          {description ? (
+            <p className="mt-1 truncate text-xs font-semibold text-[color:var(--c-muted-2)]">
+              {description}
+            </p>
+          ) : null}
+        </div>
       </div>
       <span className="shrink-0 text-[color:var(--c-muted-2)]">
         <ChevronRight size={20} aria-hidden="true" />
@@ -83,8 +90,8 @@ export default function MyPage() {
   };
 
   const menus = [
-    { label: "루틴 설정", to: "/mypage/routines", description: "자주 하는 루틴 관리" },
-    { label: "비밀번호 변경", to: "/mypage/password", description: "보안 설정" }
+    { label: "루틴 설정", to: "/mypage/routines", description: "자주 하는 루틴 관리", icon: CalendarCheck },
+    { label: "비밀번호 변경", to: "/mypage/password", description: "보안 설정", icon: Lock }
   ];
 
   const handleLogout = () => {
@@ -94,24 +101,24 @@ export default function MyPage() {
 
   return (
     <section className="space-y-4">
-      <Card className="p-0">
+      <Card className="overflow-hidden bg-[linear-gradient(135deg,var(--c-primary),var(--c-purple))] p-0">
         <div className="flex items-center justify-between gap-4 p-4">
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-[color:var(--c-muted)]">
+            <p className="text-sm font-semibold text-white/75">
               프로필
             </p>
-            <p className="mt-1 truncate text-xl font-extrabold text-[color:var(--c-text)]">
+            <p className="mt-1 truncate text-xl font-extrabold text-white">
               {user.name}
             </p>
-            <p className="mt-1 truncate text-xs font-semibold text-[color:var(--c-muted-2)]">
+            <p className="mt-1 truncate text-xs font-semibold text-white/75">
               {user.bio}
             </p>
           </div>
           <div
-            className="grid h-14 w-14 shrink-0 place-items-center rounded-3xl border border-[color:var(--c-border)] bg-[color:var(--c-surface-2)] transition-[background-color,border-color] duration-200"
+            className="grid h-14 w-14 shrink-0 place-items-center rounded-3xl border border-white/25 bg-white/15 text-white transition-[background-color,border-color] duration-200"
             aria-hidden="true"
           >
-            <span className="h-6 w-6 rounded-2xl bg-[color:var(--c-surface)]" />
+            <UserCircle size={30} aria-hidden="true" />
           </div>
         </div>
       </Card>
@@ -132,6 +139,7 @@ export default function MyPage() {
               <MenuRow
                 label={m.label}
                 description={m.description}
+                icon={m.icon}
                 onClick={() => navigate(m.to)}
               />
             </li>
@@ -153,8 +161,10 @@ export default function MyPage() {
           <Button
             type="button"
             variant="secondary"
+            className="gap-2 border-[color:var(--c-primary)] text-[color:var(--c-primary)]"
             onClick={() => setIsLogoutDialogOpen(true)}
           >
+            <LogOut size={18} aria-hidden="true" />
             로그아웃
           </Button>
         </div>

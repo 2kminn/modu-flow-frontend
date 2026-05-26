@@ -4,8 +4,8 @@ export default function Button({ variant = "primary", className, ...props }) {
 
   const styles =
     variant === "primary"
-      ? "border border-black bg-black text-white hover:bg-neutral-700 dark:border-neutral-200 dark:bg-neutral-100 dark:text-black dark:hover:bg-white"
-      : "border border-[color:var(--c-border-strong)] bg-transparent text-[color:var(--c-text)] hover:bg-[color:var(--c-surface-2)]";
+      ? "border border-transparent bg-[linear-gradient(135deg,var(--c-primary),var(--c-primary-strong))] text-white shadow-[0_10px_20px_rgba(37,99,235,0.18)] hover:brightness-105"
+      : "border border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-[color:var(--c-text)] hover:border-[color:var(--c-border-strong)] hover:bg-[color:var(--c-primary-soft)]";
 
   return <button className={[base, styles, className].filter(Boolean).join(" ")} {...props} />;
 }

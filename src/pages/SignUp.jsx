@@ -4,7 +4,7 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import FloatingLabelInput from "@/components/ui/FloatingLabelInput";
 import { setAuthToken } from "@/auth/auth";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { signupWithEmail } from "@/api/auth";
 
 export default function SignUp() {
@@ -55,7 +55,7 @@ export default function SignUp() {
 
   return (
     <Card>
-      <p className="text-[11px] font-extrabold tracking-wide text-[color:var(--c-muted-2)]">
+      <p className="bg-[linear-gradient(135deg,var(--c-primary),var(--c-purple))] bg-clip-text text-[11px] font-extrabold tracking-wide text-transparent">
         moduflow
       </p>
       <h2 className="mt-1 text-lg font-bold">회원가입</h2>
@@ -70,7 +70,8 @@ export default function SignUp() {
           type="email"
           inputMode="email"
           autoComplete="email"
-          inputClassName="focus:border-black focus:ring-0"
+          inputClassName="focus:border-[color:var(--c-primary)] focus:ring-2 focus:ring-[color:var(--c-focus-ring)]"
+          leftAdornment={<Mail size={18} aria-hidden="true" />}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
@@ -80,7 +81,8 @@ export default function SignUp() {
           label="비밀번호"
           type={showPassword ? "text" : "password"}
           autoComplete="new-password"
-          inputClassName="focus:border-black focus:ring-0"
+          inputClassName="focus:border-[color:var(--c-primary)] focus:ring-2 focus:ring-[color:var(--c-focus-ring)]"
+          leftAdornment={<Lock size={18} aria-hidden="true" />}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           rightAdornment={
@@ -104,7 +106,8 @@ export default function SignUp() {
           label="비밀번호 확인"
           type={showConfirmPassword ? "text" : "password"}
           autoComplete="new-password"
-          inputClassName="focus:border-black focus:ring-0"
+          inputClassName="focus:border-[color:var(--c-primary)] focus:ring-2 focus:ring-[color:var(--c-focus-ring)]"
+          leftAdornment={<Lock size={18} aria-hidden="true" />}
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           rightAdornment={
@@ -143,7 +146,7 @@ export default function SignUp() {
 
         <p className="text-center text-sm text-[color:var(--c-muted)]">
           이미 계정이 있나요?{" "}
-          <Link className="font-semibold text-[color:var(--c-text)] underline decoration-[color:var(--c-border-strong)] underline-offset-4 hover:decoration-[color:var(--c-text)]" to="/login">
+          <Link className="font-semibold text-[color:var(--c-primary)] underline decoration-[color:var(--c-border-strong)] underline-offset-4 hover:text-[color:var(--c-purple)]" to="/login">
             로그인
           </Link>
         </p>

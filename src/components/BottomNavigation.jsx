@@ -6,7 +6,7 @@ function HomeIcon(active) {
     <Home
       size={24}
       aria-hidden="true"
-      className={active ? "text-[color:var(--c-text)]" : "text-[color:var(--c-muted-2)]"}
+      className={active ? "text-[color:var(--c-primary)]" : "text-[color:var(--c-muted)]"}
     />
   );
 }
@@ -16,7 +16,7 @@ function DumbbellIcon(active) {
     <Dumbbell
       size={24}
       aria-hidden="true"
-      className={active ? "text-[color:var(--c-text)]" : "text-[color:var(--c-muted-2)]"}
+      className={active ? "text-[color:var(--c-primary)]" : "text-[color:var(--c-muted)]"}
     />
   );
 }
@@ -26,7 +26,7 @@ function ChartIcon(active) {
     <BarChart3
       size={24}
       aria-hidden="true"
-      className={active ? "text-[color:var(--c-text)]" : "text-[color:var(--c-muted-2)]"}
+      className={active ? "text-[color:var(--c-primary)]" : "text-[color:var(--c-muted)]"}
     />
   );
 }
@@ -36,7 +36,7 @@ function UserIcon(active) {
     <User
       size={24}
       aria-hidden="true"
-      className={active ? "text-[color:var(--c-text)]" : "text-[color:var(--c-muted-2)]"}
+      className={active ? "text-[color:var(--c-primary)]" : "text-[color:var(--c-muted)]"}
     />
   );
 }
@@ -66,8 +66,8 @@ export default function BottomNavigation() {
                     "flex h-full flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2",
                     "active:scale-[0.98] transition duration-200 hover:bg-[color:var(--c-surface-2)]",
                     isActive
-                      ? "text-[color:var(--c-text)] font-extrabold"
-                      : "text-[color:var(--c-muted)] hover:text-[color:var(--c-text)]"
+                      ? "text-[color:var(--c-primary)] font-extrabold"
+                      : "text-[color:var(--c-muted)] hover:text-[color:var(--c-primary)]"
                   ].join(" ")
                 }
               >
@@ -76,7 +76,7 @@ export default function BottomNavigation() {
                     <span
                       className={[
                         "flex h-11 w-14 items-center justify-center rounded-2xl",
-                        isActive ? "bg-[color:var(--c-surface-2)]" : "bg-transparent"
+                        isActive ? "bg-[color:var(--c-primary-soft)]" : "bg-transparent"
                       ].join(" ")}
                     >
                       {tab.icon(isActive)}

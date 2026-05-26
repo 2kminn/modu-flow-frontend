@@ -47,8 +47,8 @@ export default function RootLayout() {
                   }}
                   className={[
                     "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl",
-                    "border border-[color:var(--c-border)] bg-[color:var(--c-surface)] shadow-sm",
-                    "transition duration-200 hover:bg-[color:var(--c-surface-2)] active:scale-[0.98]",
+                    "border border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-[color:var(--c-primary)] shadow-[0_8px_18px_rgba(15,23,42,0.06)]",
+                    "transition duration-200 hover:bg-[color:var(--c-primary-soft)] active:scale-[0.98]",
                     "focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--c-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--c-surface)]"
                   ].join(" ")}
                   aria-label="뒤로가기"

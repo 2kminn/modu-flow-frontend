@@ -4,7 +4,7 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import FloatingLabelInput from "@/components/ui/FloatingLabelInput";
 import { DEV_TEST_AUTH_TOKEN, setAuthToken } from "@/auth/auth";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Lock, LogIn, Mail } from "lucide-react";
 import { getSocialLoginUrl, loginWithEmail, SOCIAL_LOGIN_RETURN_TO_KEY } from "@/api/auth";
 
 function safeRedirectPath(value) {
@@ -86,7 +86,7 @@ export default function Login() {
 
   return (
     <Card>
-      <p className="text-[11px] font-extrabold tracking-wide text-[color:var(--c-muted-2)]">
+      <p className="bg-[linear-gradient(135deg,var(--c-primary),var(--c-purple))] bg-clip-text text-[11px] font-extrabold tracking-wide text-transparent">
         moduflow
       </p>
       <h2 className="mt-1 text-lg font-bold">로그인</h2>
@@ -101,7 +101,8 @@ export default function Login() {
           type="email"
           inputMode="email"
           autoComplete="email"
-          inputClassName="focus:border-black focus:ring-0"
+          inputClassName="focus:border-[color:var(--c-primary)] focus:ring-2 focus:ring-[color:var(--c-focus-ring)]"
+          leftAdornment={<Mail size={18} aria-hidden="true" />}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
@@ -111,7 +112,8 @@ export default function Login() {
           label="비밀번호"
           type={showPassword ? "text" : "password"}
           autoComplete="current-password"
-          inputClassName="focus:border-black focus:ring-0"
+          inputClassName="focus:border-[color:var(--c-primary)] focus:ring-2 focus:ring-[color:var(--c-focus-ring)]"
+          leftAdornment={<Lock size={18} aria-hidden="true" />}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           rightAdornment={
@@ -143,12 +145,13 @@ export default function Login() {
         ) : null}
 
         <div className="text-center text-sm">
-          <Link className="font-semibold text-[color:var(--c-text)] underline decoration-[color:var(--c-border-strong)] underline-offset-4 hover:decoration-[color:var(--c-text)]" to="/forgot-password">
+          <Link className="font-semibold text-[color:var(--c-primary)] underline decoration-[color:var(--c-border-strong)] underline-offset-4 hover:text-[color:var(--c-purple)]" to="/forgot-password">
             비밀번호 찾기
           </Link>
         </div>
 
-        <Button type="submit" disabled={loading}>
+        <Button type="submit" disabled={loading} className="gap-2 bg-[linear-gradient(135deg,var(--c-primary),var(--c-purple))]">
+          <LogIn size={18} aria-hidden="true" />
           {loading ? "로그인 중..." : "로그인"}
         </Button>
 
@@ -239,7 +242,7 @@ export default function Login() {
 
         <p className="pt-1 text-center text-sm text-[color:var(--c-muted)]">
           계정이 없나요?{" "}
-          <Link className="font-semibold text-[color:var(--c-text)] underline decoration-[color:var(--c-border-strong)] underline-offset-4 hover:decoration-[color:var(--c-text)]" to="/signup">
+          <Link className="font-semibold text-[color:var(--c-purple)] underline decoration-[color:var(--c-border-strong)] underline-offset-4 hover:text-[color:var(--c-primary)]" to="/signup">
             회원가입
           </Link>
         </p>

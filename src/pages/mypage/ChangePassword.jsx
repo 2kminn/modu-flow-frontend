@@ -108,7 +108,7 @@ export default function ChangePassword() {
           <p
             className={[
               "text-xs font-semibold",
-              status.type === "error" ? "text-red-500" : "text-emerald-600"
+              status.type === "error" ? "text-red-500" : "text-[color:var(--c-success)]"
             ].join(" ")}
           >
             {status.message}

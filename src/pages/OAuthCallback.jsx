@@ -89,7 +89,7 @@ export default function OAuthCallback() {
         <div className="mt-5">
           <Link
             to="/login"
-            className="inline-flex w-full items-center justify-center rounded-2xl border border-black bg-black px-5 py-4 text-base font-semibold text-white shadow-sm transition duration-200 hover:bg-neutral-700 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--c-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--c-surface)]"
+            className="inline-flex w-full items-center justify-center rounded-2xl border border-transparent bg-[linear-gradient(135deg,var(--c-primary),var(--c-primary-strong))] px-5 py-4 text-base font-semibold text-white shadow-sm transition duration-200 hover:brightness-105 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--c-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--c-surface)]"
           >
             로그인으로 돌아가기
           </Link>

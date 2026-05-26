@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import FloatingLabelInput from "@/components/ui/FloatingLabelInput";
+import { Mail } from "lucide-react";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -31,7 +32,8 @@ export default function ForgotPassword() {
           type="email"
           inputMode="email"
           autoComplete="email"
-          inputClassName="focus:border-black focus:ring-0"
+          inputClassName="focus:border-[color:var(--c-primary)] focus:ring-2 focus:ring-[color:var(--c-focus-ring)]"
+          leftAdornment={<Mail size={18} aria-hidden="true" />}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
@@ -46,7 +48,7 @@ export default function ForgotPassword() {
 
         <p className="text-center text-sm text-[color:var(--c-muted)]">
           로그인으로 돌아가기{" "}
-          <Link className="font-semibold text-[color:var(--c-text)] underline decoration-[color:var(--c-border-strong)] underline-offset-4 hover:decoration-[color:var(--c-text)]" to="/login">
+          <Link className="font-semibold text-[color:var(--c-primary)] underline decoration-[color:var(--c-border-strong)] underline-offset-4 hover:text-[color:var(--c-purple)]" to="/login">
             로그인
           </Link>
         </p>

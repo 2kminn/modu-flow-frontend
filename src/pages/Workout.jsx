@@ -1,7 +1,7 @@
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import MuscleTargetMap from "@/components/exercise/MuscleTargetMap";
-import { Dumbbell, Search, X } from "lucide-react";
+import { ChevronRight, Dumbbell, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { validateWorkoutItemDraft } from "@/api/validation";
 import {
@@ -154,10 +154,10 @@ function createId() {
 function DifficultyPill({ difficulty }) {
   const style =
     difficulty === "고급"
-      ? "bg-[color:var(--c-level-high)]/15 text-[color:var(--c-level-high)] border-[color:var(--c-level-high)]/30"
+      ? "bg-red-50 text-[color:var(--c-danger)] border-red-100 dark:bg-red-500/10 dark:border-red-500/25"
       : difficulty === "중급"
-        ? "bg-[color:var(--c-level-mid)]/15 text-[color:var(--c-level-mid)] border-[color:var(--c-level-mid)]/30"
-        : "bg-[color:var(--c-level-low)]/15 text-[color:var(--c-level-low)] border-[color:var(--c-level-low)]/30";
+        ? "bg-[color:var(--c-purple-soft)] text-[color:var(--c-purple)] border-[color:var(--c-purple)]/20"
+        : "bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)] border-[color:var(--c-primary)]/20";
 
   return (
     <span
@@ -169,6 +169,16 @@ function DifficultyPill({ difficulty }) {
       {difficulty}
     </span>
   );
+}
+
+function getExerciseIconClass(exercise) {
+  if (exercise.id === "bench-press") {
+    return "border-[color:var(--c-purple)]/20 bg-[color:var(--c-purple-soft)] text-[color:var(--c-purple)]";
+  }
+  if (exercise.id === "pullup" || exercise.difficulty === "고급") {
+    return "border-red-100 bg-red-50 text-[color:var(--c-danger)] dark:border-red-500/25 dark:bg-red-500/10";
+  }
+  return "border-[color:var(--c-primary)]/20 bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)]";
 }
 
 function ExerciseModal({ open, exercise, onClose, onRequestAdd, addDisabled }) {
@@ -334,7 +344,7 @@ function AddToRoutineModal({
                     className={[
                       "h-10 rounded-2xl border text-xs font-extrabold transition",
                       active
-                        ? "border-black bg-black text-white dark:border-neutral-200 dark:bg-neutral-100 dark:text-black"
+                        ? "border-[color:var(--c-primary)] bg-[color:var(--c-primary)] text-white"
                         : "border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-[color:var(--c-text)] hover:bg-[color:var(--c-surface-2)]"
                     ].join(" ")}
                   >
@@ -538,8 +548,8 @@ export default function Workout() {
                   className={[
                     "shrink-0 rounded-2xl border px-4 py-2 text-sm font-extrabold transition",
                     active
-                      ? "border-black bg-black text-white dark:border-neutral-200 dark:bg-neutral-100 dark:text-black"
-                      : "border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-[color:var(--c-text)] hover:bg-[color:var(--c-surface-2)]"
+                      ? "border-[color:var(--c-primary)] bg-[color:var(--c-primary)] text-white"
+                      : "border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-[color:var(--c-text)] hover:bg-[color:var(--c-primary-soft)]"
                   ].join(" ")}
                 >
                   {cat.label}
@@ -549,8 +559,8 @@ export default function Workout() {
           </div>
         </Card>
 
-        <div className="flex items-center gap-2 rounded-3xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 py-3 shadow-sm">
-          <Search size={18} className="text-[color:var(--c-muted-2)]" aria-hidden="true" />
+        <div className="flex items-center gap-2 rounded-3xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 py-3 shadow-sm transition focus-within:border-[color:var(--c-primary)] focus-within:ring-2 focus-within:ring-[color:var(--c-focus-ring)]">
+          <Search size={18} className="text-[color:var(--c-primary)]" aria-hidden="true" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -583,9 +593,9 @@ export default function Workout() {
                 onClick={() => setModalExerciseId(ex.id)}
                 className="block w-full text-left"
               >
-                <Card className="p-0">
+                <Card className="p-0 transition hover:border-[color:var(--c-border-strong)] hover:bg-[color:var(--c-primary-soft)] active:bg-[color:var(--c-primary-soft)]">
                   <div className="flex items-center gap-4 p-4">
-                    <div className="grid h-14 w-14 place-items-center rounded-3xl border border-[color:var(--c-border)] bg-[color:var(--c-surface-2)] text-[color:var(--c-text)]">
+                    <div className={`grid h-14 w-14 place-items-center rounded-3xl border ${getExerciseIconClass(ex)}`}>
                       <Dumbbell size={22} aria-hidden="true" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -599,6 +609,11 @@ export default function Workout() {
                         {ex.targetMuscle}
                       </p>
                     </div>
+                    <ChevronRight
+                      size={20}
+                      className="shrink-0 text-[color:var(--c-muted-2)]"
+                      aria-hidden="true"
+                    />
                   </div>
                 </Card>
               </button>

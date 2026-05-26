@@ -31,7 +31,7 @@ export default function ThemeToggle({ className }) {
         aria-hidden="true"
         className={[
           "absolute top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full border shadow-sm transition-transform",
-          "border-[color:var(--c-border)] bg-[color:var(--c-surface-2)]",
+          "border-[color:var(--c-border-strong)] bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)]",
           isDark ? "translate-x-[36px]" : "translate-x-[4px]"
         ].join(" ")}
       >

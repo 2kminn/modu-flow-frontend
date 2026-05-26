@@ -1,5 +1,4 @@
 import {
-  DEFAULT_API_BASE_URL,
   apiClient,
   getApiBaseUrl,
   getApiErrorMessage
@@ -62,10 +61,11 @@ export function getSocialLoginUrl(provider) {
   }
 
   const path = `/oauth2/authorization/${normalizedProvider}`;
+  const baseUrl = getApiBaseUrl();
 
   return {
     ok: true,
-    url: `${DEFAULT_API_BASE_URL}${path}`
+    url: `${baseUrl}${path}`
   };
 }
 

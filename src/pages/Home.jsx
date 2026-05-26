@@ -1,10 +1,14 @@
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-import { Dumbbell, Pencil, X } from "lucide-react";
+import { BedDouble, CheckCircle, Dumbbell, Pencil, X, Zap } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchRecentCongestion, updateCurrentLocation } from "@/api/attendance";
-import { fetchRoutines, loadRoutinesFromLocalStorage } from "@/api/routines";
+import {
+  fetchRoutines,
+  loadRoutineRestDaysFromLocalStorage,
+  loadRoutinesFromLocalStorage
+} from "@/api/routines";
 import { startNativeWorkout } from "@/native/androidBridge";
 
 const AUTO_ATTENDANCE_STORAGE_KEY = "moduflow:auto-attendance:v1";
@@ -198,7 +202,7 @@ function CongestionPill({ level, title, loading }) {
   const ui = map[level] ?? map.mid;
 
   return (
-    <div className="rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface-2)] px-3 py-2 transition-[background-color,border-color] duration-200">
+    <div className="rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-primary-soft)] px-3 py-2 transition-[background-color,border-color] duration-200">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-xs font-extrabold text-[color:var(--c-muted)]">
@@ -226,7 +230,9 @@ function AutoAttendanceToggle({ enabled, onChange }) {
       onClick={() => onChange(!enabled)}
       className={[
         "relative inline-flex h-11 w-[96px] items-center rounded-full border shadow-sm transition duration-200 active:scale-[0.98] hover:bg-[color:var(--c-surface-2)]",
-        "border-[color:var(--c-border)] bg-[color:var(--c-surface)]"
+        enabled
+          ? "border-[color:var(--c-border-strong)] bg-[color:var(--c-primary-soft)]"
+          : "border-[color:var(--c-border)] bg-[color:var(--c-surface)]"
       ].join(" ")}
     >
       <span className="absolute left-3 text-[11px] font-extrabold text-[color:var(--c-muted-2)]">
@@ -239,11 +245,13 @@ function AutoAttendanceToggle({ enabled, onChange }) {
         aria-hidden="true"
         className={[
           "absolute top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full border shadow-sm transition-transform",
-          "border-[color:var(--c-border)] bg-[color:var(--c-surface-2)]",
+          enabled
+            ? "border-[color:var(--c-primary)] bg-[color:var(--c-primary)] text-white"
+            : "border-[color:var(--c-border)] bg-[color:var(--c-surface-2)]",
           enabled ? "translate-x-[56px]" : "translate-x-[4px]"
         ].join(" ")}
       >
-        <span className="text-[11px] font-extrabold text-[color:var(--c-text)]">
+        <span className="text-[11px] font-extrabold">
           {enabled ? "ON" : "OFF"}
         </span>
       </span>
@@ -268,15 +276,18 @@ export default function Home() {
   const [routinesByDay, setRoutinesByDay] = useState(() =>
     normalizeRoutinesByDay(loadRoutinesFromLocalStorage())
   );
+  const [restDays, setRestDays] = useState(() => loadRoutineRestDaysFromLocalStorage());
+  const isTodayRestDay = restDays.includes(todayDayKey);
   const hasAnyRoutine = useMemo(() => {
     return Object.values(routinesByDay || {}).some(
       (list) => Array.isArray(list) && list.length > 0
     );
   }, [routinesByDay]);
   const todayRoutines = useMemo(() => {
+    if (isTodayRestDay) return [];
     const list = routinesByDay?.[todayDayKey];
     return Array.isArray(list) ? list : [];
-  }, [routinesByDay, todayDayKey]);
+  }, [isTodayRestDay, routinesByDay, todayDayKey]);
   const todayExerciseIds = useMemo(() => {
     return todayRoutines.map(resolveRoutineExerciseId).filter(Boolean);
   }, [todayRoutines]);
@@ -294,16 +305,26 @@ export default function Home() {
         const serverData = await fetchRoutines();
         if (cancelled) return;
         setRoutinesByDay(normalizeRoutinesByDay(serverData));
+        if (Array.isArray(serverData?.restDays)) {
+          setRestDays(serverData.restDays);
+        }
       } catch (e) {
         console.warn("[home routines] fetch failed:", e);
       }
     }
+    function syncRestDays() {
+      setRestDays(loadRoutineRestDaysFromLocalStorage());
+    }
 
     syncRoutines();
     window.addEventListener("focus", syncRoutines);
+    window.addEventListener("storage", syncRestDays);
+    window.addEventListener("moduflow:routine-rest-days", syncRestDays);
     return () => {
       cancelled = true;
       window.removeEventListener("focus", syncRoutines);
+      window.removeEventListener("storage", syncRestDays);
+      window.removeEventListener("moduflow:routine-rest-days", syncRestDays);
     };
   }, []);
 
@@ -417,9 +438,9 @@ export default function Home() {
             </h2>
           </div>
           <div className="shrink-0 text-right">
-            <div className="inline-flex items-center gap-2 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-3 py-2 shadow-sm">
-              <span className="h-2.5 w-2.5 rounded-full bg-[color:var(--c-text)]" />
-              <span className="text-xs font-extrabold text-[color:var(--c-text)]">
+            <div className="inline-flex items-center gap-2 rounded-2xl border border-[color:var(--c-border-strong)] bg-[color:var(--c-primary-soft)] px-3 py-2 shadow-sm">
+              <CheckCircle size={15} className="text-[color:var(--c-primary)]" aria-hidden="true" />
+              <span className="text-xs font-extrabold text-[color:var(--c-primary)]">
                 {attendance.status}
               </span>
             </div>
@@ -429,20 +450,48 @@ export default function Home() {
           </div>
         </div>
 
-        <Card className="p-0">
+        <Card className="overflow-hidden bg-[linear-gradient(135deg,var(--c-primary-soft),var(--c-surface))] p-0">
           <div className="p-4">
-            <p className="text-sm font-semibold text-[color:var(--c-muted)]">
-              오늘도 한 걸음
-            </p>
-            <p className="mt-1 text-lg font-extrabold">
-              운동을 시작해볼까요?
-            </p>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-[color:var(--c-muted)]">
+                  오늘도 한 걸음
+                </p>
+                <p className="mt-1 text-lg font-extrabold">
+                  운동을 시작해볼까요?
+                </p>
+              </div>
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[color:var(--c-border-strong)] bg-white/80 text-[color:var(--c-primary)] shadow-sm dark:bg-white/10">
+                <Dumbbell size={21} aria-hidden="true" />
+              </div>
+            </div>
 
             <div className="mt-4 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] p-3">
               <p className="text-xs font-extrabold text-[color:var(--c-muted)]">
                 오늘 루틴 ({DAY_LABELS[todayDayKey] || ""})
               </p>
-              {todayRoutines.length ? (
+              {isTodayRestDay ? (
+                <>
+                  <div className="mt-2 rounded-2xl border border-[color:var(--c-primary)]/20 bg-[color:var(--c-primary-soft)] px-3 py-3">
+                    <p className="text-sm font-extrabold text-[color:var(--c-primary)]">
+                      오늘은 쉬는 날이에요.
+                    </p>
+                    <p className="mt-1 text-xs font-semibold text-[color:var(--c-muted-2)]">
+                      휴식일은 기록 캘린더와 출석률 계산에 반영돼요.
+                    </p>
+                  </div>
+                  <div className="mt-3">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="py-3 text-sm"
+                      onClick={() => navigate("/mypage/routines")}
+                    >
+                      휴식일 수정
+                    </Button>
+                  </div>
+                </>
+              ) : todayRoutines.length ? (
                 <>
                   <ul className="mt-2 space-y-1.5">
                     {todayRoutines.slice(0, 3).map((it) => (
@@ -506,9 +555,11 @@ export default function Home() {
             <div className="mt-4">
               <Button
                 type="button"
-                className="py-5 text-lg"
+                className="gap-2 py-5 text-lg"
                 onClick={() => {
-                  if (todayRoutines.length) {
+                  if (isTodayRestDay) {
+                    setStartNotice("오늘은 쉬는 날로 설정되어 있습니다.");
+                  } else if (todayRoutines.length) {
                     const started = startNativeWorkout(todayExerciseIds);
                     if (!started) navigate("/workout/run");
                   } else {
@@ -518,7 +569,12 @@ export default function Home() {
                   }
                 }}
               >
-                운동 시작
+                {isTodayRestDay ? (
+                  <BedDouble size={20} aria-hidden="true" />
+                ) : (
+                  <Zap size={20} aria-hidden="true" />
+                )}
+                {isTodayRestDay ? "쉬는 날" : "운동 시작"}
               </Button>
             </div>
           </div>

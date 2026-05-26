@@ -174,7 +174,7 @@ function WorkoutListModal({
                             setDraft(null);
                             setDraftError("");
                           }}
-                          className="h-11 flex-1 rounded-2xl bg-[color:var(--c-text)] px-4 text-sm font-extrabold text-[color:var(--c-bg)] shadow-sm transition active:scale-[0.98]"
+                          className="h-11 flex-1 rounded-2xl bg-[linear-gradient(135deg,var(--c-primary),var(--c-primary-strong))] px-4 text-sm font-extrabold text-white shadow-sm transition active:scale-[0.98]"
                         >
                           저장
                         </button>
@@ -354,10 +354,12 @@ export default function Stats() {
     fetchRestDays();
     window.addEventListener("focus", syncRestDays);
     window.addEventListener("storage", syncRestDays);
+    window.addEventListener("moduflow:routine-rest-days", syncRestDays);
     return () => {
       cancelled = true;
       window.removeEventListener("focus", syncRestDays);
       window.removeEventListener("storage", syncRestDays);
+      window.removeEventListener("moduflow:routine-rest-days", syncRestDays);
     };
   }, []);
 
@@ -528,6 +530,7 @@ export default function Stats() {
                   const dateStr = `${monthLabel}-${String(day).padStart(2, "0")}`;
                   const hasWorkout = Boolean(workoutByDate[dateStr]?.length);
                   const isRestDay = restDateSet.has(dateStr);
+                  const isToday = dateStr === todayLabel;
                   return (
                     <button
                       key={dateStr}
@@ -536,14 +539,19 @@ export default function Stats() {
                       className={[
                         "flex aspect-square flex-col items-center justify-center rounded-2xl text-xs font-extrabold transition active:scale-[0.98]",
                         hasWorkout
-                          ? "bg-[color:var(--c-text)] text-[color:var(--c-bg)] hover:opacity-90"
+                          ? "bg-[color:var(--c-primary)] text-white hover:opacity-90"
                           : isRestDay
-                            ? "border border-emerald-500/35 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/15 dark:text-emerald-300"
-                          : "bg-[color:var(--c-surface)] text-[color:var(--c-muted-2)] hover:bg-[color:var(--c-surface)]/80"
+                            ? "border border-[color:var(--c-primary)]/20 bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)] hover:bg-[color:var(--c-primary-soft)]"
+                          : "bg-[color:var(--c-surface)] text-[color:var(--c-muted-2)] hover:bg-[color:var(--c-surface)]/80",
+                        isToday ? "ring-2 ring-[color:var(--c-purple)] ring-offset-2 ring-offset-[color:var(--c-surface-2)]" : "",
+                        selectedDate === dateStr ? "ring-2 ring-[color:var(--c-purple)] ring-offset-2 ring-offset-[color:var(--c-surface-2)]" : ""
                       ].join(" ")}
-                      aria-label={`${dateStr}${hasWorkout ? " 운동 기록 있음" : ""}${isRestDay ? " 쉬는 날" : ""}`}
+                      aria-label={`${dateStr}${isToday ? " 오늘" : ""}${hasWorkout ? " 운동 기록 있음" : ""}${isRestDay ? " 쉬는 날" : ""}`}
                     >
                       <span>{day}</span>
+                      {isToday ? (
+                        <span className="mt-0.5 text-[10px] leading-none">오늘</span>
+                      ) : null}
                       {isRestDay ? (
                         <span className="mt-0.5 text-[10px] leading-none">휴</span>
                       ) : null}
@@ -551,9 +559,21 @@ export default function Stats() {
                   );
                 })}
               </div>
-              <p className="mt-3 text-xs font-semibold text-[color:var(--c-muted-2)]">
-                검정은 운동 기록, 초록색 휴 표시는 쉬는 날이에요. (기준일: {todayLabel})
-              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold text-[color:var(--c-muted-2)]">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-[color:var(--c-primary)]" />
+                  운동 기록
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-[color:var(--c-primary-soft)] ring-1 ring-[color:var(--c-primary)]/30" />
+                  쉬는 날
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-white ring-1 ring-[color:var(--c-border)] dark:bg-[color:var(--c-surface)]" />
+                  미기록
+                </span>
+                <span>(기준일: {todayLabel})</span>
+              </div>
             </div>
           </div>
         </Card>

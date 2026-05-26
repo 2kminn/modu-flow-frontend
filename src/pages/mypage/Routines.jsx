@@ -1,7 +1,7 @@
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BedDouble, Check, Pencil, Plus, Trash2, X } from "lucide-react";
+import { BedDouble, Check, Dumbbell, Pencil, Plus, Trash2, X } from "lucide-react";
 import {
   cacheRoutineRestDaysToLocalStorage,
   cacheRoutinesToLocalStorage,
@@ -80,8 +80,8 @@ function DaySelectionBar({ value, onChange }) {
               "shrink-0 rounded-full border px-3 py-2 text-sm font-extrabold transition",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--c-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--c-surface)]",
               active
-                ? "border-black bg-black text-white dark:border-neutral-200 dark:bg-neutral-100 dark:text-black"
-                : "border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-[color:var(--c-muted)] hover:bg-[color:var(--c-surface-2)] hover:text-[color:var(--c-text)]"
+                ? "border-[color:var(--c-primary)] bg-[color:var(--c-primary)] text-white"
+                : "border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-[color:var(--c-muted)] hover:bg-[color:var(--c-primary-soft)] hover:text-[color:var(--c-primary)]"
             ].join(" ")}
           >
             {d.label}
@@ -414,10 +414,11 @@ export default function Routines() {
               <Button
                 type="button"
                 variant="secondary"
-                className="w-auto px-4 py-3 text-sm"
+                className="w-auto gap-2 px-4 py-3 text-sm"
                 onClick={addRoutine}
               >
-                + 추가
+                <Plus size={16} aria-hidden="true" />
+                추가
               </Button>
             </div>
           ) : null}
@@ -432,12 +433,12 @@ export default function Routines() {
             "flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition active:scale-[0.99]",
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--c-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--c-surface)]",
             isSelectedDayRest
-              ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+              ? "border-[color:var(--c-primary)]/35 bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)]"
               : "border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-[color:var(--c-text)] hover:bg-[color:var(--c-surface-2)]"
           ].join(" ")}
         >
           <span className="flex min-w-0 items-center gap-3">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[color:var(--c-surface-2)]">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)]">
               <BedDouble size={18} aria-hidden="true" />
             </span>
             <span className="min-w-0">
@@ -454,7 +455,7 @@ export default function Routines() {
             className={[
               "relative h-7 w-12 shrink-0 rounded-full border transition",
               isSelectedDayRest
-                ? "border-emerald-500 bg-emerald-500"
+                ? "border-[color:var(--c-primary)] bg-[color:var(--c-primary)]"
                 : "border-[color:var(--c-border)] bg-[color:var(--c-surface-2)]"
             ].join(" ")}
           >
@@ -468,11 +469,11 @@ export default function Routines() {
         </button>
 
         {isSelectedDayRest ? (
-          <div className="rounded-3xl border border-dashed border-emerald-500/35 bg-emerald-500/10 p-8 text-center">
+          <div className="rounded-3xl border border-dashed border-[color:var(--c-primary)]/35 bg-[color:var(--c-primary-soft)] p-8 text-center">
             <BedDouble
               size={24}
               aria-hidden="true"
-              className="mx-auto text-emerald-700 dark:text-emerald-300"
+              className="mx-auto text-[color:var(--c-primary)]"
             />
             <p className="mt-3 text-sm font-extrabold text-[color:var(--c-text)]">
               {selectedDayLabel}요일은 쉬는 날이에요.
@@ -488,6 +489,11 @@ export default function Routines() {
               return (
                 <li key={it.id}>
                   <Card className="flex items-start justify-between gap-3">
+                    {!editing ? (
+                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[color:var(--c-purple-soft)] text-[color:var(--c-purple)]">
+                        <Dumbbell size={18} aria-hidden="true" />
+                      </div>
+                    ) : null}
                     <div className="min-w-0 flex-1">
                       {editing ? (
                         <div className="space-y-2">
@@ -620,6 +626,7 @@ export default function Routines() {
           <Button
             type="button"
             variant="secondary"
+            className="border-[color:var(--c-purple)] text-[color:var(--c-purple)]"
             onClick={() => setIsResetDialogOpen(true)}
           >
             {selectedDayLabel}요일 루틴 초기화

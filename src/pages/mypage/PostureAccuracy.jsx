@@ -14,7 +14,7 @@ function Row({ label, value }) {
       </div>
       <div className="mt-2 h-2 overflow-hidden rounded-full bg-[color:var(--c-surface)]">
         <div
-          className="h-full rounded-full bg-[color:var(--c-text)]"
+          className="h-full rounded-full bg-[linear-gradient(90deg,var(--c-primary),var(--c-purple))]"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -53,7 +53,7 @@ export default function PostureAccuracy() {
             </p>
           </div>
           <div
-            className="grid h-14 w-14 place-items-center rounded-3xl border border-[color:var(--c-border)] bg-[color:var(--c-surface-2)] text-[color:var(--c-text)] transition-[background-color,border-color] duration-200"
+            className="grid h-14 w-14 place-items-center rounded-3xl border border-[color:var(--c-border-strong)] bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)] transition-[background-color,border-color] duration-200"
             aria-hidden="true"
           >
             <svg width="26" height="26" viewBox="0 0 24 24">

@@ -69,6 +69,16 @@ function extractRestDays(data) {
   return [];
 }
 
+function hasRestDays(data) {
+  if (!data || typeof data !== "object") return false;
+  if (Array.isArray(data.restDays)) return true;
+  return Boolean(
+    data.routines &&
+      typeof data.routines === "object" &&
+      Array.isArray(data.routines.restDays)
+  );
+}
+
 function extractRoutinesByDay(data) {
   if (!data || typeof data !== "object") return {};
   const source =
@@ -148,6 +158,11 @@ export function cacheRoutineRestDaysToLocalStorage(restDays) {
       getRoutineRestDaysStorageKey(),
       JSON.stringify(safeRestDays)
     );
+    window.dispatchEvent(
+      new CustomEvent("moduflow:routine-rest-days", {
+        detail: { restDays: safeRestDays }
+      })
+    );
   } catch {
     // ignore
   }
@@ -173,11 +188,14 @@ export async function fetchRoutines() {
   const res = await apiClient.get("/api/v1/routines");
   const data = res?.data;
   if (data && typeof data === "object") {
+    const restDays = hasRestDays(data)
+      ? extractRestDays(data)
+      : loadRoutineRestDaysFromLocalStorage();
     cacheRoutinesToLocalStorage(data);
-    cacheRoutineRestDaysToLocalStorage(extractRestDays(data));
+    cacheRoutineRestDaysToLocalStorage(restDays);
     return {
       ...extractRoutinesByDay(data),
-      restDays: extractRestDays(data)
+      restDays
     };
   }
   return {};
