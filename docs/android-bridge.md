@@ -8,14 +8,44 @@
 
 1) `.env.local`(권장) 또는 `.env`에 백엔드 주소 설정
 ```bash
-VITE_API_BASE_URL=https://api.example.com
+VITE_API_BASE_URL=https://3-39-194-42.sslip.io
 ```
 
 2) 개발 서버 재시작 (`npm run dev`)
 
 참고:
-- 주소는 `https://api.example.com`처럼 “오리진” 형태로 넣으면 됩니다(마지막 `/`는 있어도 자동 제거됨).
+- 주소는 `https://3-39-194-42.sslip.io`처럼 “오리진” 형태로 넣으면 됩니다(마지막 `/`는 있어도 자동 제거됨).
 - 인증이 필요한 API면, 프론트는 `src/api/client.js`에서 토큰이 있으면 `Authorization: Bearer <token>`을 자동으로 붙입니다.
+
+## 비콘 서버 API 계약
+Beacon 서버 호출 base URL:
+```text
+https://3-39-194-42.sslip.io
+```
+
+위치 업데이트:
+```http
+POST /api/update-location
+POST /api/v1/update-location
+```
+
+현재 위치 조회:
+```http
+GET /api/current-location/{userId}
+GET /api/v1/current-location/{userId}
+```
+
+요청 본문 기본 필드:
+```json
+{
+  "userId": "Android ANDROID_ID",
+  "zoneId": 53626
+}
+```
+
+호환 필드:
+- 사용자 식별자: `userId`, `androidId`, `deviceId`
+- 구역/비콘 식별자: `zoneId`, `beaconId`, `minor`
 
 ## 1) 권장: 서버(백엔드) 경유
 1. Android 앱(비콘 감지/자세 인식)이 서버로 이벤트 전송(HTTPS)
