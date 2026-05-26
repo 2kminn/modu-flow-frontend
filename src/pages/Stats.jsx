@@ -4,7 +4,7 @@ import WeeklyWorkoutChart from "@/components/charts/WeeklyWorkoutChart";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { validateWorkoutItemDraft } from "@/api/validation";
-import { loadRoutineRestDaysFromLocalStorage } from "@/api/routines";
+import { fetchRoutines, loadRoutineRestDaysFromLocalStorage } from "@/api/routines";
 
 const WORKOUT_HISTORY_STORAGE_KEY = "moduflow:workout-history:v1";
 
@@ -337,12 +337,25 @@ export default function Stats() {
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
+    let cancelled = false;
+    async function fetchRestDays() {
+      try {
+        const data = await fetchRoutines();
+        if (!cancelled && Array.isArray(data?.restDays)) {
+          setRestDays(data.restDays);
+        }
+      } catch (e) {
+        console.warn("[stats routines] fetch failed:", e);
+      }
+    }
     function syncRestDays() {
       setRestDays(loadRoutineRestDaysFromLocalStorage());
     }
+    fetchRestDays();
     window.addEventListener("focus", syncRestDays);
     window.addEventListener("storage", syncRestDays);
     return () => {
+      cancelled = true;
       window.removeEventListener("focus", syncRestDays);
       window.removeEventListener("storage", syncRestDays);
     };

@@ -183,6 +183,9 @@ export default function Routines() {
         const serverData = await fetchRoutines();
         if (cancelled) return;
         const safeServerData = sanitizeRoutinesByDay(serverData);
+        if (Array.isArray(serverData?.restDays)) {
+          setRestDays(serverData.restDays);
+        }
         if (safeServerData && Object.keys(safeServerData).length) {
           setRoutinesByDay((prev) => {
             // Merge: preserve local-only fields (e.g. `reps`) when possible.
@@ -226,13 +229,13 @@ export default function Routines() {
     }
     const t = window.setTimeout(async () => {
       try {
-        await saveRoutines(sanitizeRoutinesByDay(routinesByDay));
+        await saveRoutines(sanitizeRoutinesByDay(routinesByDay), restDays);
       } catch (e) {
         console.warn("[routines] save failed:", e);
       }
     }, 900);
     return () => window.clearTimeout(t);
-  }, [routinesByDay]);
+  }, [routinesByDay, restDays]);
 
   useEffect(() => {
     cacheRoutinesToLocalStorage(sanitizeRoutinesByDay(routinesByDay));

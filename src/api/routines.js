@@ -54,6 +54,36 @@ function hashString(value) {
   return (hash >>> 0).toString(36);
 }
 
+function sanitizeRestDays(restDays) {
+  return Array.isArray(restDays)
+    ? [...new Set(restDays.filter((dayKey) => DAY_KEYS.has(dayKey)))]
+    : [];
+}
+
+function extractRestDays(data) {
+  if (!data || typeof data !== "object") return [];
+  if (Array.isArray(data.restDays)) return sanitizeRestDays(data.restDays);
+  if (data.routines && typeof data.routines === "object" && Array.isArray(data.routines.restDays)) {
+    return sanitizeRestDays(data.routines.restDays);
+  }
+  return [];
+}
+
+function extractRoutinesByDay(data) {
+  if (!data || typeof data !== "object") return {};
+  const source =
+    data.routines && typeof data.routines === "object" && !Array.isArray(data.routines)
+      ? data.routines
+      : data;
+  const out = Object.create(null);
+  for (const [dayKey, list] of Object.entries(source)) {
+    if (!DAY_KEYS.has(dayKey)) continue;
+    if (!Array.isArray(list)) continue;
+    out[dayKey] = list.filter((it) => it && typeof it === "object");
+  }
+  return out;
+}
+
 export function getRoutineStorageKey() {
   const token = getAuthToken();
   if (!token) return GUEST_ROUTINE_STORAGE_KEY;
@@ -81,13 +111,7 @@ export function loadRoutinesFromLocalStorage() {
     if (!raw) return {};
     const parsed = safeJsonParse(raw);
     if (!parsed || typeof parsed !== "object") return {};
-    const out = Object.create(null);
-    for (const [dayKey, list] of Object.entries(parsed)) {
-      if (!DAY_KEYS.has(dayKey)) continue;
-      if (!Array.isArray(list)) continue;
-      out[dayKey] = list.filter((it) => it && typeof it === "object");
-    }
-    return out;
+    return extractRoutinesByDay(parsed);
   } catch {
     return {};
   }
@@ -96,14 +120,7 @@ export function loadRoutinesFromLocalStorage() {
 export function cacheRoutinesToLocalStorage(routinesByDay) {
   if (typeof window === "undefined") return;
   try {
-    const out = Object.create(null);
-    if (routinesByDay && typeof routinesByDay === "object") {
-      for (const [dayKey, list] of Object.entries(routinesByDay)) {
-        if (!DAY_KEYS.has(dayKey)) continue;
-        if (!Array.isArray(list)) continue;
-        out[dayKey] = list.filter((it) => it && typeof it === "object");
-      }
-    }
+    const out = extractRoutinesByDay(routinesByDay);
     window.localStorage.setItem(getRoutineStorageKey(), JSON.stringify(out));
   } catch {
     // ignore
@@ -126,9 +143,7 @@ export function loadRoutineRestDaysFromLocalStorage() {
 export function cacheRoutineRestDaysToLocalStorage(restDays) {
   if (typeof window === "undefined") return;
   try {
-    const safeRestDays = Array.isArray(restDays)
-      ? [...new Set(restDays.filter((dayKey) => DAY_KEYS.has(dayKey)))]
-      : [];
+    const safeRestDays = sanitizeRestDays(restDays);
     window.localStorage.setItem(
       getRoutineRestDaysStorageKey(),
       JSON.stringify(safeRestDays)
@@ -149,14 +164,21 @@ export function removeLegacyRoutineCache() {
 
 export async function fetchRoutines() {
   if (isDevTestAuthToken()) {
-    return loadRoutinesFromLocalStorage();
+    return {
+      ...loadRoutinesFromLocalStorage(),
+      restDays: loadRoutineRestDaysFromLocalStorage()
+    };
   }
 
   const res = await apiClient.get("/api/v1/routines");
   const data = res?.data;
   if (data && typeof data === "object") {
     cacheRoutinesToLocalStorage(data);
-    return data;
+    cacheRoutineRestDaysToLocalStorage(extractRestDays(data));
+    return {
+      ...extractRoutinesByDay(data),
+      restDays: extractRestDays(data)
+    };
   }
   return {};
 }
@@ -184,22 +206,26 @@ function toBackendRoutineItem(item) {
   };
 }
 
-export function buildRoutinesPayload(routinesByDay) {
-  return Object.entries(routinesByDay ?? {}).reduce((acc, [dayKey, list]) => {
+export function buildRoutinesPayload(routinesByDay, restDays) {
+  const payload = Object.entries(extractRoutinesByDay(routinesByDay)).reduce((acc, [dayKey, list]) => {
     const items = Array.isArray(list) ? list : [];
     acc[dayKey] = items.map(toBackendRoutineItem).filter(Boolean);
     return acc;
   }, {});
+  payload.restDays = sanitizeRestDays(restDays ?? routinesByDay?.restDays);
+  return payload;
 }
 
-export async function saveRoutines(routinesByDay) {
-  const payload = buildRoutinesPayload(routinesByDay);
+export async function saveRoutines(routinesByDay, restDays) {
+  const payload = buildRoutinesPayload(routinesByDay, restDays);
   if (isDevTestAuthToken()) {
     cacheRoutinesToLocalStorage(routinesByDay);
+    cacheRoutineRestDaysToLocalStorage(payload.restDays);
     return payload;
   }
 
   const res = await apiClient.put("/api/v1/routines", payload);
   cacheRoutinesToLocalStorage(routinesByDay);
+  cacheRoutineRestDaysToLocalStorage(payload.restDays);
   return res?.data;
 }
