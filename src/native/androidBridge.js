@@ -43,6 +43,19 @@ export function startNativeWorkout(exercises) {
   return false;
 }
 
+export function setNativeAuthToken(token) {
+  const bridge = getBridgeObject();
+  if (!bridge || typeof bridge.setAuthToken !== "function") return false;
+
+  try {
+    bridge.setAuthToken(String(token ?? ""));
+    return true;
+  } catch {
+    // ignore
+  }
+  return false;
+}
+
 export function openNativeCamera(payload = {}) {
   const bridge = getBridgeObject();
   if (!bridge) return false;

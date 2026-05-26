@@ -1,3 +1,5 @@
+import { setNativeAuthToken } from "@/native/androidBridge";
+
 const TOKEN_KEY = "auth_token";
 const ACCOUNT_KEY = "auth_account";
 export const DEV_TEST_AUTH_TOKEN = "dev-test-token";
@@ -47,6 +49,7 @@ export function getStoredAuthIdentity() {
 
 export function setAuthToken(token, accountHint) {
   safeSet(sessionStorage, TOKEN_KEY, token);
+  setNativeAuthToken(token);
   const identity = String(accountHint || "").trim().toLowerCase();
   if (identity) safeSet(sessionStorage, ACCOUNT_KEY, identity);
   else safeRemove(sessionStorage, ACCOUNT_KEY);
@@ -54,9 +57,15 @@ export function setAuthToken(token, accountHint) {
   safeRemove(localStorage, ACCOUNT_KEY);
 }
 
+export function syncStoredAuthTokenToNative() {
+  const token = safeGet(sessionStorage);
+  if (token) setNativeAuthToken(token);
+}
+
 export function clearAuthToken() {
   safeRemove(sessionStorage);
   safeRemove(sessionStorage, ACCOUNT_KEY);
   safeRemove(localStorage);
   safeRemove(localStorage, ACCOUNT_KEY);
+  setNativeAuthToken("");
 }

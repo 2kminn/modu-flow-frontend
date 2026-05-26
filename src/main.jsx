@@ -6,10 +6,12 @@ import { registerServiceWorker } from "@/pwa";
 import { applyTheme, getStoredTheme } from "@/theme/theme";
 import { ThemeProvider } from "@/theme/ThemeProvider";
 import { setApiBaseUrl } from "@/api/client";
+import { syncStoredAuthTokenToNative } from "@/auth/auth";
 import "@/index.css";
 
 registerServiceWorker();
 applyTheme(getStoredTheme() ?? "light");
+syncStoredAuthTokenToNative();
 
 // Optional runtime override:
 //   https://your-frontend/login?apiBaseUrl=https://3-39-194-42.sslip.io
