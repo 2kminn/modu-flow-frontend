@@ -3,6 +3,7 @@ import Card from "@/components/ui/Card";
 import { Dumbbell, Pencil, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { fetchRecentCongestion, updateCurrentLocation } from "@/api/attendance";
 import { fetchRoutines, loadRoutinesFromLocalStorage } from "@/api/routines";
 import { startNativeWorkout } from "@/native/androidBridge";
 
@@ -56,7 +57,129 @@ function normalizeRoutinesByDay(raw) {
   return out;
 }
 
-function CongestionPill({ level, title }) {
+function readNumeric(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function normalizeCongestionLevel(value) {
+  if (typeof value === "string") {
+    const key = value.trim().toLowerCase();
+    if (["low", "idle", "free", "easy", "여유", "원활"].includes(key)) {
+      return "low";
+    }
+    if (["mid", "medium", "normal", "moderate", "보통"].includes(key)) {
+      return "mid";
+    }
+    if (["high", "busy", "crowded", "congested", "혼잡", "매우혼잡"].includes(key)) {
+      return "high";
+    }
+  }
+
+  const numericValue = readNumeric(value);
+  if (numericValue == null) return null;
+  if (numericValue >= 3) return "high";
+  if (numericValue >= 2) return "mid";
+  return "low";
+}
+
+function pickFirstValue(...values) {
+  return values.find((value) => value != null && !Array.isArray(value));
+}
+
+function findZoneCongestion(data, keywords) {
+  if (!data || typeof data !== "object") return null;
+
+  const direct = pickFirstValue(
+    ...keywords.flatMap((keyword) => [
+      data[keyword],
+      data[`${keyword}Zone`],
+      data[`${keyword}Congestion`],
+      data[`${keyword}CongestionLevel`],
+      data.zones?.[keyword],
+      data.zoneCongestion?.[keyword],
+      data.congestion?.[keyword]
+    ])
+  );
+  if (direct) return direct;
+
+  const lists = [data.zones, data.zoneCongestion, data.congestion, data.items, data];
+  for (const list of lists) {
+    if (!Array.isArray(list)) continue;
+    const match = list.find((item) => {
+      if (!item || typeof item !== "object") return false;
+      const label = String(
+        item.zone ?? item.zoneName ?? item.zoneId ?? item.name ?? item.type ?? ""
+      ).toLowerCase();
+      return keywords.some((keyword) => label.includes(keyword));
+    });
+    if (match) return match;
+  }
+
+  return null;
+}
+
+function normalizeZoneCongestion(zoneData) {
+  if (zoneData == null) return null;
+  if (typeof zoneData !== "object") return normalizeCongestionLevel(zoneData);
+  return normalizeCongestionLevel(
+    zoneData.level ??
+      zoneData.status ??
+      zoneData.congestionLevel ??
+      zoneData.congestion ??
+      zoneData.percent ??
+      zoneData.percentage ??
+      zoneData.rate ??
+      zoneData.count
+  );
+}
+
+function normalizeHomeCongestion(data) {
+  const root = data?.data && typeof data.data === "object" ? data.data : data;
+  const cardio = findZoneCongestion(root, ["cardio", "aerobic", "유산소"]);
+  const weight = findZoneCongestion(root, ["weight", "weights", "free-weight", "웨이트", "근력"]);
+  const fallbackLevel = normalizeCongestionLevel(
+    root?.level ?? root?.status ?? root?.percent ?? root?.percentage ?? root?.rate ?? root?.count
+  );
+
+  return {
+    cardio: normalizeZoneCongestion(cardio) ?? fallbackLevel ?? "mid",
+    weight: normalizeZoneCongestion(weight) ?? fallbackLevel ?? "mid",
+    updatedAt:
+      cardio?.occurredAt ??
+      weight?.occurredAt ??
+      root?.occurredAt ??
+      root?.updatedAt ??
+      root?.createdAt ??
+      null
+  };
+}
+
+function formatCongestionUpdatedAt(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat("ko-KR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).format(date);
+}
+
+function getNativeLocationPayload(detail) {
+  if (!detail || typeof detail !== "object") return null;
+  const userId = detail.userId ?? detail.androidId ?? detail.deviceId;
+  const zoneId = detail.zoneId ?? detail.beaconId ?? detail.minor;
+  if (userId == null || zoneId == null) return null;
+
+  return {
+    ...detail,
+    userId,
+    zoneId
+  };
+}
+
+function CongestionPill({ level, title, loading }) {
   const map = {
     low: {
       label: "여유",
@@ -82,7 +205,7 @@ function CongestionPill({ level, title }) {
             {title}
           </p>
           <p className="mt-0.5 text-[11px] font-semibold text-[color:var(--c-muted-2)]">
-            혼잡도 · {ui.label}
+            혼잡도 · {loading ? "확인 중" : ui.label}
           </p>
         </div>
         <div className="h-2 w-20 overflow-hidden rounded-full bg-[color:var(--c-surface)]">
@@ -132,11 +255,16 @@ export default function Home() {
   const navigate = useNavigate();
   const userName = "사용자";
   const attendance = { status: "출석 완료", streakDays: 3 };
-  const cardioCongestionLevel = "mid";
-  const weightCongestionLevel = "low";
   const todayDayKey = useMemo(() => dayKeyFromDate(new Date()), []);
   const [startNotice, setStartNotice] = useState(null);
   const [showRoutineOptions, setShowRoutineOptions] = useState(false);
+  const [congestion, setCongestion] = useState({
+    cardio: "mid",
+    weight: "mid",
+    updatedAt: null,
+    loading: true,
+    error: null
+  });
   const [routinesByDay, setRoutinesByDay] = useState(() =>
     normalizeRoutinesByDay(loadRoutinesFromLocalStorage())
   );
@@ -186,6 +314,79 @@ export default function Home() {
       autoAttendanceEnabled ? "true" : "false"
     );
   }, [autoAttendanceEnabled]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function syncCongestion() {
+      setCongestion((prev) => ({ ...prev, loading: true, error: null }));
+      try {
+        const data = await fetchRecentCongestion();
+        if (cancelled) return;
+        setCongestion({
+          ...normalizeHomeCongestion(data),
+          loading: false,
+          error: null
+        });
+      } catch (e) {
+        console.warn("[home congestion] fetch failed:", e);
+        if (cancelled) return;
+        setCongestion((prev) => ({
+          ...prev,
+          loading: false,
+          error: "혼잡도 정보를 불러오지 못했어요."
+        }));
+      }
+    }
+
+    syncCongestion();
+    const timer = window.setInterval(syncCongestion, 60_000);
+    window.addEventListener("focus", syncCongestion);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", syncCongestion);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    let active = true;
+
+    async function handleNativeEvent(event) {
+      const detail = event?.detail;
+      if (detail?.type === "congestion") {
+        setCongestion({
+          ...normalizeHomeCongestion(detail),
+          loading: false,
+          error: null
+        });
+        return;
+      }
+
+      const locationPayload = getNativeLocationPayload(detail);
+      if (!locationPayload) return;
+
+      try {
+        await updateCurrentLocation(locationPayload);
+        const data = await fetchRecentCongestion();
+        if (!active) return;
+        setCongestion({
+          ...normalizeHomeCongestion(data),
+          loading: false,
+          error: null
+        });
+      } catch (e) {
+        console.warn("[home native location] update failed:", e);
+      }
+    }
+
+    window.addEventListener("moduflow:native-event", handleNativeEvent);
+    return () => {
+      active = false;
+      window.removeEventListener("moduflow:native-event", handleNativeEvent);
+    };
+  }, []);
 
   useEffect(() => {
     if (!startNotice) return;
@@ -332,6 +533,12 @@ export default function Home() {
               <p className="mt-1 text-lg font-extrabold text-[color:var(--c-text)]">
                 지금 운동존 상태
               </p>
+              <p className="mt-1 text-[11px] font-semibold text-[color:var(--c-muted-2)]">
+                {congestion.error ??
+                  (formatCongestionUpdatedAt(congestion.updatedAt)
+                    ? `${formatCongestionUpdatedAt(congestion.updatedAt)} 업데이트`
+                    : "최근 출석 기준")}
+              </p>
             </div>
             <div className="text-right">
               <p className="text-[11px] font-extrabold text-[color:var(--c-muted-2)]">
@@ -349,11 +556,13 @@ export default function Home() {
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <CongestionPill
               title="유산소존"
-              level={cardioCongestionLevel}
+              level={congestion.cardio}
+              loading={congestion.loading}
             />
             <CongestionPill
               title="웨이트존"
-              level={weightCongestionLevel}
+              level={congestion.weight}
+              loading={congestion.loading}
             />
           </div>
         </Card>
