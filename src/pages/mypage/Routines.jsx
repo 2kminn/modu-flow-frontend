@@ -1,10 +1,12 @@
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
+import { BedDouble, Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import {
+  cacheRoutineRestDaysToLocalStorage,
   cacheRoutinesToLocalStorage,
   fetchRoutines,
+  loadRoutineRestDaysFromLocalStorage,
   loadRoutinesFromLocalStorage,
   removeLegacyRoutineCache,
   saveRoutines
@@ -165,11 +167,13 @@ export default function Routines() {
   const [draft, setDraft] = useState(null);
   const [draftError, setDraftError] = useState("");
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+  const [restDays, setRestDays] = useState(() => loadRoutineRestDaysFromLocalStorage());
   const didHydrateFromServerRef = useRef(false);
   const skipNextAutosaveRef = useRef(false);
 
   const routineForSelectedDay = routinesByDay?.[selectedDay] || [];
   const selectedDayLabel = DAYS.find((d) => d.key === selectedDay)?.label || "";
+  const isSelectedDayRest = restDays.includes(selectedDay);
 
   // Load routines from backend (silent; keeps existing UI)
   useEffect(() => {
@@ -234,6 +238,10 @@ export default function Routines() {
     cacheRoutinesToLocalStorage(sanitizeRoutinesByDay(routinesByDay));
     removeLegacyRoutineCache();
   }, [routinesByDay]);
+
+  useEffect(() => {
+    cacheRoutineRestDaysToLocalStorage(restDays);
+  }, [restDays]);
 
   function startEdit(item) {
     setEditingId(item.id);
@@ -313,6 +321,9 @@ export default function Routines() {
   }
 
   function addRoutine() {
+    if (isSelectedDayRest) {
+      setRestDays((prev) => prev.filter((dayKey) => dayKey !== selectedDay));
+    }
     const newItem = {
       id: createId(),
       name: "",
@@ -330,12 +341,35 @@ export default function Routines() {
     startEdit(newItem);
   }
 
+  function toggleSelectedRestDay() {
+    if (isSelectedDayRest) {
+      setRestDays((prev) => prev.filter((dayKey) => dayKey !== selectedDay));
+      return;
+    }
+
+    if (routineForSelectedDay.length && typeof window !== "undefined") {
+      const ok = window.confirm(
+        `${selectedDayLabel}요일을 쉬는 날로 설정하면 기존 루틴이 비워집니다. 계속할까요?`
+      );
+      if (!ok) return;
+    }
+
+    setRestDays((prev) => [...new Set([...(prev || []), selectedDay])]);
+    setRoutinesByDay((prev) => {
+      const next = { ...(prev || {}) };
+      delete next[selectedDay];
+      return next;
+    });
+    finishEdit();
+  }
+
   function resetSelectedDay() {
     setRoutinesByDay((prev) => {
       const next = { ...(prev || {}) };
       delete next[selectedDay];
       return next;
     });
+    setRestDays((prev) => prev.filter((dayKey) => dayKey !== selectedDay));
     cancelEdit();
     setIsResetDialogOpen(false);
   }
@@ -369,7 +403,7 @@ export default function Routines() {
               루틴 목록
             </p>
             <p className="mt-1 text-xs font-semibold text-[color:var(--c-muted-2)]">
-              {selectedDayLabel} · 운동 / 세트 / 횟수 / 무게
+              {selectedDayLabel} · {isSelectedDayRest ? "쉬는 날" : "운동 / 세트 / 횟수 / 무게"}
             </p>
           </div>
           {routineForSelectedDay.length && !editingId ? (
@@ -386,7 +420,65 @@ export default function Routines() {
           ) : null}
         </div>
 
-        {routineForSelectedDay.length ? (
+        <button
+          type="button"
+          role="switch"
+          aria-checked={isSelectedDayRest}
+          onClick={toggleSelectedRestDay}
+          className={[
+            "flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition active:scale-[0.99]",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--c-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--c-surface)]",
+            isSelectedDayRest
+              ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+              : "border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-[color:var(--c-text)] hover:bg-[color:var(--c-surface-2)]"
+          ].join(" ")}
+        >
+          <span className="flex min-w-0 items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[color:var(--c-surface-2)]">
+              <BedDouble size={18} aria-hidden="true" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-extrabold">
+                {selectedDayLabel}요일 쉬는 날
+              </span>
+              <span className="mt-0.5 block text-xs font-semibold text-[color:var(--c-muted-2)]">
+                출석률 계산에서 제외돼요.
+              </span>
+            </span>
+          </span>
+          <span
+            aria-hidden="true"
+            className={[
+              "relative h-7 w-12 shrink-0 rounded-full border transition",
+              isSelectedDayRest
+                ? "border-emerald-500 bg-emerald-500"
+                : "border-[color:var(--c-border)] bg-[color:var(--c-surface-2)]"
+            ].join(" ")}
+          >
+            <span
+              className={[
+                "absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-white shadow-sm transition-transform",
+                isSelectedDayRest ? "translate-x-6" : "translate-x-1"
+              ].join(" ")}
+            />
+          </span>
+        </button>
+
+        {isSelectedDayRest ? (
+          <div className="rounded-3xl border border-dashed border-emerald-500/35 bg-emerald-500/10 p-8 text-center">
+            <BedDouble
+              size={24}
+              aria-hidden="true"
+              className="mx-auto text-emerald-700 dark:text-emerald-300"
+            />
+            <p className="mt-3 text-sm font-extrabold text-[color:var(--c-text)]">
+              {selectedDayLabel}요일은 쉬는 날이에요.
+            </p>
+            <p className="mt-1 text-xs font-semibold text-[color:var(--c-muted-2)]">
+              쉬는 날은 통계 달력에 표시되고 출석률에 포함되지 않아요.
+            </p>
+          </div>
+        ) : routineForSelectedDay.length ? (
           <ul className="space-y-3">
             {routineForSelectedDay.map((it) => {
               const editing = it.id === editingId;

@@ -4,6 +4,7 @@ import WeeklyWorkoutChart from "@/components/charts/WeeklyWorkoutChart";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { validateWorkoutItemDraft } from "@/api/validation";
+import { loadRoutineRestDaysFromLocalStorage } from "@/api/routines";
 
 const WORKOUT_HISTORY_STORAGE_KEY = "moduflow:workout-history:v1";
 
@@ -30,6 +31,11 @@ function daysInMonth(date) {
 
 function startWeekday(date) {
   return new Date(date.getFullYear(), date.getMonth(), 1).getDay(); // 0=Sun
+}
+
+function dayKeyFromDate(date) {
+  const map = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+  return map[date.getDay()];
 }
 
 function WorkoutListModal({
@@ -262,6 +268,7 @@ export default function Stats() {
   const today = useMemo(() => new Date(), []);
   const todayLabel = useMemo(() => formatDate(today), [today]);
   const todayMonthLabel = useMemo(() => formatMonth(today), [today]);
+  const [restDays, setRestDays] = useState(() => loadRoutineRestDaysFromLocalStorage());
 
   const [recordsByDate, setRecordsByDate] = useState(() => {
     if (typeof window === "undefined") return {};
@@ -315,6 +322,31 @@ export default function Stats() {
     }, {});
     return monthOnly;
   }, [month, recordsByDate, todayMonthLabel]);
+
+  const restDateSet = useMemo(() => {
+    const restDaySet = new Set(restDays);
+    const total = daysInMonth(month);
+    const dates = new Set();
+    for (let day = 1; day <= total; day += 1) {
+      const date = new Date(month.getFullYear(), month.getMonth(), day);
+      if (!restDaySet.has(dayKeyFromDate(date))) continue;
+      dates.add(formatDate(date));
+    }
+    return dates;
+  }, [month, restDays]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    function syncRestDays() {
+      setRestDays(loadRoutineRestDaysFromLocalStorage());
+    }
+    window.addEventListener("focus", syncRestDays);
+    window.addEventListener("storage", syncRestDays);
+    return () => {
+      window.removeEventListener("focus", syncRestDays);
+      window.removeEventListener("storage", syncRestDays);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -374,9 +406,12 @@ export default function Stats() {
 
   const attendanceRate = useMemo(() => {
     const totalDays = daysInMonth(month);
-    const attended = Object.keys(workoutByDate).filter((d) => d.startsWith(monthLabel)).length;
-    return Math.round((attended / Math.max(1, totalDays)) * 100);
-  }, [month, monthLabel, workoutByDate]);
+    const countedDays = Math.max(0, totalDays - restDateSet.size);
+    const attended = Object.keys(workoutByDate).filter(
+      (d) => d.startsWith(monthLabel) && !restDateSet.has(d)
+    ).length;
+    return Math.round((attended / Math.max(1, countedDays)) * 100);
+  }, [month, monthLabel, restDateSet, workoutByDate]);
 
   const [selectedDate, setSelectedDate] = useState(null);
 
@@ -479,26 +514,32 @@ export default function Stats() {
                   if (!day) return <div key={`empty-${idx}`} />;
                   const dateStr = `${monthLabel}-${String(day).padStart(2, "0")}`;
                   const hasWorkout = Boolean(workoutByDate[dateStr]?.length);
+                  const isRestDay = restDateSet.has(dateStr);
                   return (
                     <button
                       key={dateStr}
                       type="button"
                       onClick={() => setSelectedDate(dateStr)}
                       className={[
-                        "grid aspect-square place-items-center rounded-2xl text-xs font-extrabold transition active:scale-[0.98]",
+                        "flex aspect-square flex-col items-center justify-center rounded-2xl text-xs font-extrabold transition active:scale-[0.98]",
                         hasWorkout
                           ? "bg-[color:var(--c-text)] text-[color:var(--c-bg)] hover:opacity-90"
+                          : isRestDay
+                            ? "border border-emerald-500/35 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/15 dark:text-emerald-300"
                           : "bg-[color:var(--c-surface)] text-[color:var(--c-muted-2)] hover:bg-[color:var(--c-surface)]/80"
                       ].join(" ")}
-                      aria-label={`${dateStr}${hasWorkout ? " 운동 기록 있음" : ""}`}
+                      aria-label={`${dateStr}${hasWorkout ? " 운동 기록 있음" : ""}${isRestDay ? " 쉬는 날" : ""}`}
                     >
-                      {day}
+                      <span>{day}</span>
+                      {isRestDay ? (
+                        <span className="mt-0.5 text-[10px] leading-none">휴</span>
+                      ) : null}
                     </button>
                   );
                 })}
               </div>
               <p className="mt-3 text-xs font-semibold text-[color:var(--c-muted-2)]">
-                표시된 날짜(검정)는 운동 기록이 있는 날이에요. (기준일: {todayLabel})
+                검정은 운동 기록, 초록색 휴 표시는 쉬는 날이에요. (기준일: {todayLabel})
               </p>
             </div>
           </div>

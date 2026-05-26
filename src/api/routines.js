@@ -5,6 +5,7 @@ import { getAuthToken, getStoredAuthIdentity, isDevTestAuthToken } from "@/auth/
 const ROUTINE_STORAGE_KEY = "moduflow:routines-by-day:v1";
 const ROUTINE_STORAGE_KEY_PREFIX = "moduflow:routines-by-day:v1:";
 const GUEST_ROUTINE_STORAGE_KEY = `${ROUTINE_STORAGE_KEY_PREFIX}guest`;
+const ROUTINE_REST_DAYS_STORAGE_KEY_PREFIX = "moduflow:routine-rest-days:v1:";
 const DAY_KEYS = new Set(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]);
 
 function safeJsonParse(raw) {
@@ -65,6 +66,14 @@ export function getRoutineStorageKey() {
   return `${ROUTINE_STORAGE_KEY_PREFIX}token:${hashString(token)}`;
 }
 
+export function getRoutineRestDaysStorageKey() {
+  const routineKey = getRoutineStorageKey();
+  const suffix = routineKey.startsWith(ROUTINE_STORAGE_KEY_PREFIX)
+    ? routineKey.slice(ROUTINE_STORAGE_KEY_PREFIX.length)
+    : "guest";
+  return `${ROUTINE_REST_DAYS_STORAGE_KEY_PREFIX}${suffix}`;
+}
+
 export function loadRoutinesFromLocalStorage() {
   if (typeof window === "undefined") return {};
   try {
@@ -96,6 +105,34 @@ export function cacheRoutinesToLocalStorage(routinesByDay) {
       }
     }
     window.localStorage.setItem(getRoutineStorageKey(), JSON.stringify(out));
+  } catch {
+    // ignore
+  }
+}
+
+export function loadRoutineRestDaysFromLocalStorage() {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(getRoutineRestDaysStorageKey());
+    if (!raw) return [];
+    const parsed = safeJsonParse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((dayKey) => DAY_KEYS.has(dayKey));
+  } catch {
+    return [];
+  }
+}
+
+export function cacheRoutineRestDaysToLocalStorage(restDays) {
+  if (typeof window === "undefined") return;
+  try {
+    const safeRestDays = Array.isArray(restDays)
+      ? [...new Set(restDays.filter((dayKey) => DAY_KEYS.has(dayKey)))]
+      : [];
+    window.localStorage.setItem(
+      getRoutineRestDaysStorageKey(),
+      JSON.stringify(safeRestDays)
+    );
   } catch {
     // ignore
   }
