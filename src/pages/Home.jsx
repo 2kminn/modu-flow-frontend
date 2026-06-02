@@ -3,12 +3,14 @@ import Card from "@/components/ui/Card";
 import { BedDouble, CheckCircle, Dumbbell, Pencil, X, Zap } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getApiErrorMessage } from "@/api/client";
 import { fetchRecentCongestion, updateCurrentLocation } from "@/api/attendance";
 import {
   fetchRoutines,
   loadRoutineRestDaysFromLocalStorage,
   loadRoutinesFromLocalStorage
 } from "@/api/routines";
+import { replaceWorkoutDay } from "@/api/workouts";
 import { startNativeWorkout } from "@/native/androidBridge";
 
 const AUTO_ATTENDANCE_STORAGE_KEY = "moduflow:auto-attendance:v1";
@@ -36,6 +38,13 @@ const EXERCISE_NAME_TO_ID = {
 function dayKeyFromDate(date) {
   const map = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
   return map[date.getDay()];
+}
+
+function formatDate(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
 function resolveExerciseId(name) {
@@ -265,6 +274,7 @@ export default function Home() {
   const attendance = { status: "출석 완료", streakDays: 3 };
   const todayDayKey = useMemo(() => dayKeyFromDate(new Date()), []);
   const [startNotice, setStartNotice] = useState(null);
+  const [savingWorkout, setSavingWorkout] = useState(false);
   const [showRoutineOptions, setShowRoutineOptions] = useState(false);
   const [congestion, setCongestion] = useState({
     cardio: "mid",
@@ -425,6 +435,31 @@ export default function Home() {
     navigate("/workout");
   }
 
+  async function completeTodayWorkout() {
+    if (savingWorkout) return;
+    if (isTodayRestDay) {
+      setStartNotice("오늘은 쉬는 날로 설정되어 있습니다.");
+      return;
+    }
+    if (!todayRoutines.length) {
+      setStartNotice("저장할 오늘 루틴이 없습니다.");
+      return;
+    }
+
+    setSavingWorkout(true);
+    try {
+      const today = formatDate(new Date());
+      await replaceWorkoutDay(today, todayRoutines);
+      setStartNotice("오늘 운동이 기록되었습니다.");
+      navigate("/stats");
+    } catch (e) {
+      console.warn("[home workout complete] save failed:", e);
+      setStartNotice(getApiErrorMessage(e, "운동 기록 저장에 실패했어요."));
+    } finally {
+      setSavingWorkout(false);
+    }
+  }
+
   return (
     <>
       <section className="space-y-4">
@@ -575,6 +610,16 @@ export default function Home() {
                   <Zap size={20} aria-hidden="true" />
                 )}
                 {isTodayRestDay ? "쉬는 날" : "운동 시작"}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                className="mt-2 gap-2 py-4 text-base"
+                onClick={completeTodayWorkout}
+                disabled={savingWorkout || isTodayRestDay || !todayRoutines.length}
+              >
+                <CheckCircle size={18} aria-hidden="true" />
+                {savingWorkout ? "기록 저장 중" : "운동 완료"}
               </Button>
             </div>
           </div>

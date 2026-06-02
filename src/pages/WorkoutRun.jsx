@@ -3,6 +3,7 @@ import Card from "@/components/ui/Card";
 import { Camera, CameraOff, ChevronLeft, ChevronRight, RefreshCw, RotateCcw } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getApiErrorMessage } from "@/api/client";
 import {
   closeNativeCamera,
   isAndroidWebViewBridgeAvailable,
@@ -10,6 +11,7 @@ import {
   openNativeCamera
 } from "@/native/androidBridge";
 import { loadRoutinesFromLocalStorage } from "@/api/routines";
+import { replaceWorkoutDay } from "@/api/workouts";
 
 const EXERCISE_INFO = [
   {
@@ -79,6 +81,13 @@ function dayKeyFromDate(date) {
   return map[date.getDay()];
 }
 
+function formatDate(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 function resolveExerciseInfo(item) {
   const byId = item?.exerciseId
     ? EXERCISE_INFO.find((ex) => ex.id === item.exerciseId)
@@ -102,6 +111,8 @@ export default function WorkoutRun() {
   const [cameraOn, setCameraOn] = useState(true);
   const [cameraState, setCameraState] = useState("idle"); // idle | ready | denied | error | native
   const [facingMode, setFacingMode] = useState("user"); // user | environment
+  const [savingWorkout, setSavingWorkout] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const todayKey = useMemo(() => dayKeyFromDate(new Date()), []);
   const routineList = useMemo(() => {
@@ -207,13 +218,25 @@ export default function WorkoutRun() {
     setIndex((prev) => Math.min(total - 1, prev + 1));
   }
 
-  function endWorkout() {
+  async function endWorkout() {
+    if (savingWorkout) return;
+    setSavingWorkout(true);
+    setSaveError("");
+    try {
+      await replaceWorkoutDay(formatDate(new Date()), routineList);
+    } catch (e) {
+      console.warn("[workout run] save failed:", e);
+      setSaveError(getApiErrorMessage(e, "운동 기록 저장에 실패했어요."));
+      setSavingWorkout(false);
+      return;
+    }
+
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
     closeNativeCamera({ screen: "workout:run" });
-    navigate("/");
+    navigate("/stats");
   }
 
   if (!routineList.length) {
@@ -364,7 +387,7 @@ export default function WorkoutRun() {
                   {currentInfo?.description || "운동 설명은 준비 중이에요."}
                 </p>
                 <p className="mt-3 text-xs font-semibold text-white/70">
-                  세트: {currentItem?.sets ?? "-"} · 무게: {currentItem?.weight ?? "-"}kg
+                  세트: {currentItem?.sets ?? "-"} · 횟수: {currentItem?.reps ?? "-"} · 무게: {currentItem?.weight ?? "-"}kg
                 </p>
               </div>
             </div>
@@ -396,6 +419,11 @@ export default function WorkoutRun() {
               <p className="mt-1 text-sm font-extrabold">
                 준비 중 (카메라 영상만 표시)
               </p>
+              {saveError ? (
+                <p className="mt-2 text-xs font-semibold text-red-200">
+                  {saveError}
+                </p>
+              ) : null}
             </div>
           </div>
         </div>
@@ -416,9 +444,10 @@ export default function WorkoutRun() {
             <button
               type="button"
               onClick={endWorkout}
+              disabled={savingWorkout}
               className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-3xl bg-white text-sm font-extrabold text-black shadow-lg shadow-black/20 active:scale-[0.99] transition duration-200 hover:bg-neutral-200"
             >
-              종료
+              {savingWorkout ? "저장 중" : "완료"}
             </button>
             <button
               type="button"

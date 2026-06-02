@@ -1,9 +1,13 @@
 import { apiClient } from "@/api/client";
+import { isDevTestAuthToken } from "@/auth/auth";
 import {
   validateDateRange,
   validateWorkoutCountDelta,
   validateWorkoutItemDraft
 } from "@/api/validation";
+
+export const WORKOUT_HISTORY_STORAGE_KEY = "moduflow:workout-history:v1";
+export const WORKOUT_HISTORY_EVENT = "moduflow:workout-history";
 
 function validationError(message) {
   const error = new Error(message);
@@ -11,11 +15,71 @@ function validationError(message) {
   return error;
 }
 
+function safeJsonParse(raw) {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function readWorkoutHistoryFromLocalStorage() {
+  if (typeof window === "undefined") return {};
+  const raw = window.localStorage.getItem(WORKOUT_HISTORY_STORAGE_KEY);
+  const parsed = safeJsonParse(raw);
+  if (!parsed || typeof parsed !== "object") return {};
+  return parsed;
+}
+
+function writeWorkoutHistoryToLocalStorage(history) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(WORKOUT_HISTORY_STORAGE_KEY, JSON.stringify(history || {}));
+  window.dispatchEvent(new CustomEvent(WORKOUT_HISTORY_EVENT, { detail: { history } }));
+}
+
+function normalizeWorkoutItem(item) {
+  const result = validateWorkoutItemDraft(item);
+  if (!result.ok) throw validationError(result.message);
+  return result.item;
+}
+
+function normalizeWorkoutItems(items) {
+  return (Array.isArray(items) ? items : []).map(normalizeWorkoutItem);
+}
+
+function cacheWorkoutDay(date, items) {
+  if (typeof window === "undefined") return;
+  const history = readWorkoutHistoryFromLocalStorage();
+  const safeItems = normalizeWorkoutItems(items);
+  if (safeItems.length) history[date] = safeItems;
+  else delete history[date];
+  writeWorkoutHistoryToLocalStorage(history);
+}
+
+function cacheWorkoutList(workouts) {
+  if (typeof window === "undefined" || !Array.isArray(workouts)) return;
+  const history = readWorkoutHistoryFromLocalStorage();
+  for (const workout of workouts) {
+    const date = String(workout?.date || "");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+    history[date] = normalizeWorkoutItems(workout?.items);
+  }
+  writeWorkoutHistoryToLocalStorage(history);
+}
+
 export async function fetchWorkouts({ from, to }) {
   const range = validateDateRange(from, to);
   if (!range.ok) throw validationError(range.message);
+  if (isDevTestAuthToken()) {
+    const history = readWorkoutHistoryFromLocalStorage();
+    return Object.entries(history)
+      .filter(([date]) => date >= from && date <= to)
+      .map(([date, items]) => ({ date, items: normalizeWorkoutItems(items) }));
+  }
   const res = await apiClient.get("/api/v1/workouts", { params: { from, to } });
-  return res?.data?.workouts ?? [];
+  const workouts = res?.data?.workouts ?? [];
+  cacheWorkoutList(workouts);
+  return workouts;
 }
 
 export async function fetchWorkoutCounts({ from, to }) {
@@ -26,18 +90,36 @@ export async function fetchWorkoutCounts({ from, to }) {
 }
 
 export async function replaceWorkoutDay(date, items) {
-  const safeItems = (Array.isArray(items) ? items : []).map((item) => {
-    const result = validateWorkoutItemDraft(item);
-    if (!result.ok) throw validationError(result.message);
-    return result.item;
-  });
+  const safeItems = normalizeWorkoutItems(items);
+  if (isDevTestAuthToken()) {
+    cacheWorkoutDay(date, safeItems);
+    return { ok: true, date, items: safeItems };
+  }
   const res = await apiClient.put(`/api/v1/workouts/${date}`, { items: safeItems });
+  cacheWorkoutDay(date, safeItems);
   return res?.data;
 }
 
 export async function updateWorkoutItem({ date, itemId, patch }) {
   const result = validateWorkoutItemDraft({ name: "patch", ...patch });
   if (!result.ok) throw validationError(result.message);
+  if (isDevTestAuthToken()) {
+    const history = readWorkoutHistoryFromLocalStorage();
+    const list = Array.isArray(history[date]) ? history[date] : [];
+    history[date] = list.map((it) =>
+      it?.id === itemId
+        ? {
+            ...it,
+            sets: result.item.sets,
+            reps: result.item.reps,
+            weight: result.item.weight,
+            note: result.item.note
+          }
+        : it
+    );
+    writeWorkoutHistoryToLocalStorage(history);
+    return { ok: true };
+  }
   const res = await apiClient.patch(`/api/v1/workouts/${date}/items/${itemId}`, {
     sets: result.item.sets,
     reps: result.item.reps,
@@ -48,6 +130,15 @@ export async function updateWorkoutItem({ date, itemId, patch }) {
 }
 
 export async function deleteWorkoutItem({ date, itemId }) {
+  if (isDevTestAuthToken()) {
+    const history = readWorkoutHistoryFromLocalStorage();
+    const list = Array.isArray(history[date]) ? history[date] : [];
+    const filtered = list.filter((it) => it?.id !== itemId);
+    if (filtered.length) history[date] = filtered;
+    else delete history[date];
+    writeWorkoutHistoryToLocalStorage(history);
+    return { ok: true };
+  }
   const res = await apiClient.delete(`/api/v1/workouts/${date}/items/${itemId}`);
   return res?.data;
 }

@@ -3,10 +3,16 @@ import Card from "@/components/ui/Card";
 import WeeklyWorkoutChart from "@/components/charts/WeeklyWorkoutChart";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { getApiErrorMessage } from "@/api/client";
 import { validateWorkoutItemDraft } from "@/api/validation";
 import { fetchRoutines, loadRoutineRestDaysFromLocalStorage } from "@/api/routines";
-
-const WORKOUT_HISTORY_STORAGE_KEY = "moduflow:workout-history:v1";
+import {
+  deleteWorkoutItem,
+  fetchWorkouts,
+  updateWorkoutItem,
+  WORKOUT_HISTORY_EVENT,
+  WORKOUT_HISTORY_STORAGE_KEY
+} from "@/api/workouts";
 
 function formatMonth(date) {
   const y = date.getFullYear();
@@ -36,6 +42,60 @@ function startWeekday(date) {
 function dayKeyFromDate(date) {
   const map = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
   return map[date.getDay()];
+}
+
+function normalizeRecordsByDate(raw) {
+  if (!raw || typeof raw !== "object") return {};
+  const out = Object.create(null);
+  const dateKeyRe = /^\d{4}-\d{2}-\d{2}$/;
+  for (const [k, v] of Object.entries(raw)) {
+    if (!dateKeyRe.test(k)) continue;
+    if (!Array.isArray(v)) continue;
+    out[k] = v
+      .filter((it) => it && typeof it === "object")
+      .map((it) => ({
+        id: typeof it.id === "string" ? it.id : "",
+        exerciseId: typeof it.exerciseId === "string" ? it.exerciseId : undefined,
+        name: typeof it.name === "string" ? it.name : "",
+        note: typeof it.note === "string" ? it.note : "",
+        sets:
+          typeof it.sets === "number"
+            ? it.sets
+            : it.sets == null
+              ? null
+              : Number(it.sets),
+        reps:
+          typeof it.reps === "number"
+            ? it.reps
+            : it.reps == null
+              ? null
+              : Number(it.reps),
+        weight:
+          typeof it.weight === "number"
+            ? it.weight
+            : it.weight == null
+              ? null
+              : Number(it.weight)
+      }))
+      .map((it) => ({
+        ...it,
+        sets: Number.isFinite(it.sets) ? it.sets : null,
+        reps: Number.isFinite(it.reps) ? it.reps : null,
+        weight: Number.isFinite(it.weight) ? it.weight : null
+      }));
+  }
+  return out;
+}
+
+function loadWorkoutHistoryFromLocalStorage() {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(WORKOUT_HISTORY_STORAGE_KEY);
+    if (!raw) return {};
+    return normalizeRecordsByDate(JSON.parse(raw));
+  } catch {
+    return {};
+  }
 }
 
 function WorkoutListModal({
@@ -271,46 +331,7 @@ export default function Stats() {
   const [restDays, setRestDays] = useState(() => loadRoutineRestDaysFromLocalStorage());
 
   const [recordsByDate, setRecordsByDate] = useState(() => {
-    if (typeof window === "undefined") return {};
-    try {
-      const raw = window.localStorage.getItem(WORKOUT_HISTORY_STORAGE_KEY);
-      if (!raw) return {};
-      const parsed = JSON.parse(raw);
-      if (!parsed || typeof parsed !== "object") return {};
-      const out = Object.create(null);
-      const dateKeyRe = /^\d{4}-\d{2}-\d{2}$/;
-      for (const [k, v] of Object.entries(parsed)) {
-        if (!dateKeyRe.test(k)) continue;
-        if (!Array.isArray(v)) continue;
-        out[k] = v
-          .filter((it) => it && typeof it === "object")
-          .map((it) => ({
-            id: typeof it.id === "string" ? it.id : "",
-            name: typeof it.name === "string" ? it.name : "",
-            note: typeof it.note === "string" ? it.note : "",
-            sets:
-              typeof it.sets === "number"
-                ? it.sets
-                : it.sets == null
-                  ? null
-                  : Number(it.sets),
-            weight:
-              typeof it.weight === "number"
-                ? it.weight
-                : it.weight == null
-                  ? null
-                  : Number(it.weight)
-          }))
-          .map((it) => ({
-            ...it,
-            sets: Number.isFinite(it.sets) ? it.sets : null,
-            weight: Number.isFinite(it.weight) ? it.weight : null
-          }));
-      }
-      return out;
-    } catch {
-      return {};
-    }
+    return loadWorkoutHistoryFromLocalStorage();
   });
 
   const workoutByDate = useMemo(() => {
@@ -362,6 +383,52 @@ export default function Stats() {
       window.removeEventListener("moduflow:routine-rest-days", syncRestDays);
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    function syncWorkoutHistory() {
+      setRecordsByDate(loadWorkoutHistoryFromLocalStorage());
+    }
+    window.addEventListener("focus", syncWorkoutHistory);
+    window.addEventListener("storage", syncWorkoutHistory);
+    window.addEventListener(WORKOUT_HISTORY_EVENT, syncWorkoutHistory);
+    return () => {
+      window.removeEventListener("focus", syncWorkoutHistory);
+      window.removeEventListener("storage", syncWorkoutHistory);
+      window.removeEventListener(WORKOUT_HISTORY_EVENT, syncWorkoutHistory);
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function syncWorkouts() {
+      const from = `${monthLabel}-01`;
+      const to = `${monthLabel}-${String(daysInMonth(month)).padStart(2, "0")}`;
+      try {
+        const workouts = await fetchWorkouts({ from, to });
+        if (cancelled) return;
+        setRecordsByDate((prev) => {
+          const next = { ...(prev || {}) };
+          for (const key of Object.keys(next)) {
+            if (key.startsWith(monthLabel)) delete next[key];
+          }
+          for (const workout of workouts) {
+            const date = String(workout?.date || "");
+            if (!date.startsWith(monthLabel)) continue;
+            const items = Array.isArray(workout?.items) ? workout.items : [];
+            if (items.length) next[date] = items;
+          }
+          return normalizeRecordsByDate(next);
+        });
+      } catch (e) {
+        console.warn("[stats workouts] fetch failed:", e);
+      }
+    }
+    syncWorkouts();
+    return () => {
+      cancelled = true;
+    };
+  }, [month, monthLabel]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -464,6 +531,40 @@ export default function Stats() {
   }
 
   const nextDisabled = useMemo(() => monthLabel >= todayMonthLabel, [monthLabel, todayMonthLabel]);
+
+  async function handleUpdateItem(itemId, patch) {
+    if (!selectedDate) return;
+    try {
+      await updateWorkoutItem({ date: selectedDate, itemId, patch });
+      setRecordsByDate((prev) => {
+        const next = { ...(prev || {}) };
+        const list = Array.isArray(next[selectedDate]) ? [...next[selectedDate]] : [];
+        next[selectedDate] = list.map((it) => (it.id === itemId ? { ...it, ...patch } : it));
+        return next;
+      });
+    } catch (e) {
+      console.warn("[stats workout item] update failed:", e);
+      window.alert(getApiErrorMessage(e, "운동 기록 수정에 실패했어요."));
+    }
+  }
+
+  async function handleDeleteItem(itemId) {
+    if (!selectedDate) return;
+    try {
+      await deleteWorkoutItem({ date: selectedDate, itemId });
+      setRecordsByDate((prev) => {
+        const next = { ...(prev || {}) };
+        const list = Array.isArray(next[selectedDate]) ? next[selectedDate] : [];
+        const filtered = list.filter((it) => it.id !== itemId);
+        if (filtered.length) next[selectedDate] = filtered;
+        else delete next[selectedDate];
+        return next;
+      });
+    } catch (e) {
+      console.warn("[stats workout item] delete failed:", e);
+      window.alert(getApiErrorMessage(e, "운동 기록 삭제에 실패했어요."));
+    }
+  }
 
   return (
     <>
@@ -620,26 +721,8 @@ export default function Stats() {
         title={selectedDate ? `${selectedDate} 운동 목록` : "운동 목록"}
         items={selectedItems}
         onClose={() => setSelectedDate(null)}
-        onUpdateItem={(itemId, patch) => {
-          if (!selectedDate) return;
-          setRecordsByDate((prev) => {
-            const next = { ...(prev || {}) };
-            const list = Array.isArray(next[selectedDate]) ? [...next[selectedDate]] : [];
-            next[selectedDate] = list.map((it) => (it.id === itemId ? { ...it, ...patch } : it));
-            return next;
-          });
-        }}
-        onDeleteItem={(itemId) => {
-          if (!selectedDate) return;
-          setRecordsByDate((prev) => {
-            const next = { ...(prev || {}) };
-            const list = Array.isArray(next[selectedDate]) ? next[selectedDate] : [];
-            const filtered = list.filter((it) => it.id !== itemId);
-            if (filtered.length) next[selectedDate] = filtered;
-            else delete next[selectedDate];
-            return next;
-          });
-        }}
+        onUpdateItem={handleUpdateItem}
+        onDeleteItem={handleDeleteItem}
       />
     </>
   );
