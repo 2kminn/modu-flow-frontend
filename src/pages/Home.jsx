@@ -41,9 +41,9 @@ const EXERCISE_NAME_TO_ID = {
   "플랭크": "plank"
 };
 const BEACON_CONGESTION_SLOTS = [
-  { id: "beacon-1", title: "비콘 1" },
-  { id: "beacon-2", title: "비콘 2" },
-  { id: "beacon-3", title: "비콘 3" }
+  { id: "beacon-slot-1", title: "비콘 ID 없음" },
+  { id: "beacon-slot-2", title: "비콘 ID 없음" },
+  { id: "beacon-slot-3", title: "비콘 ID 없음" }
 ];
 
 function dayKeyFromDate(date) {
@@ -159,8 +159,8 @@ function normalizeCongestionLevel(value, metric = "level") {
     if (percent >= 40) return "mid";
     return "low";
   }
-  if (numericValue >= 3) return "high";
-  if (numericValue >= 2) return "mid";
+  if (numericValue >= 2) return "high";
+  if (numericValue >= 1) return "mid";
   return "low";
 }
 
@@ -203,6 +203,18 @@ function findZoneCongestion(data, keywords) {
 function normalizeZoneCongestion(zoneData) {
   if (zoneData == null) return null;
   if (typeof zoneData !== "object") return normalizeCongestionLevel(zoneData);
+  if (zoneData.congestionStatus != null) {
+    return normalizeCongestionLevel(zoneData.congestionStatus);
+  }
+  if (zoneData.congestionRate != null) {
+    return normalizeCongestionLevel(zoneData.congestionRate, "rate");
+  }
+  if (zoneData.occupancy != null) {
+    return normalizeCongestionLevel(zoneData.occupancy, "rate");
+  }
+  if (zoneData.currentCount != null) return normalizeCongestionLevel(zoneData.currentCount);
+  if (zoneData.peopleCount != null) return normalizeCongestionLevel(zoneData.peopleCount);
+  if (zoneData.userCount != null) return normalizeCongestionLevel(zoneData.userCount);
   if (zoneData.level != null) return normalizeCongestionLevel(zoneData.level);
   if (zoneData.status != null) return normalizeCongestionLevel(zoneData.status);
   if (zoneData.congestionLevel != null) {
@@ -220,7 +232,8 @@ function normalizeZoneCongestion(zoneData) {
 }
 
 function normalizeFallbackCongestion(root) {
-  if (!root || typeof root !== "object") return null;
+  if (root == null) return null;
+  if (typeof root !== "object") return normalizeCongestionLevel(root);
   if (root.level != null) return normalizeCongestionLevel(root.level);
   if (root.status != null) return normalizeCongestionLevel(root.status);
   if (root.percent != null) return normalizeCongestionLevel(root.percent, "percent");
@@ -234,15 +247,15 @@ function normalizeFallbackCongestion(root) {
 function getBeaconTitle(item, index) {
   if (!item || typeof item !== "object") return BEACON_CONGESTION_SLOTS[index].title;
   const label =
-    item.beaconName ??
     item.beaconId ??
-    item.zoneName ??
     item.zoneId ??
-    item.zone ??
+    item.minor ??
+    item.id ??
     item.name ??
-    item.type;
+    item.beaconName ??
+    item.zoneName;
   if (label == null || label === "") return BEACON_CONGESTION_SLOTS[index].title;
-  return String(label);
+  return `비콘 ID ${String(label)}`;
 }
 
 function createBeaconCongestionSlots(status = "no-signal", level = "mid") {
@@ -256,14 +269,15 @@ function createBeaconCongestionSlots(status = "no-signal", level = "mid") {
 function createNativeBeaconSignalSlots(payload, status = "signal-api-error") {
   const slots = createBeaconCongestionSlots("no-signal");
   const beaconLabel =
-    payload?.beaconName ??
     payload?.beaconId ??
-    payload?.zoneName ??
     payload?.zoneId ??
-    payload?.minor;
+    payload?.minor ??
+    payload?.id ??
+    payload?.beaconName ??
+    payload?.zoneName;
   slots[0] = {
     ...slots[0],
-    title: beaconLabel == null ? "비콘 수신" : `비콘 ${beaconLabel}`,
+    title: beaconLabel == null ? "비콘 ID 없음" : `비콘 ID ${beaconLabel}`,
     status
   };
   return slots;
@@ -305,20 +319,27 @@ function getBeaconCongestionItems(root) {
 
 function normalizeHomeCongestion(data) {
   const root = data?.data && typeof data.data === "object" ? data.data : data;
+  if (import.meta.env.DEV) {
+    console.log("[home congestion] raw response:", data);
+  }
   const cardio = findZoneCongestion(root, ["cardio", "aerobic", "유산소"]);
   const weight = findZoneCongestion(root, ["weight", "weights", "free-weight", "웨이트", "근력"]);
   const cardioLevel = normalizeZoneCongestion(cardio);
   const weightLevel = normalizeZoneCongestion(weight);
   const fallbackLevel = normalizeFallbackCongestion(root);
   const beaconItems = getBeaconCongestionItems(root);
+  const isSingleNearestBeaconLevel = beaconItems.length === 0 && fallbackLevel != null;
   const beacons = BEACON_CONGESTION_SLOTS.map((slot, index) => {
     const item = beaconItems[index];
     const level = normalizeZoneCongestion(item);
-    const hasSignal = level != null;
+    const hasSignal = level != null || (isSingleNearestBeaconLevel && index === 0);
     return {
       id: slot.id,
-      title: getBeaconTitle(item, index),
-      level: level ?? "mid",
+      title:
+        isSingleNearestBeaconLevel && index === 0
+          ? "비콘 ID 없음"
+          : getBeaconTitle(item, index),
+      level: level ?? (index === 0 ? fallbackLevel : null) ?? "mid",
       status: hasSignal ? "ok" : "no-signal"
     };
   });
@@ -607,6 +628,9 @@ export default function Home() {
 
     async function handleNativeEvent(event) {
       const detail = event?.detail;
+      if (import.meta.env.DEV) {
+        console.log("[home native event] detail:", detail);
+      }
       if (detail?.type === "congestion") {
         setCongestion({
           ...normalizeHomeCongestion(detail),
