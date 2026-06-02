@@ -39,12 +39,22 @@ function sanitizeRoutine(item) {
   if (!item || typeof item !== "object") return null;
   const id = typeof item.id === "string" && item.id ? item.id : createId();
   const name = typeof item.name === "string" ? item.name : "";
+  const exerciseId =
+    item.exerciseId == null || String(item.exerciseId).trim() === ""
+      ? undefined
+      : String(item.exerciseId).trim();
+  const note =
+    item.note == null || String(item.note).trim() === ""
+      ? undefined
+      : String(item.note);
   return {
     id,
     name,
     sets: coerceNumberOrNull(item.sets),
     reps: coerceNumberOrNull(item.reps),
     weight: coerceNumberOrNull(item.weight),
+    exerciseId,
+    note,
     isNew: Boolean(item.isNew)
   };
 }
