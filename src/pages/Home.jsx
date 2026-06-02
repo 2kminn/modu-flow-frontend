@@ -18,6 +18,8 @@ import {
 import { startNativeWorkout } from "@/native/androidBridge";
 
 const AUTO_ATTENDANCE_STORAGE_KEY = "moduflow:auto-attendance:v1";
+const GYM_NAME_STORAGE_KEY = "moduflow:gym-name:v1";
+const DEFAULT_GYM_NAME = "ModuFlow";
 const DAY_LABELS = {
   mon: "월",
   tue: "화",
@@ -66,6 +68,41 @@ function hasWorkoutRecordForDate(date) {
   } catch {
     return false;
   }
+}
+
+function readStoredGymName() {
+  if (typeof window === "undefined") return "";
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const fromQuery = params.get("gymName");
+    if (fromQuery?.trim()) {
+      window.localStorage.setItem(GYM_NAME_STORAGE_KEY, fromQuery.trim());
+      return fromQuery.trim();
+    }
+  } catch {
+    // ignore
+  }
+
+  try {
+    return window.localStorage.getItem(GYM_NAME_STORAGE_KEY)?.trim() || "";
+  } catch {
+    return "";
+  }
+}
+
+function resolveGymName(source) {
+  const gymName =
+    source?.gymName ??
+    source?.gym?.name ??
+    source?.gymId ??
+    (typeof window === "undefined"
+      ? ""
+      : window.__MODUFLOW_GYM_NAME__ ?? window.__MODUFLOW_CONFIG__?.gymName) ??
+    readStoredGymName() ??
+    import.meta.env.VITE_GYM_NAME ??
+    DEFAULT_GYM_NAME;
+
+  return String(gymName || "").trim() || DEFAULT_GYM_NAME;
 }
 
 function resolveExerciseId(name) {
@@ -216,6 +253,30 @@ function createBeaconCongestionSlots(status = "no-signal", level = "mid") {
   }));
 }
 
+function createNativeBeaconSignalSlots(payload, status = "signal-api-error") {
+  const slots = createBeaconCongestionSlots("no-signal");
+  const beaconLabel =
+    payload?.beaconName ??
+    payload?.beaconId ??
+    payload?.zoneName ??
+    payload?.zoneId ??
+    payload?.minor;
+  slots[0] = {
+    ...slots[0],
+    title: beaconLabel == null ? "비콘 수신" : `비콘 ${beaconLabel}`,
+    status
+  };
+  return slots;
+}
+
+function getDetailedApiErrorMessage(error, fallback = "API 응답 실패") {
+  const status = error?.response?.status;
+  const message = getApiErrorMessage(error, fallback);
+  if (status) return `API 실패 ${status}: ${message}`;
+  if (error?.code) return `API 실패 ${error.code}`;
+  return message || fallback;
+}
+
 function getCongestionEntries(value) {
   if (!value) return [];
   if (Array.isArray(value)) return value;
@@ -302,7 +363,8 @@ function getNativeLocationPayload(detail) {
   return {
     ...detail,
     userId,
-    zoneId
+    zoneId,
+    gymName: resolveGymName(detail)
   };
 }
 
@@ -324,9 +386,15 @@ function CongestionPill({ level, title, loading, status }) {
 
   const ui = map[level] ?? map.mid;
   const statusLabel =
-    status === "error" ? "API 응답 실패" : status === "no-signal" ? "신호 없음" : ui.label;
+    status === "error"
+      ? "API 응답 실패"
+      : status === "signal-api-error"
+        ? "신호 수신/API 실패"
+        : status === "no-signal"
+          ? "신호 없음"
+          : ui.label;
   const barClass =
-    loading || status === "error" || status === "no-signal"
+    loading || status === "error" || status === "signal-api-error" || status === "no-signal"
       ? "w-0 bg-transparent"
       : ui.bar;
 
@@ -496,7 +564,7 @@ export default function Home() {
     async function syncCongestion() {
       setCongestion((prev) => ({ ...prev, loading: true, error: null }));
       try {
-        const data = await fetchRecentCongestion();
+        const data = await fetchRecentCongestion({ gymName: resolveGymName() });
         if (cancelled) return;
         setCongestion({
           ...normalizeHomeCongestion(data),
@@ -512,7 +580,7 @@ export default function Home() {
           hasZoneBreakdown: false,
           status: "error",
           loading: false,
-          error: "API 응답 실패"
+          error: getDetailedApiErrorMessage(e)
         }));
       }
     }
@@ -547,7 +615,9 @@ export default function Home() {
 
       try {
         await updateCurrentLocation(locationPayload);
-        const data = await fetchRecentCongestion();
+        const data = await fetchRecentCongestion({
+          gymName: resolveGymName(locationPayload)
+        });
         if (!active) return;
         setCongestion({
           ...normalizeHomeCongestion(data),
@@ -559,11 +629,11 @@ export default function Home() {
         if (!active) return;
         setCongestion((prev) => ({
           ...prev,
-          beacons: createBeaconCongestionSlots("error"),
+          beacons: createNativeBeaconSignalSlots(locationPayload),
           hasZoneBreakdown: false,
           status: "error",
           loading: false,
-          error: "API 응답 실패"
+          error: getDetailedApiErrorMessage(e)
         }));
       }
     }
