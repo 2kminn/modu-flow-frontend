@@ -38,6 +38,11 @@ const EXERCISE_NAME_TO_ID = {
   plank: "plank",
   "플랭크": "plank"
 };
+const BEACON_CONGESTION_SLOTS = [
+  { id: "beacon-1", title: "비콘 1" },
+  { id: "beacon-2", title: "비콘 2" },
+  { id: "beacon-3", title: "비콘 3" }
+];
 
 function dayKeyFromDate(date) {
   const map = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
@@ -87,11 +92,15 @@ function normalizeRoutinesByDay(raw) {
 }
 
 function readNumeric(value) {
+  if (typeof value === "string") {
+    const n = Number(value.trim().replace(/%$/, ""));
+    return Number.isFinite(n) ? n : null;
+  }
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
 }
 
-function normalizeCongestionLevel(value) {
+function normalizeCongestionLevel(value, metric = "level") {
   if (typeof value === "string") {
     const key = value.trim().toLowerCase();
     if (["low", "idle", "free", "easy", "여유", "원활"].includes(key)) {
@@ -107,6 +116,12 @@ function normalizeCongestionLevel(value) {
 
   const numericValue = readNumeric(value);
   if (numericValue == null) return null;
+  if (metric === "percent" || metric === "percentage" || metric === "rate") {
+    const percent = numericValue <= 1 ? numericValue * 100 : numericValue;
+    if (percent >= 70) return "high";
+    if (percent >= 40) return "mid";
+    return "low";
+  }
   if (numericValue >= 3) return "high";
   if (numericValue >= 2) return "mid";
   return "low";
@@ -130,7 +145,7 @@ function findZoneCongestion(data, keywords) {
       data.congestion?.[keyword]
     ])
   );
-  if (direct) return direct;
+  if (direct != null) return direct;
 
   const lists = [data.zones, data.zoneCongestion, data.congestion, data.items, data];
   for (const list of lists) {
@@ -151,29 +166,112 @@ function findZoneCongestion(data, keywords) {
 function normalizeZoneCongestion(zoneData) {
   if (zoneData == null) return null;
   if (typeof zoneData !== "object") return normalizeCongestionLevel(zoneData);
+  if (zoneData.level != null) return normalizeCongestionLevel(zoneData.level);
+  if (zoneData.status != null) return normalizeCongestionLevel(zoneData.status);
+  if (zoneData.congestionLevel != null) {
+    return normalizeCongestionLevel(zoneData.congestionLevel);
+  }
+  if (zoneData.congestion != null) return normalizeCongestionLevel(zoneData.congestion);
+  if (zoneData.percent != null) return normalizeCongestionLevel(zoneData.percent, "percent");
+  if (zoneData.percentage != null) {
+    return normalizeCongestionLevel(zoneData.percentage, "percentage");
+  }
+  if (zoneData.rate != null) return normalizeCongestionLevel(zoneData.rate, "rate");
   return normalizeCongestionLevel(
-    zoneData.level ??
-      zoneData.status ??
-      zoneData.congestionLevel ??
-      zoneData.congestion ??
-      zoneData.percent ??
-      zoneData.percentage ??
-      zoneData.rate ??
-      zoneData.count
+    zoneData.count
   );
+}
+
+function normalizeFallbackCongestion(root) {
+  if (!root || typeof root !== "object") return null;
+  if (root.level != null) return normalizeCongestionLevel(root.level);
+  if (root.status != null) return normalizeCongestionLevel(root.status);
+  if (root.percent != null) return normalizeCongestionLevel(root.percent, "percent");
+  if (root.percentage != null) {
+    return normalizeCongestionLevel(root.percentage, "percentage");
+  }
+  if (root.rate != null) return normalizeCongestionLevel(root.rate, "rate");
+  return normalizeCongestionLevel(root.count);
+}
+
+function getBeaconTitle(item, index) {
+  if (!item || typeof item !== "object") return BEACON_CONGESTION_SLOTS[index].title;
+  const label =
+    item.beaconName ??
+    item.beaconId ??
+    item.zoneName ??
+    item.zoneId ??
+    item.zone ??
+    item.name ??
+    item.type;
+  if (label == null || label === "") return BEACON_CONGESTION_SLOTS[index].title;
+  return String(label);
+}
+
+function createBeaconCongestionSlots(status = "no-signal", level = "mid") {
+  return BEACON_CONGESTION_SLOTS.map((slot) => ({
+    ...slot,
+    level,
+    status
+  }));
+}
+
+function getCongestionEntries(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  if (typeof value !== "object") return [];
+  return Object.entries(value).map(([key, item]) => {
+    if (item && typeof item === "object" && !Array.isArray(item)) {
+      return { name: key, ...item };
+    }
+    return { name: key, level: item };
+  });
+}
+
+function getBeaconCongestionItems(root) {
+  if (!root || typeof root !== "object") return [];
+  const lists = [
+    root.beacons,
+    root.beaconCongestion,
+    root.zones,
+    root.zoneCongestion,
+    root.congestion,
+    root.items,
+    Array.isArray(root) ? root : null
+  ];
+  return lists.flatMap(getCongestionEntries).slice(0, BEACON_CONGESTION_SLOTS.length);
 }
 
 function normalizeHomeCongestion(data) {
   const root = data?.data && typeof data.data === "object" ? data.data : data;
   const cardio = findZoneCongestion(root, ["cardio", "aerobic", "유산소"]);
   const weight = findZoneCongestion(root, ["weight", "weights", "free-weight", "웨이트", "근력"]);
-  const fallbackLevel = normalizeCongestionLevel(
-    root?.level ?? root?.status ?? root?.percent ?? root?.percentage ?? root?.rate ?? root?.count
-  );
+  const cardioLevel = normalizeZoneCongestion(cardio);
+  const weightLevel = normalizeZoneCongestion(weight);
+  const fallbackLevel = normalizeFallbackCongestion(root);
+  const beaconItems = getBeaconCongestionItems(root);
+  const beacons = BEACON_CONGESTION_SLOTS.map((slot, index) => {
+    const item = beaconItems[index];
+    const level = normalizeZoneCongestion(item);
+    const hasSignal = level != null;
+    return {
+      id: slot.id,
+      title: getBeaconTitle(item, index),
+      level: level ?? "mid",
+      status: hasSignal ? "ok" : "no-signal"
+    };
+  });
+  const hasBeaconSignal = beacons.some((beacon) => beacon.status === "ok");
+  const hasZoneBreakdown = cardioLevel != null || weightLevel != null || hasBeaconSignal;
+  const hasCongestionSignal = hasZoneBreakdown || fallbackLevel != null;
 
   return {
-    cardio: normalizeZoneCongestion(cardio) ?? fallbackLevel ?? "mid",
-    weight: normalizeZoneCongestion(weight) ?? fallbackLevel ?? "mid",
+    cardio: cardioLevel ?? fallbackLevel ?? "mid",
+    weight: weightLevel ?? fallbackLevel ?? "mid",
+    overall: fallbackLevel ?? cardioLevel ?? weightLevel ?? "mid",
+    beacons,
+    hasZoneBreakdown,
+    status: hasCongestionSignal ? "ok" : "no-signal",
     updatedAt:
       cardio?.occurredAt ??
       weight?.occurredAt ??
@@ -208,7 +306,7 @@ function getNativeLocationPayload(detail) {
   };
 }
 
-function CongestionPill({ level, title, loading }) {
+function CongestionPill({ level, title, loading, status }) {
   const map = {
     low: {
       label: "여유",
@@ -225,6 +323,12 @@ function CongestionPill({ level, title, loading }) {
   };
 
   const ui = map[level] ?? map.mid;
+  const statusLabel =
+    status === "error" ? "API 응답 실패" : status === "no-signal" ? "신호 없음" : ui.label;
+  const barClass =
+    loading || status === "error" || status === "no-signal"
+      ? "w-0 bg-transparent"
+      : ui.bar;
 
   return (
     <div className="rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-primary-soft)] px-3 py-2 transition-[background-color,border-color] duration-200">
@@ -234,11 +338,11 @@ function CongestionPill({ level, title, loading }) {
             {title}
           </p>
           <p className="mt-0.5 text-[11px] font-semibold text-[color:var(--c-muted-2)]">
-            혼잡도 · {loading ? "확인 중" : ui.label}
+            혼잡도 · {loading ? "확인 중" : statusLabel}
           </p>
         </div>
         <div className="h-2 w-20 overflow-hidden rounded-full bg-[color:var(--c-surface)]">
-          <div className={`h-full ${ui.bar}`} />
+          <div className={`h-full ${barClass}`} />
         </div>
       </div>
     </div>
@@ -299,6 +403,10 @@ export default function Home() {
   const [congestion, setCongestion] = useState({
     cardio: "mid",
     weight: "mid",
+    overall: "mid",
+    beacons: createBeaconCongestionSlots("loading"),
+    hasZoneBreakdown: false,
+    status: "loading",
     updatedAt: null,
     loading: true,
     error: null
@@ -400,8 +508,11 @@ export default function Home() {
         if (cancelled) return;
         setCongestion((prev) => ({
           ...prev,
+          beacons: createBeaconCongestionSlots("error"),
+          hasZoneBreakdown: false,
+          status: "error",
           loading: false,
-          error: "혼잡도 정보를 불러오지 못했어요."
+          error: "API 응답 실패"
         }));
       }
     }
@@ -445,6 +556,15 @@ export default function Home() {
         });
       } catch (e) {
         console.warn("[home native location] update failed:", e);
+        if (!active) return;
+        setCongestion((prev) => ({
+          ...prev,
+          beacons: createBeaconCongestionSlots("error"),
+          hasZoneBreakdown: false,
+          status: "error",
+          loading: false,
+          error: "API 응답 실패"
+        }));
       }
     }
 
@@ -685,6 +805,9 @@ export default function Home() {
               </p>
               <p className="mt-1 text-[11px] font-semibold text-[color:var(--c-muted-2)]">
                 {congestion.error ??
+                  (congestion.status === "no-signal"
+                    ? "혼잡도 신호 없음"
+                    : null) ??
                   (formatCongestionUpdatedAt(congestion.updatedAt)
                     ? `${formatCongestionUpdatedAt(congestion.updatedAt)} 업데이트`
                     : "최근 출석 기준")}
@@ -703,17 +826,16 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <CongestionPill
-              title="유산소존"
-              level={congestion.cardio}
-              loading={congestion.loading}
-            />
-            <CongestionPill
-              title="웨이트존"
-              level={congestion.weight}
-              loading={congestion.loading}
-            />
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            {congestion.beacons.map((beacon) => (
+              <CongestionPill
+                key={beacon.id}
+                title={beacon.title}
+                level={beacon.level}
+                loading={congestion.loading}
+                status={congestion.status === "error" ? "error" : beacon.status}
+              />
+            ))}
           </div>
         </Card>
       </section>
