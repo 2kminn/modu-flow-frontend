@@ -10,7 +10,11 @@ import {
   loadRoutineRestDaysFromLocalStorage,
   loadRoutinesFromLocalStorage
 } from "@/api/routines";
-import { replaceWorkoutDay } from "@/api/workouts";
+import {
+  WORKOUT_HISTORY_EVENT,
+  WORKOUT_HISTORY_STORAGE_KEY,
+  replaceWorkoutDay
+} from "@/api/workouts";
 import { startNativeWorkout } from "@/native/androidBridge";
 
 const AUTO_ATTENDANCE_STORAGE_KEY = "moduflow:auto-attendance:v1";
@@ -45,6 +49,18 @@ function formatDate(date) {
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
+}
+
+function hasWorkoutRecordForDate(date) {
+  if (typeof window === "undefined") return false;
+  try {
+    const raw = window.localStorage.getItem(WORKOUT_HISTORY_STORAGE_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed?.[date]) && parsed[date].length > 0;
+  } catch {
+    return false;
+  }
 }
 
 function resolveExerciseId(name) {
@@ -273,8 +289,12 @@ export default function Home() {
   const userName = "사용자";
   const attendance = { status: "출석 완료", streakDays: 3 };
   const todayDayKey = useMemo(() => dayKeyFromDate(new Date()), []);
+  const todayDate = useMemo(() => formatDate(new Date()), []);
   const [startNotice, setStartNotice] = useState(null);
   const [savingWorkout, setSavingWorkout] = useState(false);
+  const [workoutSavedToday, setWorkoutSavedToday] = useState(() =>
+    hasWorkoutRecordForDate(formatDate(new Date()))
+  );
   const [showRoutineOptions, setShowRoutineOptions] = useState(false);
   const [congestion, setCongestion] = useState({
     cardio: "mid",
@@ -345,6 +365,22 @@ export default function Home() {
       autoAttendanceEnabled ? "true" : "false"
     );
   }, [autoAttendanceEnabled]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    function syncWorkoutSavedToday() {
+      setWorkoutSavedToday(hasWorkoutRecordForDate(todayDate));
+    }
+    syncWorkoutSavedToday();
+    window.addEventListener("focus", syncWorkoutSavedToday);
+    window.addEventListener("storage", syncWorkoutSavedToday);
+    window.addEventListener(WORKOUT_HISTORY_EVENT, syncWorkoutSavedToday);
+    return () => {
+      window.removeEventListener("focus", syncWorkoutSavedToday);
+      window.removeEventListener("storage", syncWorkoutSavedToday);
+      window.removeEventListener(WORKOUT_HISTORY_EVENT, syncWorkoutSavedToday);
+    };
+  }, [todayDate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -437,6 +473,10 @@ export default function Home() {
 
   async function completeTodayWorkout() {
     if (savingWorkout) return;
+    if (workoutSavedToday) {
+      setStartNotice("오늘 운동은 이미 기록되었습니다.");
+      return;
+    }
     if (isTodayRestDay) {
       setStartNotice("오늘은 쉬는 날로 설정되어 있습니다.");
       return;
@@ -448,8 +488,8 @@ export default function Home() {
 
     setSavingWorkout(true);
     try {
-      const today = formatDate(new Date());
-      await replaceWorkoutDay(today, todayRoutines);
+      await replaceWorkoutDay(todayDate, todayRoutines);
+      setWorkoutSavedToday(true);
       setStartNotice("오늘 운동이 기록되었습니다.");
       navigate("/stats");
     } catch (e) {
@@ -616,10 +656,19 @@ export default function Home() {
                 variant="secondary"
                 className="mt-2 gap-2 py-4 text-base"
                 onClick={completeTodayWorkout}
-                disabled={savingWorkout || isTodayRestDay || !todayRoutines.length}
+                disabled={
+                  savingWorkout ||
+                  workoutSavedToday ||
+                  isTodayRestDay ||
+                  !todayRoutines.length
+                }
               >
                 <CheckCircle size={18} aria-hidden="true" />
-                {savingWorkout ? "기록 저장 중" : "운동 완료"}
+                {workoutSavedToday
+                  ? "저장됨"
+                  : savingWorkout
+                    ? "기록 저장 중"
+                    : "운동 완료"}
               </Button>
             </div>
           </div>

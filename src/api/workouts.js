@@ -47,6 +47,17 @@ function normalizeWorkoutItems(items) {
   return (Array.isArray(items) ? items : []).map(normalizeWorkoutItem);
 }
 
+function isNetworkError(error) {
+  return Boolean(error && !error.response);
+}
+
+function getLocalWorkoutsInRange(from, to) {
+  const history = readWorkoutHistoryFromLocalStorage();
+  return Object.entries(history)
+    .filter(([date]) => date >= from && date <= to)
+    .map(([date, items]) => ({ date, items: normalizeWorkoutItems(items) }));
+}
+
 function cacheWorkoutDay(date, items) {
   if (typeof window === "undefined") return;
   const history = readWorkoutHistoryFromLocalStorage();
@@ -67,19 +78,39 @@ function cacheWorkoutList(workouts) {
   writeWorkoutHistoryToLocalStorage(history);
 }
 
+function cacheWorkoutItemPatch(date, itemId, patch) {
+  if (typeof window === "undefined") return;
+  const history = readWorkoutHistoryFromLocalStorage();
+  const list = Array.isArray(history[date]) ? history[date] : [];
+  history[date] = list.map((it) => (it?.id === itemId ? { ...it, ...patch } : it));
+  writeWorkoutHistoryToLocalStorage(history);
+}
+
+function cacheWorkoutItemDelete(date, itemId) {
+  if (typeof window === "undefined") return;
+  const history = readWorkoutHistoryFromLocalStorage();
+  const list = Array.isArray(history[date]) ? history[date] : [];
+  const filtered = list.filter((it) => it?.id !== itemId);
+  if (filtered.length) history[date] = filtered;
+  else delete history[date];
+  writeWorkoutHistoryToLocalStorage(history);
+}
+
 export async function fetchWorkouts({ from, to }) {
   const range = validateDateRange(from, to);
   if (!range.ok) throw validationError(range.message);
   if (isDevTestAuthToken()) {
-    const history = readWorkoutHistoryFromLocalStorage();
-    return Object.entries(history)
-      .filter(([date]) => date >= from && date <= to)
-      .map(([date, items]) => ({ date, items: normalizeWorkoutItems(items) }));
+    return getLocalWorkoutsInRange(from, to);
   }
-  const res = await apiClient.get("/api/v1/workouts", { params: { from, to } });
-  const workouts = res?.data?.workouts ?? [];
-  cacheWorkoutList(workouts);
-  return workouts;
+  try {
+    const res = await apiClient.get("/api/v1/workouts", { params: { from, to } });
+    const workouts = res?.data?.workouts ?? [];
+    cacheWorkoutList(workouts);
+    return workouts;
+  } catch (e) {
+    if (isNetworkError(e)) return getLocalWorkoutsInRange(from, to);
+    throw e;
+  }
 }
 
 export async function fetchWorkoutCounts({ from, to }) {
@@ -95,52 +126,69 @@ export async function replaceWorkoutDay(date, items) {
     cacheWorkoutDay(date, safeItems);
     return { ok: true, date, items: safeItems };
   }
-  const res = await apiClient.put(`/api/v1/workouts/${date}`, { items: safeItems });
-  cacheWorkoutDay(date, safeItems);
-  return res?.data;
+  try {
+    const res = await apiClient.put(`/api/v1/workouts/${date}`, { items: safeItems });
+    cacheWorkoutDay(date, safeItems);
+    return res?.data;
+  } catch (e) {
+    if (!isNetworkError(e)) throw e;
+    cacheWorkoutDay(date, safeItems);
+    return { ok: true, date, items: safeItems, localOnly: true };
+  }
 }
 
 export async function updateWorkoutItem({ date, itemId, patch }) {
   const result = validateWorkoutItemDraft({ name: "patch", ...patch });
   if (!result.ok) throw validationError(result.message);
   if (isDevTestAuthToken()) {
-    const history = readWorkoutHistoryFromLocalStorage();
-    const list = Array.isArray(history[date]) ? history[date] : [];
-    history[date] = list.map((it) =>
-      it?.id === itemId
-        ? {
-            ...it,
-            sets: result.item.sets,
-            reps: result.item.reps,
-            weight: result.item.weight,
-            note: result.item.note
-          }
-        : it
-    );
-    writeWorkoutHistoryToLocalStorage(history);
+    cacheWorkoutItemPatch(date, itemId, {
+      sets: result.item.sets,
+      reps: result.item.reps,
+      weight: result.item.weight,
+      note: result.item.note
+    });
     return { ok: true };
   }
-  const res = await apiClient.patch(`/api/v1/workouts/${date}/items/${itemId}`, {
-    sets: result.item.sets,
-    reps: result.item.reps,
-    weight: result.item.weight,
-    note: result.item.note
-  });
-  return res?.data;
+  try {
+    const res = await apiClient.patch(`/api/v1/workouts/${date}/items/${itemId}`, {
+      sets: result.item.sets,
+      reps: result.item.reps,
+      weight: result.item.weight,
+      note: result.item.note
+    });
+    cacheWorkoutItemPatch(date, itemId, {
+      sets: result.item.sets,
+      reps: result.item.reps,
+      weight: result.item.weight,
+      note: result.item.note
+    });
+    return res?.data;
+  } catch (e) {
+    if (!isNetworkError(e)) throw e;
+    cacheWorkoutItemPatch(date, itemId, {
+      sets: result.item.sets,
+      reps: result.item.reps,
+      weight: result.item.weight,
+      note: result.item.note
+    });
+    return { ok: true, localOnly: true };
+  }
 }
 
 export async function deleteWorkoutItem({ date, itemId }) {
   if (isDevTestAuthToken()) {
-    const history = readWorkoutHistoryFromLocalStorage();
-    const list = Array.isArray(history[date]) ? history[date] : [];
-    const filtered = list.filter((it) => it?.id !== itemId);
-    if (filtered.length) history[date] = filtered;
-    else delete history[date];
-    writeWorkoutHistoryToLocalStorage(history);
+    cacheWorkoutItemDelete(date, itemId);
     return { ok: true };
   }
-  const res = await apiClient.delete(`/api/v1/workouts/${date}/items/${itemId}`);
-  return res?.data;
+  try {
+    const res = await apiClient.delete(`/api/v1/workouts/${date}/items/${itemId}`);
+    cacheWorkoutItemDelete(date, itemId);
+    return res?.data;
+  } catch (e) {
+    if (!isNetworkError(e)) throw e;
+    cacheWorkoutItemDelete(date, itemId);
+    return { ok: true, localOnly: true };
+  }
 }
 
 export async function incrementWorkoutDayCount({ date, delta } = {}) {

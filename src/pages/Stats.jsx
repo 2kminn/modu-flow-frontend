@@ -5,14 +5,29 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getApiErrorMessage } from "@/api/client";
 import { validateWorkoutItemDraft } from "@/api/validation";
-import { fetchRoutines, loadRoutineRestDaysFromLocalStorage } from "@/api/routines";
+import {
+  fetchRoutines,
+  loadRoutineRestDaysFromLocalStorage,
+  loadRoutinesFromLocalStorage
+} from "@/api/routines";
 import {
   deleteWorkoutItem,
   fetchWorkouts,
+  replaceWorkoutDay,
   updateWorkoutItem,
   WORKOUT_HISTORY_EVENT,
   WORKOUT_HISTORY_STORAGE_KEY
 } from "@/api/workouts";
+
+const DAY_LABELS = {
+  sun: "일",
+  mon: "월",
+  tue: "화",
+  wed: "수",
+  thu: "목",
+  fri: "금",
+  sat: "토"
+};
 
 function formatMonth(date) {
   const y = date.getFullYear();
@@ -42,6 +57,28 @@ function startWeekday(date) {
 function dayKeyFromDate(date) {
   const map = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
   return map[date.getDay()];
+}
+
+function dateFromDateString(value) {
+  const [y, m, d] = String(value || "").split("-").map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+}
+
+function createId() {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function cloneWorkoutItem(item) {
+  return {
+    id: createId(),
+    exerciseId: item?.exerciseId,
+    name: item?.name,
+    note: item?.note,
+    sets: item?.sets,
+    reps: item?.reps,
+    weight: item?.weight
+  };
 }
 
 function normalizeRecordsByDate(raw) {
@@ -102,19 +139,35 @@ function WorkoutListModal({
   open,
   title,
   items,
+  routineItems,
+  routineDayLabel,
+  savingAdd,
   onClose,
+  onAddItems,
   onUpdateItem,
   onDeleteItem
 }) {
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState(null);
   const [draftError, setDraftError] = useState("");
+  const [addMode, setAddMode] = useState("choice");
+  const [addDraft, setAddDraft] = useState({
+    name: "",
+    note: "",
+    sets: "",
+    reps: "",
+    weight: ""
+  });
+  const [addError, setAddError] = useState("");
 
   useEffect(() => {
     if (!open) return;
     setEditingId(null);
     setDraft(null);
     setDraftError("");
+    setAddMode("choice");
+    setAddDraft({ name: "", note: "", sets: "", reps: "", weight: "" });
+    setAddError("");
   }, [open]);
 
   useEffect(() => {
@@ -306,6 +359,132 @@ function WorkoutListModal({
               </p>
             </div>
           )}
+
+          <div className="mt-4 rounded-3xl border border-[color:var(--c-border)] bg-[color:var(--c-surface-2)] p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-extrabold text-[color:var(--c-text)]">
+                  운동 추가
+                </p>
+                <p className="mt-1 text-xs font-semibold text-[color:var(--c-muted-2)]">
+                  빠진 운동 기록을 이 날짜에 추가해요.
+                </p>
+              </div>
+              {addMode !== "choice" ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAddMode("choice");
+                    setAddError("");
+                  }}
+                  className="h-9 shrink-0 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-3 text-xs font-extrabold text-[color:var(--c-text)]"
+                >
+                  뒤로
+                </button>
+              ) : null}
+            </div>
+
+            {addMode === "choice" ? (
+              <div className="mt-3 grid gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAddMode("manual")}
+                  className="h-12 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-left text-sm font-extrabold text-[color:var(--c-text)] transition hover:bg-[color:var(--c-surface)]/80 active:scale-[0.98]"
+                >
+                  수동으로 추가
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onAddItems?.((routineItems || []).map(cloneWorkoutItem))}
+                  disabled={savingAdd || !(routineItems || []).length}
+                  className="h-12 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-left text-sm font-extrabold text-[color:var(--c-text)] transition hover:bg-[color:var(--c-surface)]/80 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
+                >
+                  {routineDayLabel}요일 루틴 그대로 추가
+                </button>
+                {!(routineItems || []).length ? (
+                  <p className="text-xs font-semibold text-[color:var(--c-muted-2)]">
+                    이 요일에 등록된 루틴이 없어요.
+                  </p>
+                ) : null}
+              </div>
+            ) : (
+              <div className="mt-3 grid gap-2">
+                <input
+                  value={addDraft.name}
+                  onChange={(e) =>
+                    setAddDraft((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                  placeholder="운동 이름"
+                  className="h-11 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-sm font-semibold text-[color:var(--c-text)] outline-none focus:ring-2 focus:ring-[color:var(--c-focus-ring)]"
+                />
+                <input
+                  value={addDraft.note}
+                  onChange={(e) =>
+                    setAddDraft((prev) => ({ ...prev, note: e.target.value }))
+                  }
+                  placeholder="메모"
+                  className="h-11 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-sm font-semibold text-[color:var(--c-text)] outline-none focus:ring-2 focus:ring-[color:var(--c-focus-ring)]"
+                />
+                <div className="grid grid-cols-3 gap-2">
+                  <input
+                    value={addDraft.sets}
+                    onChange={(e) =>
+                      setAddDraft((prev) => ({ ...prev, sets: e.target.value }))
+                    }
+                    inputMode="numeric"
+                    placeholder="세트"
+                    className="h-11 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-sm font-semibold text-[color:var(--c-text)] outline-none focus:ring-2 focus:ring-[color:var(--c-focus-ring)]"
+                  />
+                  <input
+                    value={addDraft.reps}
+                    onChange={(e) =>
+                      setAddDraft((prev) => ({ ...prev, reps: e.target.value }))
+                    }
+                    inputMode="numeric"
+                    placeholder="횟수"
+                    className="h-11 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-sm font-semibold text-[color:var(--c-text)] outline-none focus:ring-2 focus:ring-[color:var(--c-focus-ring)]"
+                  />
+                  <input
+                    value={addDraft.weight}
+                    onChange={(e) =>
+                      setAddDraft((prev) => ({ ...prev, weight: e.target.value }))
+                    }
+                    inputMode="numeric"
+                    placeholder="무게"
+                    className="h-11 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-sm font-semibold text-[color:var(--c-text)] outline-none focus:ring-2 focus:ring-[color:var(--c-focus-ring)]"
+                  />
+                </div>
+                {addError ? (
+                  <p className="text-xs font-semibold text-red-500">{addError}</p>
+                ) : null}
+                <button
+                  type="button"
+                  disabled={savingAdd}
+                  onClick={() => {
+                    const validation = validateWorkoutItemDraft({
+                      id: createId(),
+                      name: addDraft.name,
+                      note: addDraft.note,
+                      sets: addDraft.sets,
+                      reps: addDraft.reps,
+                      weight: addDraft.weight
+                    });
+                    if (!validation.ok) {
+                      setAddError(validation.message);
+                      return;
+                    }
+                    onAddItems?.([validation.item]);
+                    setAddDraft({ name: "", note: "", sets: "", reps: "", weight: "" });
+                    setAddError("");
+                    setAddMode("choice");
+                  }}
+                  className="h-12 rounded-2xl bg-[linear-gradient(135deg,var(--c-primary),var(--c-primary-strong))] px-4 text-sm font-extrabold text-white shadow-sm transition active:scale-[0.98] disabled:opacity-60"
+                >
+                  {savingAdd ? "추가 중" : "기록에 추가"}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="shrink-0 border-t border-[color:var(--c-border)] bg-[color:var(--c-surface)] p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
@@ -329,6 +508,8 @@ export default function Stats() {
   const todayLabel = useMemo(() => formatDate(today), [today]);
   const todayMonthLabel = useMemo(() => formatMonth(today), [today]);
   const [restDays, setRestDays] = useState(() => loadRoutineRestDaysFromLocalStorage());
+  const [routinesByDay, setRoutinesByDay] = useState(() => loadRoutinesFromLocalStorage());
+  const [savingAdd, setSavingAdd] = useState(false);
 
   const [recordsByDate, setRecordsByDate] = useState(() => {
     return loadWorkoutHistoryFromLocalStorage();
@@ -365,12 +546,16 @@ export default function Stats() {
         if (!cancelled && Array.isArray(data?.restDays)) {
           setRestDays(data.restDays);
         }
+        if (!cancelled && data && typeof data === "object") {
+          setRoutinesByDay(data);
+        }
       } catch (e) {
         console.warn("[stats routines] fetch failed:", e);
       }
     }
     function syncRestDays() {
       setRestDays(loadRoutineRestDaysFromLocalStorage());
+      setRoutinesByDay(loadRoutinesFromLocalStorage());
     }
     fetchRestDays();
     window.addEventListener("focus", syncRestDays);
@@ -409,9 +594,6 @@ export default function Stats() {
         if (cancelled) return;
         setRecordsByDate((prev) => {
           const next = { ...(prev || {}) };
-          for (const key of Object.keys(next)) {
-            if (key.startsWith(monthLabel)) delete next[key];
-          }
           for (const workout of workouts) {
             const date = String(workout?.date || "");
             if (!date.startsWith(monthLabel)) continue;
@@ -514,6 +696,14 @@ export default function Stats() {
     if (!selectedDate) return [];
     return workoutByDate[selectedDate] ?? [];
   }, [selectedDate, workoutByDate]);
+  const selectedDateDayKey = useMemo(() => {
+    const date = dateFromDateString(selectedDate);
+    return date ? dayKeyFromDate(date) : "";
+  }, [selectedDate]);
+  const selectedRoutineItems = useMemo(() => {
+    const list = routinesByDay?.[selectedDateDayKey];
+    return Array.isArray(list) ? list : [];
+  }, [routinesByDay, selectedDateDayKey]);
 
   useEffect(() => {
     setSelectedDate(null);
@@ -563,6 +753,27 @@ export default function Stats() {
     } catch (e) {
       console.warn("[stats workout item] delete failed:", e);
       window.alert(getApiErrorMessage(e, "운동 기록 삭제에 실패했어요."));
+    }
+  }
+
+  async function handleAddItems(itemsToAdd) {
+    if (!selectedDate) return;
+    const safeItems = (Array.isArray(itemsToAdd) ? itemsToAdd : []).filter(Boolean);
+    if (!safeItems.length) return;
+
+    setSavingAdd(true);
+    try {
+      const nextItems = [...selectedItems, ...safeItems];
+      await replaceWorkoutDay(selectedDate, nextItems);
+      setRecordsByDate((prev) => ({
+        ...(prev || {}),
+        [selectedDate]: nextItems
+      }));
+    } catch (e) {
+      console.warn("[stats workout item] add failed:", e);
+      window.alert(getApiErrorMessage(e, "운동 기록 추가에 실패했어요."));
+    } finally {
+      setSavingAdd(false);
     }
   }
 
@@ -636,7 +847,11 @@ export default function Stats() {
                     <button
                       key={dateStr}
                       type="button"
-                      onClick={() => setSelectedDate(dateStr)}
+                      onClick={() => {
+                        if (isRestDay) return;
+                        setSelectedDate(dateStr);
+                      }}
+                      disabled={isRestDay}
                       className={[
                         "flex aspect-square flex-col items-center justify-center rounded-2xl text-xs font-extrabold transition active:scale-[0.98]",
                         hasWorkout
@@ -645,7 +860,8 @@ export default function Stats() {
                             ? "border border-[color:var(--c-primary)]/20 bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)] hover:bg-[color:var(--c-primary-soft)]"
                           : "bg-[color:var(--c-surface)] text-[color:var(--c-muted-2)] hover:bg-[color:var(--c-surface)]/80",
                         isToday ? "ring-2 ring-[color:var(--c-purple)] ring-offset-2 ring-offset-[color:var(--c-surface-2)]" : "",
-                        selectedDate === dateStr ? "ring-2 ring-[color:var(--c-purple)] ring-offset-2 ring-offset-[color:var(--c-surface-2)]" : ""
+                        selectedDate === dateStr && !isRestDay ? "ring-2 ring-[color:var(--c-purple)] ring-offset-2 ring-offset-[color:var(--c-surface-2)]" : "",
+                        isRestDay ? "cursor-not-allowed active:scale-100" : ""
                       ].join(" ")}
                       aria-label={`${dateStr}${isToday ? " 오늘" : ""}${hasWorkout ? " 운동 기록 있음" : ""}${isRestDay ? " 쉬는 날" : ""}`}
                     >
@@ -720,7 +936,11 @@ export default function Stats() {
         open={Boolean(selectedDate)}
         title={selectedDate ? `${selectedDate} 운동 목록` : "운동 목록"}
         items={selectedItems}
+        routineItems={selectedRoutineItems}
+        routineDayLabel={DAY_LABELS[selectedDateDayKey] || ""}
+        savingAdd={savingAdd}
         onClose={() => setSelectedDate(null)}
+        onAddItems={handleAddItems}
         onUpdateItem={handleUpdateItem}
         onDeleteItem={handleDeleteItem}
       />
