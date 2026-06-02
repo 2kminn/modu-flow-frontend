@@ -67,7 +67,10 @@ export default function OAuthCallback() {
       return;
     }
 
-    setAuthToken(token);
+    setAuthToken(
+      token,
+      params.get("email") || params.get("userId") || params.get("username")
+    );
     const nextPath = safePath(params.get("redirect") || safeGetReturnTo());
     safeClearReturnTo();
     navigate(nextPath, { replace: true });

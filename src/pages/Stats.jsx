@@ -13,10 +13,11 @@ import {
 import {
   deleteWorkoutItem,
   fetchWorkouts,
+  getWorkoutHistoryStorageKey,
+  loadWorkoutHistoryFromLocalStorage,
   replaceWorkoutDay,
   updateWorkoutItem,
-  WORKOUT_HISTORY_EVENT,
-  WORKOUT_HISTORY_STORAGE_KEY
+  WORKOUT_HISTORY_EVENT
 } from "@/api/workouts";
 
 const DAY_LABELS = {
@@ -122,17 +123,6 @@ function normalizeRecordsByDate(raw) {
       }));
   }
   return out;
-}
-
-function loadWorkoutHistoryFromLocalStorage() {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = window.localStorage.getItem(WORKOUT_HISTORY_STORAGE_KEY);
-    if (!raw) return {};
-    return normalizeRecordsByDate(JSON.parse(raw));
-  } catch {
-    return {};
-  }
 }
 
 function WorkoutListModal({
@@ -512,7 +502,7 @@ export default function Stats() {
   const [savingAdd, setSavingAdd] = useState(false);
 
   const [recordsByDate, setRecordsByDate] = useState(() => {
-    return loadWorkoutHistoryFromLocalStorage();
+    return normalizeRecordsByDate(loadWorkoutHistoryFromLocalStorage());
   });
 
   const workoutByDate = useMemo(() => {
@@ -572,7 +562,7 @@ export default function Stats() {
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
     function syncWorkoutHistory() {
-      setRecordsByDate(loadWorkoutHistoryFromLocalStorage());
+      setRecordsByDate(normalizeRecordsByDate(loadWorkoutHistoryFromLocalStorage()));
     }
     window.addEventListener("focus", syncWorkoutHistory);
     window.addEventListener("storage", syncWorkoutHistory);
@@ -622,51 +612,11 @@ export default function Stats() {
         if (!Array.isArray(v)) continue;
         out[k] = v.filter((it) => it && typeof it === "object");
       }
-      window.localStorage.setItem(WORKOUT_HISTORY_STORAGE_KEY, JSON.stringify(out));
+      window.localStorage.setItem(getWorkoutHistoryStorageKey(), JSON.stringify(out));
     } catch {
       // ignore
     }
   }, [recordsByDate]);
-
-  useEffect(() => {
-    if (Object.keys(recordsByDate || {}).length) return;
-    // Seed dummy history only up to today (no future dates)
-    const currentMonthLabel = formatMonth(month);
-    const canSeed = currentMonthLabel <= todayMonthLabel;
-    if (!canSeed) return;
-    const maxDay =
-      currentMonthLabel === todayMonthLabel ? today.getDate() : daysInMonth(month);
-    const baseY = month.getFullYear();
-    const baseM = month.getMonth() + 1;
-    const m = String(baseM).padStart(2, "0");
-    const template = [
-      {
-        day: 2,
-        items: [
-          { id: "w1", name: "푸쉬업", note: "가슴 · 삼두", sets: 3, weight: 0 },
-          { id: "w2", name: "플랭크", note: "코어", sets: 3, weight: 0 }
-        ]
-      },
-      {
-        day: 5,
-        items: [{ id: "w3", name: "스쿼트", note: "하체", sets: 4, weight: 60 }]
-      },
-      {
-        day: 12,
-        items: [
-          { id: "w4", name: "런지", note: "하체", sets: 3, weight: 10 },
-          { id: "w5", name: "크런치", note: "복근", sets: 3, weight: 0 }
-        ]
-      }
-    ];
-    const seeded = template.reduce((acc, entry) => {
-      if (entry.day > maxDay) return acc;
-      const key = `${baseY}-${m}-${String(entry.day).padStart(2, "0")}`;
-      acc[key] = entry.items;
-      return acc;
-    }, {});
-    setRecordsByDate(seeded);
-  }, []);
 
   const attendanceRate = useMemo(() => {
     const totalDays = daysInMonth(month);

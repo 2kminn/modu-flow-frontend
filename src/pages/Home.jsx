@@ -1,7 +1,7 @@
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { BedDouble, CheckCircle, Dumbbell, Pencil, X, Zap } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getApiErrorMessage } from "@/api/client";
 import { fetchRecentCongestion, updateCurrentLocation } from "@/api/attendance";
@@ -12,7 +12,8 @@ import {
 } from "@/api/routines";
 import {
   WORKOUT_HISTORY_EVENT,
-  WORKOUT_HISTORY_STORAGE_KEY,
+  getWorkoutHistoryStorageKey,
+  loadWorkoutHistoryFromLocalStorage,
   replaceWorkoutDay
 } from "@/api/workouts";
 import { startNativeWorkout } from "@/native/androidBridge";
@@ -61,13 +62,22 @@ function formatDate(date) {
 function hasWorkoutRecordForDate(date) {
   if (typeof window === "undefined") return false;
   try {
-    const raw = window.localStorage.getItem(WORKOUT_HISTORY_STORAGE_KEY);
-    if (!raw) return false;
-    const parsed = JSON.parse(raw);
+    const parsed = loadWorkoutHistoryFromLocalStorage();
     return Array.isArray(parsed?.[date]) && parsed[date].length > 0;
   } catch {
     return false;
   }
+}
+
+function getAccountScopedStorageKey(storageKey) {
+  return `${storageKey}:${encodeURIComponent(getWorkoutHistoryStorageKey())}`;
+}
+
+function readAutoAttendanceEnabled() {
+  if (typeof window === "undefined") return false;
+  const raw = window.localStorage.getItem(getAccountScopedStorageKey(AUTO_ATTENDANCE_STORAGE_KEY));
+  if (!raw) return false;
+  return raw === "true";
 }
 
 function readStoredGymName() {
@@ -524,12 +534,16 @@ export default function Home() {
   const todayExerciseIds = useMemo(() => {
     return todayRoutines.map(resolveRoutineExerciseId).filter(Boolean);
   }, [todayRoutines]);
-  const [autoAttendanceEnabled, setAutoAttendanceEnabled] = useState(() => {
-    if (typeof window === "undefined") return false;
-    const raw = window.localStorage.getItem(AUTO_ATTENDANCE_STORAGE_KEY);
-    if (!raw) return false;
-    return raw === "true";
-  });
+  const workoutHistoryStorageKey = getWorkoutHistoryStorageKey();
+  const autoAttendanceStorageKey = useMemo(
+    () => getAccountScopedStorageKey(AUTO_ATTENDANCE_STORAGE_KEY),
+    [workoutHistoryStorageKey]
+  );
+  const [autoAttendanceEnabled, setAutoAttendanceEnabled] = useState(() =>
+    readAutoAttendanceEnabled()
+  );
+  const autoAttendanceStorageKeyRef = useRef(autoAttendanceStorageKey);
+  const skipAutoAttendanceWriteRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -562,12 +576,24 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (autoAttendanceStorageKeyRef.current !== autoAttendanceStorageKey) {
+      autoAttendanceStorageKeyRef.current = autoAttendanceStorageKey;
+      skipAutoAttendanceWriteRef.current = true;
+    }
+    setAutoAttendanceEnabled(readAutoAttendanceEnabled());
+  }, [autoAttendanceStorageKey]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
+    if (skipAutoAttendanceWriteRef.current) {
+      skipAutoAttendanceWriteRef.current = false;
+      return;
+    }
     window.localStorage.setItem(
-      AUTO_ATTENDANCE_STORAGE_KEY,
+      autoAttendanceStorageKey,
       autoAttendanceEnabled ? "true" : "false"
     );
-  }, [autoAttendanceEnabled]);
+  }, [autoAttendanceEnabled, autoAttendanceStorageKey]);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -583,7 +609,7 @@ export default function Home() {
       window.removeEventListener("storage", syncWorkoutSavedToday);
       window.removeEventListener(WORKOUT_HISTORY_EVENT, syncWorkoutSavedToday);
     };
-  }, [todayDate]);
+  }, [todayDate, workoutHistoryStorageKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -887,9 +913,7 @@ export default function Home() {
                 onClick={completeTodayWorkout}
                 disabled={
                   savingWorkout ||
-                  workoutSavedToday ||
-                  isTodayRestDay ||
-                  !todayRoutines.length
+                  workoutSavedToday
                 }
               >
                 <CheckCircle size={18} aria-hidden="true" />
@@ -897,7 +921,11 @@ export default function Home() {
                   ? "저장됨"
                   : savingWorkout
                     ? "기록 저장 중"
-                    : "운동 완료"}
+                    : isTodayRestDay
+                      ? "쉬는 날"
+                      : !todayRoutines.length
+                        ? "루틴 없음"
+                        : "운동 완료"}
               </Button>
             </div>
           </div>

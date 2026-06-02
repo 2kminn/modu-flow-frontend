@@ -1,5 +1,5 @@
 import { apiClient } from "@/api/client";
-import { isDevTestAuthToken } from "@/auth/auth";
+import { getAuthToken, getStoredAuthIdentity, isDevTestAuthToken } from "@/auth/auth";
 import {
   validateDateRange,
   validateWorkoutCountDelta,
@@ -7,6 +7,8 @@ import {
 } from "@/api/validation";
 
 export const WORKOUT_HISTORY_STORAGE_KEY = "moduflow:workout-history:v1";
+const WORKOUT_HISTORY_STORAGE_KEY_PREFIX = `${WORKOUT_HISTORY_STORAGE_KEY}:`;
+const GUEST_WORKOUT_HISTORY_STORAGE_KEY = `${WORKOUT_HISTORY_STORAGE_KEY_PREFIX}guest`;
 export const WORKOUT_HISTORY_EVENT = "moduflow:workout-history";
 
 function validationError(message) {
@@ -23,18 +25,117 @@ function safeJsonParse(raw) {
   }
 }
 
-function readWorkoutHistoryFromLocalStorage() {
-  if (typeof window === "undefined") return {};
-  const raw = window.localStorage.getItem(WORKOUT_HISTORY_STORAGE_KEY);
+function decodeBase64Url(value) {
+  try {
+    const normalized = String(value || "").replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+    return atob(padded);
+  } catch {
+    return "";
+  }
+}
+
+function getJwtIdentity(token) {
+  if (!token || typeof token !== "string") return "";
+  const parts = token.split(".");
+  if (parts.length < 2) return "";
+  const payloadText = decodeBase64Url(parts[1]);
+  if (!payloadText) return "";
+  const payload = safeJsonParse(payloadText);
+  if (!payload || typeof payload !== "object") return "";
+  return (
+    payload.sub ??
+    payload.userId ??
+    payload.id ??
+    payload.email ??
+    payload.username ??
+    ""
+  );
+}
+
+function hashString(value) {
+  let hash = 2166136261;
+  const text = String(value || "");
+  for (let i = 0; i < text.length; i += 1) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function parseWorkoutHistory(raw) {
   const parsed = safeJsonParse(raw);
   if (!parsed || typeof parsed !== "object") return {};
   return parsed;
 }
 
+function removeDemoWorkoutSeed(history) {
+  const demoIds = new Set(["w1", "w2", "w3", "w4", "w5"]);
+  let changed = false;
+  const next = Object.create(null);
+
+  for (const [date, items] of Object.entries(history || {})) {
+    if (!Array.isArray(items)) continue;
+    const isDemoSeed =
+      items.length > 0 &&
+      items.every((item) => demoIds.has(String(item?.id || "")));
+    if (isDemoSeed) {
+      changed = true;
+      continue;
+    }
+    next[date] = items;
+  }
+
+  return { history: changed ? next : history, changed };
+}
+
+export function getWorkoutHistoryStorageKey() {
+  const token = getAuthToken();
+  if (!token) return GUEST_WORKOUT_HISTORY_STORAGE_KEY;
+
+  const identity = String(getStoredAuthIdentity() || getJwtIdentity(token) || "").trim();
+  if (identity) {
+    return `${WORKOUT_HISTORY_STORAGE_KEY_PREFIX}user:${encodeURIComponent(identity)}`;
+  }
+
+  return `${WORKOUT_HISTORY_STORAGE_KEY_PREFIX}token:${hashString(token)}`;
+}
+
+export function loadWorkoutHistoryFromLocalStorage() {
+  if (typeof window === "undefined") return {};
+  const storageKey = getWorkoutHistoryStorageKey();
+  const raw = window.localStorage.getItem(storageKey);
+  const parsed = parseWorkoutHistory(raw);
+  if (Object.keys(parsed).length) {
+    const cleaned = removeDemoWorkoutSeed(parsed);
+    if (cleaned.changed) {
+      window.localStorage.setItem(storageKey, JSON.stringify(cleaned.history));
+    }
+    return cleaned.history;
+  }
+
+  const token = getAuthToken();
+  if (token) return {};
+
+  const legacy = parseWorkoutHistory(window.localStorage.getItem(WORKOUT_HISTORY_STORAGE_KEY));
+  if (!Object.keys(legacy).length) return {};
+  const cleanedLegacy = removeDemoWorkoutSeed(legacy);
+
+  if (storageKey !== WORKOUT_HISTORY_STORAGE_KEY) {
+    window.localStorage.setItem(storageKey, JSON.stringify(cleanedLegacy.history));
+    window.localStorage.removeItem(WORKOUT_HISTORY_STORAGE_KEY);
+  }
+
+  return cleanedLegacy.history;
+}
+
 function writeWorkoutHistoryToLocalStorage(history) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(WORKOUT_HISTORY_STORAGE_KEY, JSON.stringify(history || {}));
-  window.dispatchEvent(new CustomEvent(WORKOUT_HISTORY_EVENT, { detail: { history } }));
+  const storageKey = getWorkoutHistoryStorageKey();
+  window.localStorage.setItem(storageKey, JSON.stringify(history || {}));
+  window.dispatchEvent(
+    new CustomEvent(WORKOUT_HISTORY_EVENT, { detail: { history, storageKey } })
+  );
 }
 
 function normalizeWorkoutItem(item) {
@@ -52,7 +153,7 @@ function isNetworkError(error) {
 }
 
 function getLocalWorkoutsInRange(from, to) {
-  const history = readWorkoutHistoryFromLocalStorage();
+  const history = loadWorkoutHistoryFromLocalStorage();
   return Object.entries(history)
     .filter(([date]) => date >= from && date <= to)
     .map(([date, items]) => ({ date, items: normalizeWorkoutItems(items) }));
@@ -60,7 +161,7 @@ function getLocalWorkoutsInRange(from, to) {
 
 function cacheWorkoutDay(date, items) {
   if (typeof window === "undefined") return;
-  const history = readWorkoutHistoryFromLocalStorage();
+  const history = loadWorkoutHistoryFromLocalStorage();
   const safeItems = normalizeWorkoutItems(items);
   if (safeItems.length) history[date] = safeItems;
   else delete history[date];
@@ -69,7 +170,7 @@ function cacheWorkoutDay(date, items) {
 
 function cacheWorkoutList(workouts) {
   if (typeof window === "undefined" || !Array.isArray(workouts)) return;
-  const history = readWorkoutHistoryFromLocalStorage();
+  const history = loadWorkoutHistoryFromLocalStorage();
   for (const workout of workouts) {
     const date = String(workout?.date || "");
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
@@ -80,7 +181,7 @@ function cacheWorkoutList(workouts) {
 
 function cacheWorkoutItemPatch(date, itemId, patch) {
   if (typeof window === "undefined") return;
-  const history = readWorkoutHistoryFromLocalStorage();
+  const history = loadWorkoutHistoryFromLocalStorage();
   const list = Array.isArray(history[date]) ? history[date] : [];
   history[date] = list.map((it) => (it?.id === itemId ? { ...it, ...patch } : it));
   writeWorkoutHistoryToLocalStorage(history);
@@ -88,7 +189,7 @@ function cacheWorkoutItemPatch(date, itemId, patch) {
 
 function cacheWorkoutItemDelete(date, itemId) {
   if (typeof window === "undefined") return;
-  const history = readWorkoutHistoryFromLocalStorage();
+  const history = loadWorkoutHistoryFromLocalStorage();
   const list = Array.isArray(history[date]) ? history[date] : [];
   const filtered = list.filter((it) => it?.id !== itemId);
   if (filtered.length) history[date] = filtered;
