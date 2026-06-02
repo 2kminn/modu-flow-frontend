@@ -390,11 +390,17 @@ function CongestionPill({ level, title, loading, status }) {
       ? "API 응답 실패"
       : status === "signal-api-error"
         ? "신호 수신/API 실패"
-        : status === "no-signal"
-          ? "신호 없음"
-          : ui.label;
+        : status === "signal-received"
+          ? "신호 수신"
+          : status === "no-signal"
+            ? "신호 없음"
+            : ui.label;
   const barClass =
-    loading || status === "error" || status === "signal-api-error" || status === "no-signal"
+    loading ||
+    status === "error" ||
+    status === "signal-api-error" ||
+    status === "signal-received" ||
+    status === "no-signal"
       ? "w-0 bg-transparent"
       : ui.bar;
 
@@ -612,6 +618,15 @@ export default function Home() {
 
       const locationPayload = getNativeLocationPayload(detail);
       if (!locationPayload) return;
+
+      setCongestion((prev) => ({
+        ...prev,
+        beacons: createNativeBeaconSignalSlots(locationPayload, "signal-received"),
+        hasZoneBreakdown: true,
+        status: "ok",
+        loading: false,
+        error: null
+      }));
 
       try {
         await updateCurrentLocation(locationPayload);
@@ -903,7 +918,7 @@ export default function Home() {
                 title={beacon.title}
                 level={beacon.level}
                 loading={congestion.loading}
-                status={congestion.status === "error" ? "error" : beacon.status}
+                status={beacon.status}
               />
             ))}
           </div>
