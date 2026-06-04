@@ -1,7 +1,7 @@
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-import { BedDouble, CheckCircle, Dumbbell, Pencil, X, Zap } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { BedDouble, CheckCircle, Dumbbell, Pencil, RefreshCw, X, Zap } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getApiErrorMessage } from "@/api/client";
 import { fetchRecentCongestion, updateCurrentLocation } from "@/api/attendance";
@@ -18,7 +18,6 @@ import {
 } from "@/api/workouts";
 import { startNativeWorkout } from "@/native/androidBridge";
 
-const AUTO_ATTENDANCE_STORAGE_KEY = "moduflow:auto-attendance:v1";
 const GYM_NAME_STORAGE_KEY = "moduflow:gym-name:v1";
 const DEFAULT_GYM_NAME = "ModuFlow";
 const DAY_LABELS = {
@@ -67,17 +66,6 @@ function hasWorkoutRecordForDate(date) {
   } catch {
     return false;
   }
-}
-
-function getAccountScopedStorageKey(storageKey) {
-  return `${storageKey}:${encodeURIComponent(getWorkoutHistoryStorageKey())}`;
-}
-
-function readAutoAttendanceEnabled() {
-  if (typeof window === "undefined") return false;
-  const raw = window.localStorage.getItem(getAccountScopedStorageKey(AUTO_ATTENDANCE_STORAGE_KEY));
-  if (!raw) return false;
-  return raw === "true";
 }
 
 function readStoredGymName() {
@@ -428,10 +416,10 @@ function CongestionPill({ level, title, loading, status }) {
             : ui.label;
   const barClass =
     loading ||
-    status === "error" ||
-    status === "signal-api-error" ||
-    status === "signal-received" ||
-    status === "no-signal"
+      status === "error" ||
+      status === "signal-api-error" ||
+      status === "signal-received" ||
+      status === "no-signal"
       ? "w-0 bg-transparent"
       : ui.bar;
 
@@ -451,45 +439,6 @@ function CongestionPill({ level, title, loading, status }) {
         </div>
       </div>
     </div>
-  );
-}
-
-function AutoAttendanceToggle({ enabled, onChange }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={enabled}
-      aria-label={enabled ? "자동출석 끄기" : "자동출석 켜기"}
-      onClick={() => onChange(!enabled)}
-      className={[
-        "relative inline-flex h-11 w-[96px] items-center rounded-full border shadow-sm transition duration-200 active:scale-[0.98] hover:bg-[color:var(--c-surface-2)]",
-        enabled
-          ? "border-[color:var(--c-border-strong)] bg-[color:var(--c-primary-soft)]"
-          : "border-[color:var(--c-border)] bg-[color:var(--c-surface)]"
-      ].join(" ")}
-    >
-      <span className="absolute left-3 text-[11px] font-extrabold text-[color:var(--c-muted-2)]">
-        OFF
-      </span>
-      <span className="absolute right-3 text-[11px] font-extrabold text-[color:var(--c-muted-2)]">
-        ON
-      </span>
-      <span
-        aria-hidden="true"
-        className={[
-          "absolute top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full border shadow-sm transition-transform",
-          enabled
-            ? "border-[color:var(--c-primary)] bg-[color:var(--c-primary)] text-white"
-            : "border-[color:var(--c-border)] bg-[color:var(--c-surface-2)]",
-          enabled ? "translate-x-[56px]" : "translate-x-[4px]"
-        ].join(" ")}
-      >
-        <span className="text-[11px] font-extrabold">
-          {enabled ? "ON" : "OFF"}
-        </span>
-      </span>
-    </button>
   );
 }
 
@@ -535,15 +484,6 @@ export default function Home() {
     return todayRoutines.map(resolveRoutineExerciseId).filter(Boolean);
   }, [todayRoutines]);
   const workoutHistoryStorageKey = getWorkoutHistoryStorageKey();
-  const autoAttendanceStorageKey = useMemo(
-    () => getAccountScopedStorageKey(AUTO_ATTENDANCE_STORAGE_KEY),
-    [workoutHistoryStorageKey]
-  );
-  const [autoAttendanceEnabled, setAutoAttendanceEnabled] = useState(() =>
-    readAutoAttendanceEnabled()
-  );
-  const autoAttendanceStorageKeyRef = useRef(autoAttendanceStorageKey);
-  const skipAutoAttendanceWriteRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -576,26 +516,6 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (autoAttendanceStorageKeyRef.current !== autoAttendanceStorageKey) {
-      autoAttendanceStorageKeyRef.current = autoAttendanceStorageKey;
-      skipAutoAttendanceWriteRef.current = true;
-    }
-    setAutoAttendanceEnabled(readAutoAttendanceEnabled());
-  }, [autoAttendanceStorageKey]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (skipAutoAttendanceWriteRef.current) {
-      skipAutoAttendanceWriteRef.current = false;
-      return;
-    }
-    window.localStorage.setItem(
-      autoAttendanceStorageKey,
-      autoAttendanceEnabled ? "true" : "false"
-    );
-  }, [autoAttendanceEnabled, autoAttendanceStorageKey]);
-
-  useEffect(() => {
     if (typeof window === "undefined") return undefined;
     function syncWorkoutSavedToday() {
       setWorkoutSavedToday(hasWorkoutRecordForDate(todayDate));
@@ -611,42 +531,47 @@ export default function Home() {
     };
   }, [todayDate, workoutHistoryStorageKey]);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function syncCongestion() {
+  const syncCongestion = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) {
       setCongestion((prev) => ({ ...prev, loading: true, error: null }));
-      try {
-        const data = await fetchRecentCongestion({ gymName: resolveGymName() });
-        if (cancelled) return;
-        setCongestion({
-          ...normalizeHomeCongestion(data),
-          loading: false,
-          error: null
-        });
-      } catch (e) {
-        console.warn("[home congestion] fetch failed:", e);
-        if (cancelled) return;
-        setCongestion((prev) => ({
-          ...prev,
-          beacons: createBeaconCongestionSlots("error"),
-          hasZoneBreakdown: false,
-          status: "error",
-          loading: false,
-          error: getDetailedApiErrorMessage(e)
-        }));
-      }
+    }
+    try {
+      const data = await fetchRecentCongestion({ gymName: resolveGymName() });
+      setCongestion({
+        ...normalizeHomeCongestion(data),
+        loading: false,
+        error: null
+      });
+    } catch (e) {
+      console.warn("[home congestion] fetch failed:", e);
+      setCongestion((prev) => ({
+        ...prev,
+        beacons: createBeaconCongestionSlots("error"),
+        hasZoneBreakdown: false,
+        status: "error",
+        loading: false,
+        error: getDetailedApiErrorMessage(e)
+      }));
+    }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    function syncIfActive(options) {
+      if (!active) return;
+      syncCongestion(options);
     }
 
-    syncCongestion();
-    const timer = window.setInterval(syncCongestion, 60_000);
-    window.addEventListener("focus", syncCongestion);
+    syncIfActive();
+    const timer = window.setInterval(() => syncIfActive({ silent: true }), 60_000);
+    window.addEventListener("focus", syncIfActive);
     return () => {
-      cancelled = true;
+      active = false;
       window.clearInterval(timer);
-      window.removeEventListener("focus", syncCongestion);
+      window.removeEventListener("focus", syncIfActive);
     };
-  }, []);
+  }, [syncCongestion]);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -934,9 +859,6 @@ export default function Home() {
         <Card>
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-semibold text-[color:var(--c-muted)]">
-                혼잡도
-              </p>
               <p className="mt-1 text-lg font-extrabold text-[color:var(--c-text)]">
                 지금 운동존 상태
               </p>
@@ -951,14 +873,21 @@ export default function Home() {
               </p>
             </div>
             <div className="text-right">
-              <p className="text-[11px] font-extrabold text-[color:var(--c-muted-2)]">
-                자동출석
-              </p>
               <div className="mt-2">
-                <AutoAttendanceToggle
-                  enabled={autoAttendanceEnabled}
-                  onChange={setAutoAttendanceEnabled}
-                />
+                <button
+                  type="button"
+                  onClick={() => syncCongestion()}
+                  disabled={congestion.loading}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-3 text-xs font-extrabold text-[color:var(--c-text)] shadow-sm transition duration-200 hover:bg-[color:var(--c-surface-2)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                  aria-label="비콘 위치정보 갱신"
+                >
+                  <RefreshCw
+                    size={15}
+                    className={congestion.loading ? "animate-spin" : ""}
+                    aria-hidden="true"
+                  />
+                  갱신
+                </button>
               </div>
             </div>
           </div>
