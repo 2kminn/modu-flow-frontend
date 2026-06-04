@@ -1,9 +1,15 @@
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-import { clearAuthToken } from "@/auth/auth";
+import FloatingLabelInput from "@/components/ui/FloatingLabelInput";
+import {
+  clearAuthToken,
+  getAuthDisplayIdentity,
+  getAuthProfileName,
+  setStoredProfileName
+} from "@/auth/auth";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CalendarCheck, ChevronRight, Lock, LogOut, UserCircle } from "lucide-react";
+import { CalendarCheck, ChevronRight, Lock, LogOut, Pencil, UserCircle } from "lucide-react";
 
 function MenuRow({ label, description, onClick, icon: Icon }) {
   return (
@@ -81,12 +87,86 @@ function LogoutConfirmDialog({ onCancel, onConfirm }) {
   );
 }
 
+function ProfileNameDialog({ initialName, accountEmail, onCancel, onSave }) {
+  const [name, setName] = useState(initialName);
+  const [error, setError] = useState(null);
+
+  function handleSubmit(event) {
+    event.preventDefault();
+    const nextName = String(name || "").trim();
+    if (!nextName) {
+      setError("이름을 입력해 주세요.");
+      return;
+    }
+    onSave(nextName);
+  }
+
+  return (
+    <div
+      className="fixed -top-24 bottom-[calc(72px+env(safe-area-inset-bottom))] inset-x-0 z-50 flex items-center justify-center bg-black/45 px-4 pt-24"
+      role="presentation"
+      onClick={onCancel}
+    >
+      <form
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="profile-name-dialog-title"
+        className="w-full max-w-sm rounded-3xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] p-5 shadow-xl"
+        onClick={(event) => event.stopPropagation()}
+        onSubmit={handleSubmit}
+      >
+        <h2
+          id="profile-name-dialog-title"
+          className="text-lg font-extrabold text-[color:var(--c-text)]"
+        >
+          이름 수정
+        </h2>
+        <p className="mt-2 truncate text-sm font-semibold text-[color:var(--c-muted)]">
+          로그인 계정: {accountEmail}
+        </p>
+
+        <div className="mt-5 space-y-2">
+          <FloatingLabelInput
+            id="profile-name"
+            label="이름"
+            autoComplete="name"
+            maxLength={30}
+            inputClassName="focus:border-[color:var(--c-primary)] focus:ring-2 focus:ring-[color:var(--c-focus-ring)]"
+            value={name}
+            onChange={(event) => {
+              setName(event.target.value);
+              setError(null);
+            }}
+          />
+          {error ? (
+            <p className="text-xs font-semibold text-red-500">
+              {error}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="mt-5 grid grid-cols-2 gap-2">
+          <Button type="button" variant="secondary" onClick={onCancel}>
+            취소
+          </Button>
+          <Button type="submit">
+            저장
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export default function MyPage() {
   const navigate = useNavigate();
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+  const [profileName, setProfileName] = useState(() => getAuthProfileName());
+  const accountEmail = getAuthDisplayIdentity();
   const user = {
-    name: "사용자",
-    bio: "초급 · 주 3회 · 목표: 근력 향상"
+    name: profileName,
+    bio: accountEmail
   };
 
   const menus = [
@@ -99,10 +179,21 @@ export default function MyPage() {
     navigate("/login", { replace: true });
   };
 
+  const handleSaveProfileName = (nextName) => {
+    const savedName = setStoredProfileName(nextName, accountEmail);
+    setProfileName(savedName || accountEmail);
+    setIsProfileDialogOpen(false);
+  };
+
   return (
     <section className="space-y-4">
       <Card className="overflow-hidden bg-[linear-gradient(135deg,var(--c-primary),var(--c-purple))] p-0">
-        <div className="flex items-center justify-between gap-4 p-4">
+        <button
+          type="button"
+          className="flex w-full items-center justify-between gap-4 p-4 text-left transition hover:brightness-105 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--c-primary)]"
+          onClick={() => setIsProfileDialogOpen(true)}
+          aria-label="프로필 이름 수정"
+        >
           <div className="min-w-0">
             <p className="text-sm font-semibold text-white/75">
               프로필
@@ -114,13 +205,15 @@ export default function MyPage() {
               {user.bio}
             </p>
           </div>
-          <div
-            className="grid h-14 w-14 shrink-0 place-items-center rounded-3xl border border-white/25 bg-white/15 text-white transition-[background-color,border-color] duration-200"
+          <div className="relative grid h-14 w-14 shrink-0 place-items-center rounded-3xl border border-white/25 bg-white/15 text-white transition-[background-color,border-color] duration-200"
             aria-hidden="true"
           >
             <UserCircle size={30} aria-hidden="true" />
+            <span className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full border border-white/30 bg-white/20">
+              <Pencil size={13} aria-hidden="true" />
+            </span>
           </div>
-        </div>
+        </button>
       </Card>
 
       <Card className="p-0">
@@ -174,6 +267,15 @@ export default function MyPage() {
         <LogoutConfirmDialog
           onCancel={() => setIsLogoutDialogOpen(false)}
           onConfirm={handleLogout}
+        />
+      ) : null}
+
+      {isProfileDialogOpen ? (
+        <ProfileNameDialog
+          initialName={profileName}
+          accountEmail={accountEmail}
+          onCancel={() => setIsProfileDialogOpen(false)}
+          onSave={handleSaveProfileName}
         />
       ) : null}
     </section>

@@ -16,6 +16,7 @@ import {
   loadWorkoutHistoryFromLocalStorage,
   replaceWorkoutDay
 } from "@/api/workouts";
+import { getAuthDisplayIdentity } from "@/auth/auth";
 import { startNativeWorkout } from "@/native/androidBridge";
 
 const GYM_NAME_STORAGE_KEY = "moduflow:gym-name:v1";
@@ -444,7 +445,7 @@ function CongestionPill({ level, title, loading, status }) {
 
 export default function Home() {
   const navigate = useNavigate();
-  const userName = "사용자";
+  const userName = getAuthDisplayIdentity();
   const attendance = { status: "출석 완료", streakDays: 3 };
   const todayDayKey = useMemo(() => dayKeyFromDate(new Date()), []);
   const todayDate = useMemo(() => formatDate(new Date()), []);

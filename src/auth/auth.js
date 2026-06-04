@@ -2,6 +2,7 @@ import { setNativeAuthToken } from "@/native/androidBridge";
 
 const TOKEN_KEY = "auth_token";
 const ACCOUNT_KEY = "auth_account";
+const PROFILE_NAME_KEY_PREFIX = "moduflow:profile-name:v1:";
 export const DEV_TEST_AUTH_TOKEN = "dev-test-token";
 
 function safeGet(storage, key = TOKEN_KEY) {
@@ -45,6 +46,39 @@ export function isDevTestAuthToken(token = getAuthToken()) {
 
 export function getStoredAuthIdentity() {
   return safeGet(sessionStorage, ACCOUNT_KEY) || null;
+}
+
+function normalizeAccount(accountHint = getStoredAuthIdentity()) {
+  return String(accountHint || "").trim().toLowerCase();
+}
+
+function getProfileNameKey(accountHint) {
+  const account = normalizeAccount(accountHint);
+  if (!account) return null;
+  return `${PROFILE_NAME_KEY_PREFIX}${encodeURIComponent(account)}`;
+}
+
+export function getStoredProfileName(accountHint) {
+  const key = getProfileNameKey(accountHint);
+  if (!key) return "";
+  return String(safeGet(localStorage, key) || "").trim();
+}
+
+export function setStoredProfileName(name, accountHint) {
+  const key = getProfileNameKey(accountHint);
+  if (!key) return "";
+  const normalizedName = String(name || "").trim();
+  if (normalizedName) safeSet(localStorage, key, normalizedName);
+  else safeRemove(localStorage, key);
+  return normalizedName;
+}
+
+export function getAuthDisplayIdentity() {
+  return getStoredAuthIdentity() || "사용자";
+}
+
+export function getAuthProfileName() {
+  return getStoredProfileName() || getAuthDisplayIdentity();
 }
 
 export function setAuthToken(token, accountHint) {
