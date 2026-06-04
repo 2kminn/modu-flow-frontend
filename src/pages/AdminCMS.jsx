@@ -1,0 +1,483 @@
+import { useMemo, useState } from "react";
+import Card from "@/components/ui/Card";
+import ThemeToggle from "@/components/ui/ThemeToggle";
+import {
+  Activity,
+  BarChart3,
+  Check,
+  ChevronRight,
+  Dumbbell,
+  Edit3,
+  Menu,
+  Plus,
+  RadioTower,
+  Trash2,
+  Users,
+  X
+} from "lucide-react";
+
+const initialBeaconZones = [
+  { id: "B001", name: "유산소 존", capacity: 30 },
+  { id: "B002", name: "웨이트 존", capacity: 50 },
+  { id: "B003", name: "스트레칭 존", capacity: 20 },
+  { id: "B004", name: "PT 존", capacity: 10 }
+];
+
+const menuItems = [
+  { label: "대시보드", icon: BarChart3 },
+  { label: "출결 현황", icon: Users },
+  { label: "비콘 구역 설정", icon: RadioTower }
+];
+
+const congestionZones = [
+  { name: "유산소 존", current: 18, capacity: 30, rate: 60, status: "보통" },
+  { name: "웨이트 존", current: 42, capacity: 50, rate: 84, status: "혼잡" }
+];
+
+const emptyForm = { id: "", name: "", capacity: "" };
+
+function Sidebar({ open, onClose }) {
+  return (
+    <>
+      <div
+        className={[
+          "fixed inset-0 z-40 bg-slate-950/30 backdrop-blur-sm transition-opacity lg:hidden",
+          open ? "opacity-100" : "pointer-events-none opacity-0"
+        ].join(" ")}
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <aside
+        className={[
+          "fixed inset-y-0 left-0 z-50 w-[280px] border-r border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 py-5 text-[color:var(--c-text)] transition-transform lg:sticky lg:top-0 lg:z-auto lg:h-dvh lg:translate-x-0",
+          open ? "translate-x-0" : "-translate-x-full"
+        ].join(" ")}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[linear-gradient(135deg,var(--c-primary),var(--c-purple))] text-white shadow-sm">
+              <Dumbbell size={20} aria-hidden="true" />
+            </div>
+            <div>
+              <p className="text-[11px] font-extrabold uppercase tracking-wide text-[color:var(--c-muted-2)]">
+                moduflow
+              </p>
+              <h2 className="text-base font-black">관리자 CMS</h2>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="grid h-10 w-10 place-items-center rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-[color:var(--c-muted)] transition hover:bg-[color:var(--c-surface-2)] lg:hidden"
+            onClick={onClose}
+            aria-label="메뉴 닫기"
+          >
+            <X size={18} aria-hidden="true" />
+          </button>
+        </div>
+
+        <nav className="mt-8 space-y-2" aria-label="관리자 메뉴">
+          {menuItems.map((item, index) => {
+            const Icon = item.icon;
+            const isActive = index === 0;
+
+            return (
+              <button
+                type="button"
+                key={item.label}
+                className={[
+                  "flex h-12 w-full items-center justify-between rounded-2xl px-4 text-left text-sm font-bold transition",
+                  isActive
+                    ? "bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)]"
+                    : "text-[color:var(--c-muted)] hover:bg-[color:var(--c-surface-2)] hover:text-[color:var(--c-text)]"
+                ].join(" ")}
+                onClick={onClose}
+              >
+                <span className="flex items-center gap-3">
+                  <Icon size={18} aria-hidden="true" />
+                  {item.label}
+                </span>
+                {isActive ? <ChevronRight size={17} aria-hidden="true" /> : null}
+              </button>
+            );
+          })}
+        </nav>
+      </aside>
+    </>
+  );
+}
+
+function StatCard({ icon: Icon, label, value, tone }) {
+  return (
+    <Card className="rounded-2xl p-5">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-bold text-[color:var(--c-muted)]">{label}</p>
+          <p className="mt-2 text-2xl font-black tracking-tight">{value}</p>
+        </div>
+        <div className={["grid h-12 w-12 place-items-center rounded-2xl", tone].join(" ")}>
+          <Icon size={22} aria-hidden="true" />
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function AdminCMS() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [beaconZones, setBeaconZones] = useState(initialBeaconZones);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState(emptyForm);
+
+  const attendanceRate = useMemo(() => Math.round((124 / 328) * 1000) / 10, []);
+  const isEditing = editingId != null;
+
+  function openAddModal() {
+    setEditingId(null);
+    setForm(emptyForm);
+    setModalOpen(true);
+  }
+
+  function openEditModal(zone) {
+    setEditingId(zone.id);
+    setForm({ id: zone.id, name: zone.name, capacity: String(zone.capacity) });
+    setModalOpen(true);
+  }
+
+  function closeModal() {
+    setModalOpen(false);
+    setEditingId(null);
+    setForm(emptyForm);
+  }
+
+  function saveBeaconZone(e) {
+    e.preventDefault();
+    const id = form.id.trim();
+    const name = form.name.trim();
+    const capacity = Number(form.capacity);
+
+    if (!id || !name || !Number.isFinite(capacity) || capacity <= 0) return;
+
+    if (isEditing) {
+      setBeaconZones((zones) =>
+        zones.map((zone) =>
+          zone.id === editingId ? { id, name, capacity: Math.round(capacity) } : zone
+        )
+      );
+    } else {
+      setBeaconZones((zones) => [...zones, { id, name, capacity: Math.round(capacity) }]);
+    }
+
+    closeModal();
+  }
+
+  function deleteBeaconZone(zoneId) {
+    if (!window.confirm("선택한 비콘 구역을 삭제할까요?")) return;
+    setBeaconZones((zones) => zones.filter((zone) => zone.id !== zoneId));
+  }
+
+  return (
+    <div className="min-h-dvh bg-[color:var(--c-bg)] text-[color:var(--c-text)]">
+      <div className="lg:grid lg:grid-cols-[280px_minmax(0,1fr)]">
+        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+        <main className="min-w-0">
+          <header className="sticky top-0 z-30 border-b border-[color:var(--c-border)] bg-[color:var(--c-surface)]/95 backdrop-blur">
+            <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
+              <div className="flex min-w-0 items-center gap-3">
+                <button
+                  type="button"
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-[color:var(--c-primary)] shadow-sm transition hover:bg-[color:var(--c-primary-soft)] lg:hidden"
+                  onClick={() => setSidebarOpen(true)}
+                  aria-label="메뉴 열기"
+                >
+                  <Menu size={20} aria-hidden="true" />
+                </button>
+                <div className="min-w-0">
+                  <h1 className="truncate text-xl font-black tracking-tight sm:text-2xl">
+                    대시보드
+                  </h1>
+                  <p className="mt-1 hidden text-sm font-semibold text-[color:var(--c-muted)] sm:block">
+                    헬스장 운영 현황을 한눈에 확인하세요.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex shrink-0 items-center gap-2">
+                <span className="hidden rounded-full border border-[color:var(--c-border)] bg-[color:var(--c-surface-2)] px-3 py-2 text-xs font-extrabold text-[color:var(--c-primary)] sm:inline-flex">
+                  관리자
+                </span>
+                <ThemeToggle />
+              </div>
+            </div>
+          </header>
+
+          <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
+            <p className="mb-4 text-sm font-semibold text-[color:var(--c-muted)] sm:hidden">
+              헬스장 운영 현황을 한눈에 확인하세요.
+            </p>
+
+            <section className="grid gap-4 md:grid-cols-3">
+              <StatCard
+                icon={Activity}
+                label="현재 출석 인원"
+                value="124명"
+                tone="bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)]"
+              />
+              <StatCard
+                icon={Users}
+                label="총 회원 수"
+                value="328명"
+                tone="bg-[color:var(--c-purple-soft)] text-[color:var(--c-purple)]"
+              />
+              <StatCard
+                icon={Check}
+                label="출석률"
+                value={`${attendanceRate}%`}
+                tone="bg-emerald-500/10 text-[color:var(--c-success)]"
+              />
+            </section>
+
+            <section className="mt-4 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+              <Card className="rounded-2xl p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="text-base font-black">출결 현황</h2>
+                    <p className="mt-1 text-sm font-semibold text-[color:var(--c-muted)]">
+                      총 회원 수 328명 기준
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-[color:var(--c-primary-soft)] px-3 py-1 text-xs font-extrabold text-[color:var(--c-primary)]">
+                    실시간
+                  </span>
+                </div>
+
+                <div className="mt-6 grid items-center gap-6 sm:grid-cols-[180px_1fr]">
+                  <div
+                    className="mx-auto grid h-44 w-44 place-items-center rounded-full"
+                    style={{
+                      background: `conic-gradient(var(--c-primary) 0 ${attendanceRate}%, var(--c-surface-2) ${attendanceRate}% 100%)`
+                    }}
+                    aria-label={`출석률 ${attendanceRate}%`}
+                  >
+                    <div className="grid h-28 w-28 place-items-center rounded-full border border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-center">
+                      <div>
+                        <p className="text-2xl font-black">{attendanceRate}%</p>
+                        <p className="text-xs font-bold text-[color:var(--c-muted)]">출석률</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {[
+                      ["총 회원 수", "328명"],
+                      ["출석 회원", "124명"],
+                      ["미출석 회원", "204명"]
+                    ].map(([label, value]) => (
+                      <div
+                        key={label}
+                        className="flex items-center justify-between rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface-2)] px-4 py-3"
+                      >
+                        <span className="text-sm font-bold text-[color:var(--c-muted)]">
+                          {label}
+                        </span>
+                        <span className="text-base font-black">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="rounded-2xl p-5">
+                <h2 className="text-base font-black">공간별 혼잡도</h2>
+                <div className="mt-5 space-y-5">
+                  {congestionZones.map((zone) => (
+                    <div key={zone.name}>
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="font-black">{zone.name}</p>
+                          <p className="mt-1 text-sm font-semibold text-[color:var(--c-muted)]">
+                            {zone.current}명 / {zone.capacity}명
+                          </p>
+                        </div>
+                        <span
+                          className={[
+                            "rounded-full px-3 py-1 text-xs font-extrabold",
+                            zone.status === "혼잡"
+                              ? "bg-red-500/10 text-[color:var(--c-danger)]"
+                              : "bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)]"
+                          ].join(" ")}
+                        >
+                          {zone.rate}% · {zone.status}
+                        </span>
+                      </div>
+                      <div className="mt-3 h-3 overflow-hidden rounded-full bg-[color:var(--c-surface-2)]">
+                        <div
+                          className={[
+                            "h-full rounded-full",
+                            zone.status === "혼잡"
+                              ? "bg-[color:var(--c-danger)]"
+                              : "bg-[linear-gradient(135deg,var(--c-primary),var(--c-purple))]"
+                          ].join(" ")}
+                          style={{ width: `${zone.rate}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </section>
+
+            <Card className="mt-4 rounded-2xl p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-base font-black">비콘 구역 설정</h2>
+                  <p className="mt-1 text-sm font-semibold text-[color:var(--c-muted)]">
+                    구역별 비콘 ID와 수용 인원을 관리합니다.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,var(--c-primary),var(--c-purple))] px-4 text-sm font-extrabold text-white shadow-sm transition hover:brightness-105 active:scale-[0.98]"
+                  onClick={openAddModal}
+                >
+                  <Plus size={18} aria-hidden="true" /> 구역 추가
+                </button>
+              </div>
+
+              <div className="mt-5 overflow-x-auto">
+                <table className="min-w-[640px] w-full border-separate border-spacing-0 text-left">
+                  <thead>
+                    <tr className="text-xs font-extrabold uppercase tracking-wide text-[color:var(--c-muted-2)]">
+                      <th className="border-b border-[color:var(--c-border)] px-3 py-3">
+                        비콘 ID
+                      </th>
+                      <th className="border-b border-[color:var(--c-border)] px-3 py-3">
+                        구역명
+                      </th>
+                      <th className="border-b border-[color:var(--c-border)] px-3 py-3">
+                        수용 인원
+                      </th>
+                      <th className="border-b border-[color:var(--c-border)] px-3 py-3 text-right">
+                        관리
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {beaconZones.map((zone) => (
+                      <tr key={zone.id} className="text-sm font-bold">
+                        <td className="border-b border-[color:var(--c-border)] px-3 py-4 text-[color:var(--c-primary)]">
+                          {zone.id}
+                        </td>
+                        <td className="border-b border-[color:var(--c-border)] px-3 py-4">
+                          {zone.name}
+                        </td>
+                        <td className="border-b border-[color:var(--c-border)] px-3 py-4">
+                          {zone.capacity}명
+                        </td>
+                        <td className="border-b border-[color:var(--c-border)] px-3 py-4">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              type="button"
+                              className="inline-flex h-10 items-center gap-1 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-3 text-xs font-extrabold text-[color:var(--c-primary)] transition hover:bg-[color:var(--c-primary-soft)]"
+                              onClick={() => openEditModal(zone)}
+                            >
+                              <Edit3 size={14} aria-hidden="true" /> 수정
+                            </button>
+                            <button
+                              type="button"
+                              className="inline-flex h-10 items-center gap-1 rounded-2xl border border-red-500/20 bg-red-500/10 px-3 text-xs font-extrabold text-[color:var(--c-danger)] transition hover:bg-red-500/15"
+                              onClick={() => deleteBeaconZone(zone.id)}
+                            >
+                              <Trash2 size={14} aria-hidden="true" /> 삭제
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </div>
+        </main>
+      </div>
+
+      {modalOpen ? (
+        <div className="fixed inset-0 z-[80] grid place-items-end bg-slate-950/40 px-4 py-4 backdrop-blur-sm sm:place-items-center">
+          <form
+            className="w-full max-w-md rounded-3xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] p-5 shadow-2xl"
+            onSubmit={saveBeaconZone}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-lg font-black">
+                {isEditing ? "비콘 구역 수정" : "비콘 구역 추가"}
+              </h2>
+              <button
+                type="button"
+                className="grid h-10 w-10 place-items-center rounded-2xl border border-[color:var(--c-border)] text-[color:var(--c-muted)] transition hover:bg-[color:var(--c-surface-2)]"
+                onClick={closeModal}
+                aria-label="모달 닫기"
+              >
+                <X size={18} aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              <label className="block">
+                <span className="text-sm font-bold text-[color:var(--c-muted)]">비콘 ID</span>
+                <input
+                  className="mt-2 h-12 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-sm font-bold outline-none transition focus:border-[color:var(--c-primary)] focus:ring-2 focus:ring-[color:var(--c-focus-ring)]"
+                  value={form.id}
+                  onChange={(e) => setForm((prev) => ({ ...prev, id: e.target.value }))}
+                  placeholder="B005"
+                  required
+                />
+              </label>
+              <label className="block">
+                <span className="text-sm font-bold text-[color:var(--c-muted)]">구역명</span>
+                <input
+                  className="mt-2 h-12 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-sm font-bold outline-none transition focus:border-[color:var(--c-primary)] focus:ring-2 focus:ring-[color:var(--c-focus-ring)]"
+                  value={form.name}
+                  onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                  placeholder="필라테스 존"
+                  required
+                />
+              </label>
+              <label className="block">
+                <span className="text-sm font-bold text-[color:var(--c-muted)]">수용 인원</span>
+                <input
+                  type="number"
+                  min="1"
+                  className="mt-2 h-12 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-sm font-bold outline-none transition focus:border-[color:var(--c-primary)] focus:ring-2 focus:ring-[color:var(--c-focus-ring)]"
+                  value={form.capacity}
+                  onChange={(e) => setForm((prev) => ({ ...prev, capacity: e.target.value }))}
+                  placeholder="20"
+                  required
+                />
+              </label>
+            </div>
+
+            <div className="mt-5 flex gap-2">
+              <button
+                type="button"
+                className="h-12 flex-1 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-sm font-extrabold text-[color:var(--c-text)] transition hover:bg-[color:var(--c-surface-2)]"
+                onClick={closeModal}
+              >
+                취소
+              </button>
+              <button
+                type="submit"
+                className="h-12 flex-1 rounded-2xl bg-[linear-gradient(135deg,var(--c-primary),var(--c-purple))] text-sm font-extrabold text-white shadow-sm transition hover:brightness-105 active:scale-[0.98]"
+              >
+                저장
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export default AdminCMS;

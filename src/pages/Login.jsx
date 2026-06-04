@@ -4,7 +4,7 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import FloatingLabelInput from "@/components/ui/FloatingLabelInput";
 import { DEV_TEST_AUTH_TOKEN, setAuthToken } from "@/auth/auth";
-import { Eye, EyeOff, Lock, LogIn, Mail } from "lucide-react";
+import { Eye, EyeOff, Lock, LogIn, Mail, ShieldCheck } from "lucide-react";
 import { getSocialLoginUrl, loginWithEmail, SOCIAL_LOGIN_RETURN_TO_KEY } from "@/api/auth";
 
 function safeRedirectPath(value) {
@@ -153,6 +153,16 @@ export default function Login() {
         <Button type="submit" disabled={loading} className="gap-2 bg-[linear-gradient(135deg,var(--c-primary),var(--c-purple))]">
           <LogIn size={18} aria-hidden="true" />
           {loading ? "로그인 중..." : "로그인"}
+        </Button>
+
+        <Button
+          type="button"
+          variant="secondary"
+          className="gap-2"
+          onClick={() => navigate("/admin")}
+        >
+          <ShieldCheck size={18} aria-hidden="true" />
+          CMS 테스트 로그인
         </Button>
 
         {import.meta.env.DEV ? (

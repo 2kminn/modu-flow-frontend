@@ -3,6 +3,7 @@ import RequireAuth from "@/auth/RequireAuth";
 import AuthLayout from "@/layouts/AuthLayout";
 import RootLayout from "@/layouts/RootLayout";
 import Home from "@/pages/Home";
+import AdminCMS from "@/pages/AdminCMS";
 import Login from "@/pages/Login";
 import OAuthCallback from "@/pages/OAuthCallback";
 import ForgotPassword from "@/pages/ForgotPassword";
@@ -28,6 +29,9 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/signup" element={<SignUp />} />
         </Route>
+
+        <Route path="/admin" element={<AdminCMS />} />
+        <Route path="/cms" element={<AdminCMS />} />
 
         <Route
           element={
