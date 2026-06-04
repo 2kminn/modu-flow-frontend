@@ -210,6 +210,7 @@ function validationError(message) {
 // Backend RoutineItemDto supports: { id, name, sets, weight, exerciseId, reps, note }
 function toBackendRoutineItem(item) {
   if (!item || typeof item !== "object") return null;
+  if (!String(item.name ?? "").trim()) return null;
   const result = validateWorkoutItemDraft(item);
   if (!result.ok) throw validationError(result.message);
   const { id, name, sets, weight, exerciseId, reps, note } = result.item;

@@ -7,7 +7,6 @@ import { validateWorkoutItemDraft } from "@/api/validation";
 import {
   cacheRoutinesToLocalStorage,
   fetchRoutines,
-  loadRoutinesFromLocalStorage,
   saveRoutines
 } from "@/api/routines";
 
@@ -457,14 +456,6 @@ export default function Workout() {
     [modalExerciseId]
   );
 
-  const addDisabled = useMemo(() => {
-    if (!modalExercise) return false;
-    const stored = loadRoutinesFromLocalStorage();
-    const todayKey = dayKeyFromDate(new Date());
-    const list = Array.isArray(stored?.[todayKey]) ? stored[todayKey] : [];
-    return list.some((it) => it?.exerciseId === modalExercise.id || it?.name === modalExercise.name);
-  }, [modalExercise]);
-
   function openAddModal() {
     if (!modalExercise) return;
     setAddModalOpen(true);
@@ -636,7 +627,7 @@ export default function Workout() {
         exercise={modalExercise}
         onClose={() => setModalExerciseId(null)}
         onRequestAdd={openAddModal}
-        addDisabled={addDisabled}
+        addDisabled={false}
       />
 
       <AddToRoutineModal

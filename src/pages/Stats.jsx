@@ -82,6 +82,59 @@ function cloneWorkoutItem(item) {
   };
 }
 
+function normalizeWorkoutName(value) {
+  return String(value || "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function getWorkoutItemMatchKeys(item) {
+  const keys = [];
+  const exerciseId = String(item?.exerciseId || "").trim();
+  const name = normalizeWorkoutName(item?.name);
+  if (exerciseId) keys.push(`exercise:${exerciseId}`);
+  if (name) keys.push(`name:${name}`);
+  return keys;
+}
+
+function workoutItemsMatch(a, b) {
+  const aKeys = getWorkoutItemMatchKeys(a);
+  const bKeys = new Set(getWorkoutItemMatchKeys(b));
+  return aKeys.some((key) => bKeys.has(key));
+}
+
+function hasMatchingWorkoutItem(item, items) {
+  return (Array.isArray(items) ? items : []).some((it) => workoutItemsMatch(item, it));
+}
+
+function getMissingRoutineItems(routineItems, currentItems) {
+  return (Array.isArray(routineItems) ? routineItems : []).filter(
+    (routineItem) => !hasMatchingWorkoutItem(routineItem, currentItems)
+  );
+}
+
+function mergeRoutineWithWorkoutItems(routineItems, currentItems) {
+  const current = Array.isArray(currentItems) ? currentItems : [];
+  const usedCurrentIndexes = new Set();
+  const merged = [];
+
+  for (const routineItem of Array.isArray(routineItems) ? routineItems : []) {
+    const matchIndex = current.findIndex(
+      (it, idx) => !usedCurrentIndexes.has(idx) && workoutItemsMatch(routineItem, it)
+    );
+    if (matchIndex >= 0) {
+      usedCurrentIndexes.add(matchIndex);
+      merged.push(current[matchIndex]);
+    } else {
+      merged.push(cloneWorkoutItem(routineItem));
+    }
+  }
+
+  current.forEach((it, idx) => {
+    if (!usedCurrentIndexes.has(idx)) merged.push(it);
+  });
+
+  return merged;
+}
+
 function normalizeRecordsByDate(raw) {
   if (!raw || typeof raw !== "object") return {};
   const out = Object.create(null);
@@ -170,6 +223,10 @@ function WorkoutListModal({
   }, [open, onClose]);
 
   if (!open) return null;
+
+  const missingRoutineItems = getMissingRoutineItems(routineItems, items);
+  const routineAddDisabled =
+    savingAdd || !(routineItems || []).length || !missingRoutineItems.length;
 
   return (
     <div
@@ -385,15 +442,25 @@ function WorkoutListModal({
                 </button>
                 <button
                   type="button"
-                  onClick={() => onAddItems?.((routineItems || []).map(cloneWorkoutItem))}
-                  disabled={savingAdd || !(routineItems || []).length}
+                  onClick={() =>
+                    onAddItems?.(mergeRoutineWithWorkoutItems(routineItems, items), {
+                      replace: true
+                    })
+                  }
+                  disabled={routineAddDisabled}
                   className="h-12 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-left text-sm font-extrabold text-[color:var(--c-text)] transition hover:bg-[color:var(--c-surface)]/80 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
                 >
-                  {routineDayLabel}요일 루틴 그대로 추가
+                  {!missingRoutineItems.length && (routineItems || []).length
+                    ? "이미 추가된 루틴이에요"
+                    : `${routineDayLabel}요일 루틴 그대로 추가`}
                 </button>
                 {!(routineItems || []).length ? (
                   <p className="text-xs font-semibold text-[color:var(--c-muted-2)]">
                     이 요일에 등록된 루틴이 없어요.
+                  </p>
+                ) : !missingRoutineItems.length ? (
+                  <p className="text-xs font-semibold text-[color:var(--c-muted-2)]">
+                    이 날짜에 요일 루틴이 이미 모두 들어있어요.
                   </p>
                 ) : null}
               </div>
@@ -706,14 +773,14 @@ export default function Stats() {
     }
   }
 
-  async function handleAddItems(itemsToAdd) {
+  async function handleAddItems(itemsToAdd, options = {}) {
     if (!selectedDate) return;
     const safeItems = (Array.isArray(itemsToAdd) ? itemsToAdd : []).filter(Boolean);
     if (!safeItems.length) return;
 
     setSavingAdd(true);
     try {
-      const nextItems = [...selectedItems, ...safeItems];
+      const nextItems = options.replace ? safeItems : [...selectedItems, ...safeItems];
       await replaceWorkoutDay(selectedDate, nextItems);
       setRecordsByDate((prev) => ({
         ...(prev || {}),
