@@ -196,7 +196,6 @@ function WorkoutListModal({
   const [addMode, setAddMode] = useState("choice");
   const [addDraft, setAddDraft] = useState({
     name: "",
-    note: "",
     sets: "",
     reps: "",
     weight: ""
@@ -209,7 +208,7 @@ function WorkoutListModal({
     setDraft(null);
     setDraftError("");
     setAddMode("choice");
-    setAddDraft({ name: "", note: "", sets: "", reps: "", weight: "" });
+    setAddDraft({ name: "", sets: "", reps: "", weight: "" });
     setAddError("");
   }, [open]);
 
@@ -474,14 +473,6 @@ function WorkoutListModal({
                   placeholder="운동 이름"
                   className="h-11 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-sm font-semibold text-[color:var(--c-text)] outline-none focus:ring-2 focus:ring-[color:var(--c-focus-ring)]"
                 />
-                <input
-                  value={addDraft.note}
-                  onChange={(e) =>
-                    setAddDraft((prev) => ({ ...prev, note: e.target.value }))
-                  }
-                  placeholder="메모"
-                  className="h-11 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-sm font-semibold text-[color:var(--c-text)] outline-none focus:ring-2 focus:ring-[color:var(--c-focus-ring)]"
-                />
                 <div className="grid grid-cols-3 gap-2">
                   <input
                     value={addDraft.sets}
@@ -521,7 +512,7 @@ function WorkoutListModal({
                     const validation = validateWorkoutItemDraft({
                       id: createId(),
                       name: addDraft.name,
-                      note: addDraft.note,
+                      note: "",
                       sets: addDraft.sets,
                       reps: addDraft.reps,
                       weight: addDraft.weight
@@ -531,7 +522,7 @@ function WorkoutListModal({
                       return;
                     }
                     onAddItems?.([validation.item]);
-                    setAddDraft({ name: "", note: "", sets: "", reps: "", weight: "" });
+                    setAddDraft({ name: "", sets: "", reps: "", weight: "" });
                     setAddError("");
                     setAddMode("choice");
                   }}
@@ -864,21 +855,16 @@ export default function Stats() {
                     <button
                       key={dateStr}
                       type="button"
-                      onClick={() => {
-                        if (isRestDay) return;
-                        setSelectedDate(dateStr);
-                      }}
-                      disabled={isRestDay}
+                      onClick={() => setSelectedDate(dateStr)}
                       className={[
                         "flex aspect-square flex-col items-center justify-center rounded-2xl text-xs font-extrabold transition active:scale-[0.98]",
-                        hasWorkout
-                          ? "bg-[color:var(--c-primary)] text-white hover:opacity-90"
-                          : isRestDay
+                        isRestDay
                             ? "border border-[color:var(--c-primary)]/20 bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)] hover:bg-[color:var(--c-primary-soft)]"
-                          : "bg-[color:var(--c-surface)] text-[color:var(--c-muted-2)] hover:bg-[color:var(--c-surface)]/80",
+                          : hasWorkout
+                            ? "bg-[color:var(--c-primary)] text-white hover:opacity-90"
+                            : "bg-[color:var(--c-surface)] text-[color:var(--c-muted-2)] hover:bg-[color:var(--c-surface)]/80",
                         isToday ? "ring-2 ring-[color:var(--c-purple)] ring-offset-2 ring-offset-[color:var(--c-surface-2)]" : "",
-                        selectedDate === dateStr && !isRestDay ? "ring-2 ring-[color:var(--c-purple)] ring-offset-2 ring-offset-[color:var(--c-surface-2)]" : "",
-                        isRestDay ? "cursor-not-allowed active:scale-100" : ""
+                        selectedDate === dateStr ? "ring-2 ring-[color:var(--c-purple)] ring-offset-2 ring-offset-[color:var(--c-surface-2)]" : ""
                       ].join(" ")}
                       aria-label={`${dateStr}${isToday ? " 오늘" : ""}${hasWorkout ? " 운동 기록 있음" : ""}${isRestDay ? " 쉬는 날" : ""}`}
                     >
