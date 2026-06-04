@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   const providerValue = req.query?.provider;
   const provider = Array.isArray(providerValue) ? providerValue[0] : providerValue;
   const normalizedProvider = String(provider || "").trim().toLowerCase();
-  const allowed = new Set(["google", "kakao", "naver"]);
+  const allowed = new Set(["google", "kakao"]);
 
   if (!allowed.has(normalizedProvider)) {
     res.statusCode = 400;

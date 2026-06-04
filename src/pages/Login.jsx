@@ -183,21 +183,6 @@ export default function Login() {
           <div className="mt-4 flex items-center justify-center gap-4">
             <button
               type="button"
-              onClick={() => onSocialLogin("naver")}
-              aria-label="네이버로 로그인"
-              disabled={loading}
-              className="grid h-14 w-14 place-items-center rounded-full bg-[#03C75A] shadow-sm transition duration-200 hover:brightness-105 hover:shadow-md hover:scale-[1.03] active:scale-[0.98]"
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  fill="white"
-                  d="M6 4h4.1l3.8 5.6V4H18v16h-4.1L10.1 14.4V20H6V4Z"
-                />
-              </svg>
-            </button>
-
-            <button
-              type="button"
               onClick={() => onSocialLogin("kakao")}
               aria-label="카카오로 로그인"
               disabled={loading}

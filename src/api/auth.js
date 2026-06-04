@@ -4,7 +4,7 @@ import {
   getApiErrorMessage
 } from "@/api/client";
 
-const SOCIAL_PROVIDERS = new Set(["google", "kakao", "naver"]);
+const SOCIAL_PROVIDERS = new Set(["google", "kakao"]);
 export const SOCIAL_LOGIN_RETURN_TO_KEY = "moduflow:social-login-return-to:v1";
 
 export async function loginWithEmail({ email, password }) {

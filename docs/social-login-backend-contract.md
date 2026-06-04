@@ -20,7 +20,6 @@
 
 - `google`
 - `kakao`
-- `naver`
 
 예시:
 
