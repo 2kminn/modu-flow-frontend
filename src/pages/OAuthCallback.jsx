@@ -43,6 +43,14 @@ function safePath(value) {
   return value;
 }
 
+function pickParam(params, keys) {
+  for (const key of keys) {
+    const value = params.get(key);
+    if (String(value || "").trim()) return String(value).trim();
+  }
+  return "";
+}
+
 export default function OAuthCallback() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -67,10 +75,10 @@ export default function OAuthCallback() {
       return;
     }
 
-    setAuthToken(
-      token,
-      params.get("email") || params.get("userId") || params.get("username")
-    );
+    const accountHint = pickParam(params, ["email", "userId", "username"]);
+    const profileName = pickParam(params, ["name", "nickname", "userName", "displayName"]);
+
+    setAuthToken(token, accountHint || profileName, profileName);
     const nextPath = safePath(params.get("redirect") || safeGetReturnTo());
     safeClearReturnTo();
     navigate(nextPath, { replace: true });

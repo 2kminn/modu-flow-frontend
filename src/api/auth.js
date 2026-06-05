@@ -7,6 +7,21 @@ import {
 const SOCIAL_PROVIDERS = new Set(["google", "kakao"]);
 export const SOCIAL_LOGIN_RETURN_TO_KEY = "moduflow:social-login-return-to:v1";
 
+function pickDisplayName(source) {
+  if (!source || typeof source !== "object") return "";
+  return String(
+    source.name ??
+      source.nickname ??
+      source.userName ??
+      source.displayName ??
+      source.user?.name ??
+      source.user?.nickname ??
+      source.user?.userName ??
+      source.user?.displayName ??
+      ""
+  ).trim();
+}
+
 export async function loginWithEmail({ email, password }) {
   try {
     const normalizedEmail = String(email || "").trim().toLowerCase();
@@ -28,6 +43,7 @@ export async function loginWithEmail({ email, password }) {
       tokenType: data?.tokenType,
       expiresInSeconds: data?.expiresInSeconds,
       email: data?.email ?? data?.user?.email,
+      name: pickDisplayName(data),
       debug: { response: res?.data ?? null }
     };
   } catch (e) {
@@ -69,12 +85,14 @@ export function getSocialLoginUrl(provider) {
   };
 }
 
-export async function signupWithEmail({ email, password }) {
+export async function signupWithEmail({ email, password, name }) {
   try {
     const normalizedEmail = String(email || "").trim().toLowerCase();
+    const normalizedName = String(name || "").trim();
     const res = await apiClient.post("/api/v1/auth/signup", {
       email: normalizedEmail,
-      password
+      password,
+      name: normalizedName
     });
     const data = res?.data;
     const accessToken = data?.accessToken;
@@ -93,6 +111,7 @@ export async function signupWithEmail({ email, password }) {
       tokenType: data?.tokenType,
       expiresInSeconds: data?.expiresInSeconds,
       email: data?.email ?? data?.user?.email,
+      name: pickDisplayName(data) || normalizedName,
       debug: { response: res?.data ?? null }
     };
   } catch (e) {

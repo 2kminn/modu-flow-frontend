@@ -130,7 +130,7 @@ function ProfileNameDialog({ initialName, accountEmail, onCancel, onSave }) {
             id="profile-name"
             label="이름"
             autoComplete="name"
-            maxLength={30}
+            maxLength={100}
             inputClassName="focus:border-[color:var(--c-primary)] focus:ring-2 focus:ring-[color:var(--c-focus-ring)]"
             value={name}
             onChange={(event) => {

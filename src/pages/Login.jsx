@@ -75,7 +75,7 @@ export default function Login() {
       return;
     }
 
-    setAuthToken(result.accessToken, result.email || nextEmail);
+    setAuthToken(result.accessToken, result.email || nextEmail, result.name);
     navigate(fromPath, { replace: true });
   }
 

@@ -4,12 +4,13 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import FloatingLabelInput from "@/components/ui/FloatingLabelInput";
 import { setAuthToken } from "@/auth/auth";
-import { Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, User } from "lucide-react";
 import { signupWithEmail } from "@/api/auth";
 
 export default function SignUp() {
   const navigate = useNavigate();
 
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -24,8 +25,14 @@ export default function SignUp() {
     setError(null);
     setDebugInfo(null);
 
+    const trimmedName = name.trim();
+
     if (!email.trim() || !password || !confirmPassword) {
-      setError("모든 항목을 입력해 주세요.");
+      setError("이메일과 비밀번호를 입력해 주세요.");
+      return;
+    }
+    if (trimmedName.length > 100) {
+      setError("이름은 최대 100자까지 입력할 수 있어요.");
       return;
     }
     if (password !== confirmPassword) {
@@ -37,7 +44,8 @@ export default function SignUp() {
     const signupResult = await signupWithEmail({
       email,
       password,
-      confirmPassword
+      confirmPassword,
+      name: trimmedName
     });
 
     if (!signupResult.ok) {
@@ -48,7 +56,7 @@ export default function SignUp() {
       return;
     }
 
-    setAuthToken(signupResult.accessToken, signupResult.email || email);
+    setAuthToken(signupResult.accessToken, signupResult.email || email, signupResult.name || name);
     setLoading(false);
     navigate("/", { replace: true });
   }
@@ -64,6 +72,18 @@ export default function SignUp() {
       </p>
 
       <form className="mt-5 space-y-3" onSubmit={onSubmit}>
+        <FloatingLabelInput
+          id="signup-name"
+          label="이름"
+          type="text"
+          autoComplete="name"
+          maxLength={100}
+          inputClassName="focus:border-[color:var(--c-primary)] focus:ring-2 focus:ring-[color:var(--c-focus-ring)]"
+          leftAdornment={<User size={18} aria-hidden="true" />}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+
         <FloatingLabelInput
           id="signup-email"
           label="이메일"

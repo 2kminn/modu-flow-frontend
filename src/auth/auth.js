@@ -3,6 +3,7 @@ import { setNativeAuthToken } from "@/native/androidBridge";
 const TOKEN_KEY = "auth_token";
 const ACCOUNT_KEY = "auth_account";
 const PROFILE_NAME_KEY_PREFIX = "moduflow:profile-name:v1:";
+export const PROFILE_NAME_CHANGED_EVENT = "moduflow:profile-name-changed";
 export const DEV_TEST_AUTH_TOKEN = "dev-test-token";
 
 function safeGet(storage, key = TOKEN_KEY) {
@@ -70,6 +71,15 @@ export function setStoredProfileName(name, accountHint) {
   const normalizedName = String(name || "").trim();
   if (normalizedName) safeSet(localStorage, key, normalizedName);
   else safeRemove(localStorage, key);
+  try {
+    window.dispatchEvent(
+      new CustomEvent(PROFILE_NAME_CHANGED_EVENT, {
+        detail: { account: normalizeAccount(accountHint), name: normalizedName }
+      })
+    );
+  } catch {
+    // ignore
+  }
   return normalizedName;
 }
 
@@ -81,12 +91,15 @@ export function getAuthProfileName() {
   return getStoredProfileName() || getAuthDisplayIdentity();
 }
 
-export function setAuthToken(token, accountHint) {
+export function setAuthToken(token, accountHint, profileName) {
   safeSet(sessionStorage, TOKEN_KEY, token);
   setNativeAuthToken(token);
   const identity = String(accountHint || "").trim().toLowerCase();
   if (identity) safeSet(sessionStorage, ACCOUNT_KEY, identity);
   else safeRemove(sessionStorage, ACCOUNT_KEY);
+  if (identity && String(profileName || "").trim()) {
+    setStoredProfileName(profileName, identity);
+  }
   safeRemove(localStorage);
   safeRemove(localStorage, ACCOUNT_KEY);
 }
