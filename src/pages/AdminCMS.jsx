@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   DEFAULT_BEACON_ZONES,
@@ -27,6 +27,7 @@ import {
   LogOut,
   Menu,
   Plus,
+  Search,
   Trash2,
   Users,
   X
@@ -72,6 +73,56 @@ function formatDateTime(value) {
     minute: "2-digit"
   }).format(date);
 }
+
+function formatDate(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function dateKeyFromRecord(record) {
+  return formatDate(record?.checkInAt || record?.createdAt || record?.date);
+}
+
+function getRecordStatus(record) {
+  return String(record?.status || (record?.checkOutAt ? "퇴실" : "출석")).trim() || "출석";
+}
+
+function isWithinPreset(dateKey, preset) {
+  if (!dateKey || preset === "all") return preset === "all";
+
+  const today = new Date();
+  const target = new Date(`${dateKey}T00:00:00`);
+  if (Number.isNaN(target.getTime())) return false;
+
+  if (preset === "today") return dateKey === formatDate(today);
+
+  if (preset === "week") {
+    const start = new Date(today);
+    start.setHours(0, 0, 0, 0);
+    start.setDate(today.getDate() - today.getDay());
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+    return target >= start && target <= end;
+  }
+
+  if (preset === "month") {
+    return target.getFullYear() === today.getFullYear() && target.getMonth() === today.getMonth();
+  }
+
+  return true;
+}
+
+const attendanceDatePresets = [
+  { id: "all", label: "전체" },
+  { id: "today", label: "오늘" },
+  { id: "week", label: "이번 주" },
+  { id: "month", label: "이번 달" }
+];
 
 function Sidebar({ open, activeSection, onSelect, onClose }) {
   return (
@@ -168,6 +219,12 @@ function AdminCMS() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [beaconZones, setBeaconZones] = useState(() => loadBeaconZonesFromLocalStorage());
   const [attendanceRecords, setAttendanceRecords] = useState([]);
+  const [attendanceFilters, setAttendanceFilters] = useState({
+    query: "",
+    datePreset: "today",
+    zone: "all",
+    status: "all"
+  });
   const [loadingAttendance, setLoadingAttendance] = useState(false);
   const [attendanceMessage, setAttendanceMessage] = useState("");
   const [dashboardSummary, setDashboardSummary] = useState({
@@ -187,6 +244,42 @@ function AdminCMS() {
 
   const { totalMembers, checkedInCount, absentCount, attendanceRate } = dashboardSummary;
   const isEditing = editingId != null;
+  const attendanceZones = useMemo(() => {
+    const zones = attendanceRecords
+      .map((record) => String(record.zoneName || "").trim())
+      .filter(Boolean);
+    return [...new Set(zones)].sort((a, b) => a.localeCompare(b, "ko"));
+  }, [attendanceRecords]);
+  const attendanceStatuses = useMemo(() => {
+    const statuses = attendanceRecords.map(getRecordStatus).filter(Boolean);
+    return [...new Set(statuses)].sort((a, b) => a.localeCompare(b, "ko"));
+  }, [attendanceRecords]);
+  const filteredAttendanceRecords = useMemo(() => {
+    const query = attendanceFilters.query.trim().toLowerCase();
+    return attendanceRecords.filter((record) => {
+      const dateKey = dateKeyFromRecord(record);
+      if (!isWithinPreset(dateKey, attendanceFilters.datePreset)) return false;
+
+      const zoneName = String(record.zoneName || "").trim();
+      if (attendanceFilters.zone !== "all" && zoneName !== attendanceFilters.zone) return false;
+
+      const status = getRecordStatus(record);
+      if (attendanceFilters.status !== "all" && status !== attendanceFilters.status) return false;
+
+      if (!query) return true;
+      const searchable = [
+        record.email,
+        record.name,
+        record.id,
+        zoneName,
+        status,
+        formatDateTime(record.checkInAt)
+      ]
+        .map((value) => String(value || "").toLowerCase())
+        .join(" ");
+      return searchable.includes(query);
+    });
+  }, [attendanceFilters, attendanceRecords]);
 
   function logout() {
     clearAuthToken();
@@ -644,8 +737,101 @@ function AdminCMS() {
                     ) : null}
                   </div>
                   <span className="w-fit rounded-full bg-[color:var(--c-primary-soft)] px-3 py-1 text-xs font-extrabold text-[color:var(--c-primary)]">
-                    {attendanceRecords.length}명
+                    {filteredAttendanceRecords.length}명
                   </span>
+                </div>
+
+                <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(220px,1fr)_auto]">
+                  <label className="relative block">
+                    <span className="sr-only">출결 검색</span>
+                    <Search
+                      className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[color:var(--c-muted-2)]"
+                      size={18}
+                      aria-hidden="true"
+                    />
+                    <input
+                      type="search"
+                      className="h-12 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] pl-11 pr-4 text-sm font-bold outline-none transition placeholder:text-[color:var(--c-muted-2)] focus:border-[color:var(--c-primary)] focus:ring-2 focus:ring-[color:var(--c-focus-ring)]"
+                      value={attendanceFilters.query}
+                      onChange={(e) =>
+                        setAttendanceFilters((prev) => ({ ...prev, query: e.target.value }))
+                      }
+                      placeholder="이메일, 이름, 구역 검색"
+                    />
+                  </label>
+
+                  <div className="flex flex-wrap gap-2">
+                    {attendanceDatePresets.map((preset) => (
+                      <button
+                        type="button"
+                        key={preset.id}
+                        className={[
+                          "h-12 rounded-2xl border px-4 text-sm font-extrabold transition",
+                          attendanceFilters.datePreset === preset.id
+                            ? "border-transparent bg-[color:var(--c-primary)] text-white shadow-sm"
+                            : "border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-[color:var(--c-muted)] hover:bg-[color:var(--c-surface-2)] hover:text-[color:var(--c-text)]"
+                        ].join(" ")}
+                        onClick={() =>
+                          setAttendanceFilters((prev) => ({ ...prev, datePreset: preset.id }))
+                        }
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                  <label className="min-w-0 flex-1">
+                    <span className="sr-only">이용 구역 필터</span>
+                    <select
+                      className="h-12 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-sm font-extrabold text-[color:var(--c-text)] outline-none transition focus:border-[color:var(--c-primary)] focus:ring-2 focus:ring-[color:var(--c-focus-ring)]"
+                      value={attendanceFilters.zone}
+                      onChange={(e) =>
+                        setAttendanceFilters((prev) => ({ ...prev, zone: e.target.value }))
+                      }
+                    >
+                      <option value="all">전체 구역</option>
+                      {attendanceZones.map((zone) => (
+                        <option key={zone} value={zone}>
+                          {zone}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="min-w-0 flex-1">
+                    <span className="sr-only">출결 상태 필터</span>
+                    <select
+                      className="h-12 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-sm font-extrabold text-[color:var(--c-text)] outline-none transition focus:border-[color:var(--c-primary)] focus:ring-2 focus:ring-[color:var(--c-focus-ring)]"
+                      value={attendanceFilters.status}
+                      onChange={(e) =>
+                        setAttendanceFilters((prev) => ({ ...prev, status: e.target.value }))
+                      }
+                    >
+                      <option value="all">전체 상태</option>
+                      {attendanceStatuses.map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <button
+                    type="button"
+                    className="h-12 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-sm font-extrabold text-[color:var(--c-muted)] transition hover:bg-[color:var(--c-surface-2)] hover:text-[color:var(--c-text)]"
+                    onClick={() =>
+                      setAttendanceFilters({
+                        query: "",
+                        datePreset: "today",
+                        zone: "all",
+                        status: "all"
+                      })
+                    }
+                  >
+                    초기화
+                  </button>
                 </div>
 
                 <div className="mt-5 overflow-x-auto">
@@ -670,7 +856,7 @@ function AdminCMS() {
                       </tr>
                     </thead>
                     <tbody>
-                      {attendanceRecords.map((record, index) => (
+                      {filteredAttendanceRecords.map((record, index) => (
                         <tr
                           key={`${record.id}-${record.checkInAt || index}`}
                           className="text-sm font-bold"
@@ -689,7 +875,7 @@ function AdminCMS() {
                           </td>
                           <td className="border-b border-[color:var(--c-border)] px-3 py-4">
                             <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-extrabold text-[color:var(--c-success)]">
-                              {record.status || (record.checkOutAt ? "퇴실" : "출석")}
+                              {getRecordStatus(record)}
                             </span>
                           </td>
                         </tr>
@@ -704,13 +890,13 @@ function AdminCMS() {
                           </td>
                         </tr>
                       ) : null}
-                      {!loadingAttendance && attendanceRecords.length === 0 ? (
+                      {!loadingAttendance && filteredAttendanceRecords.length === 0 ? (
                         <tr>
                           <td
                             colSpan={5}
                             className="border-b border-[color:var(--c-border)] px-3 py-8 text-center text-sm font-bold text-[color:var(--c-muted)]"
                           >
-                            표시할 출결 기록이 없습니다.
+                            조건에 맞는 출결 기록이 없습니다.
                           </td>
                         </tr>
                       ) : null}
