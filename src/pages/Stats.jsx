@@ -178,7 +178,7 @@ function normalizeRecordsByDate(raw) {
   for (const [k, v] of Object.entries(raw)) {
     if (!dateKeyRe.test(k)) continue;
     if (!Array.isArray(v)) continue;
-    out[k] = v
+    const items = v
       .filter((it) => it && typeof it === "object")
       .map((it) => ({
         id: typeof it.id === "string" ? it.id : "",
@@ -210,6 +210,7 @@ function normalizeRecordsByDate(raw) {
         reps: Number.isFinite(it.reps) ? it.reps : null,
         weight: Number.isFinite(it.weight) ? it.weight : null
       }));
+    if (items.length) out[k] = items;
   }
   return out;
 }
@@ -606,7 +607,7 @@ export default function Stats() {
     const currentMonthLabel = formatMonth(month);
     if (currentMonthLabel > todayMonthLabel) return {};
     const monthOnly = Object.entries(recordsByDate || {}).reduce((acc, [k, v]) => {
-      if (k.startsWith(currentMonthLabel) && Array.isArray(v)) acc[k] = v;
+      if (k.startsWith(currentMonthLabel) && Array.isArray(v) && v.length) acc[k] = v;
       return acc;
     }, {});
     return monthOnly;
@@ -733,7 +734,8 @@ export default function Stats() {
       for (const [k, v] of Object.entries(recordsByDate || {})) {
         if (!dateKeyRe.test(k)) continue;
         if (!Array.isArray(v)) continue;
-        out[k] = v.filter((it) => it && typeof it === "object");
+        const items = v.filter((it) => it && typeof it === "object");
+        if (items.length) out[k] = items;
       }
       window.localStorage.setItem(getWorkoutHistoryStorageKey(), JSON.stringify(out));
     } catch {
