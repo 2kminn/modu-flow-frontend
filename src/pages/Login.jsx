@@ -159,7 +159,10 @@ export default function Login() {
           type="button"
           variant="secondary"
           className="gap-2"
-          onClick={() => navigate("/admin")}
+          onClick={() => {
+            setAuthToken(DEV_TEST_AUTH_TOKEN, "cms-test");
+            navigate("/admin", { replace: true });
+          }}
         >
           <ShieldCheck size={18} aria-hidden="true" />
           CMS 테스트 로그인

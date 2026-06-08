@@ -1,4 +1,16 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  DEFAULT_BEACON_ZONES,
+  createBeaconZone,
+  deleteBeaconZoneById,
+  fetchBeaconZones,
+  loadBeaconZonesFromLocalStorage,
+  saveBeaconZonesToLocalStorage,
+  updateBeaconZone
+} from "@/api/beaconZones";
+import { getApiErrorMessage } from "@/api/client";
+import { clearAuthToken } from "@/auth/auth";
 import Card from "@/components/ui/Card";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import {
@@ -8,6 +20,7 @@ import {
   ChevronRight,
   Dumbbell,
   Edit3,
+  LogOut,
   Menu,
   Plus,
   RadioTower,
@@ -16,17 +29,9 @@ import {
   X
 } from "lucide-react";
 
-const initialBeaconZones = [
-  { id: "B001", name: "유산소 존", capacity: 30 },
-  { id: "B002", name: "웨이트 존", capacity: 50 },
-  { id: "B003", name: "스트레칭 존", capacity: 20 },
-  { id: "B004", name: "PT 존", capacity: 10 }
-];
-
 const menuItems = [
   { label: "대시보드", icon: BarChart3 },
-  { label: "출결 현황", icon: Users },
-  { label: "비콘 구역 설정", icon: RadioTower }
+  { label: "출결 현황", icon: Users }
 ];
 
 const congestionZones = [
@@ -123,14 +128,49 @@ function StatCard({ icon: Icon, label, value, tone }) {
 }
 
 function AdminCMS() {
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [beaconZones, setBeaconZones] = useState(initialBeaconZones);
+  const [beaconZones, setBeaconZones] = useState(() => loadBeaconZonesFromLocalStorage());
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
+  const [loadingZones, setLoadingZones] = useState(true);
+  const [savingZone, setSavingZone] = useState(false);
+  const [zoneMessage, setZoneMessage] = useState("");
 
   const attendanceRate = useMemo(() => Math.round((124 / 328) * 1000) / 10, []);
   const isEditing = editingId != null;
+
+  function logout() {
+    clearAuthToken();
+    navigate("/login", { replace: true });
+  }
+
+  useEffect(() => {
+    let active = true;
+
+    async function syncBeaconZones() {
+      setLoadingZones(true);
+      try {
+        const zones = await fetchBeaconZones();
+        if (!active) return;
+        setBeaconZones(zones.length ? zones : DEFAULT_BEACON_ZONES);
+        setZoneMessage("");
+      } catch (e) {
+        console.warn("[admin beacon zones] fetch failed:", e);
+        if (!active) return;
+        setBeaconZones(loadBeaconZonesFromLocalStorage());
+        setZoneMessage("비콘 구역 API를 불러오지 못해 저장된 설정을 표시 중입니다.");
+      } finally {
+        if (active) setLoadingZones(false);
+      }
+    }
+
+    syncBeaconZones();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function openAddModal() {
     setEditingId(null);
@@ -150,30 +190,69 @@ function AdminCMS() {
     setForm(emptyForm);
   }
 
-  function saveBeaconZone(e) {
+  async function saveBeaconZone(e) {
     e.preventDefault();
+    if (savingZone) return;
     const id = form.id.trim();
     const name = form.name.trim();
     const capacity = Number(form.capacity);
 
     if (!id || !name || !Number.isFinite(capacity) || capacity <= 0) return;
 
-    if (isEditing) {
-      setBeaconZones((zones) =>
-        zones.map((zone) =>
-          zone.id === editingId ? { id, name, capacity: Math.round(capacity) } : zone
-        )
-      );
-    } else {
-      setBeaconZones((zones) => [...zones, { id, name, capacity: Math.round(capacity) }]);
+    const nextZone = { id, name, capacity: Math.round(capacity) };
+    const hasDuplicate = beaconZones.some((zone) => zone.id === id && zone.id !== editingId);
+    if (hasDuplicate) {
+      setZoneMessage("이미 등록된 비콘 ID입니다.");
+      return;
     }
 
-    closeModal();
+    setSavingZone(true);
+    try {
+      const saved = isEditing
+        ? await updateBeaconZone(editingId, nextZone)
+        : await createBeaconZone(nextZone);
+      const zoneToStore = saved ?? nextZone;
+      setBeaconZones((zones) => {
+        const next = isEditing
+          ? zones.map((zone) => (zone.id === editingId ? zoneToStore : zone))
+          : [...zones, zoneToStore];
+        saveBeaconZonesToLocalStorage(next);
+        return next;
+      });
+      setZoneMessage("비콘 구역 설정이 저장되었습니다.");
+      closeModal();
+    } catch (err) {
+      console.warn("[admin beacon zones] save failed:", err);
+      setBeaconZones((zones) => {
+        const next = isEditing
+          ? zones.map((zone) => (zone.id === editingId ? nextZone : zone))
+          : [...zones, nextZone];
+        saveBeaconZonesToLocalStorage(next);
+        return next;
+      });
+      setZoneMessage(
+        `${getApiErrorMessage(err, "비콘 구역 API 저장에 실패했어요.")} 로컬 설정에는 반영했습니다.`
+      );
+      closeModal();
+    } finally {
+      setSavingZone(false);
+    }
   }
 
-  function deleteBeaconZone(zoneId) {
+  async function deleteBeaconZone(zoneId) {
     if (!window.confirm("선택한 비콘 구역을 삭제할까요?")) return;
-    setBeaconZones((zones) => zones.filter((zone) => zone.id !== zoneId));
+    const next = beaconZones.filter((zone) => zone.id !== zoneId);
+    setBeaconZones(next);
+    saveBeaconZonesToLocalStorage(next);
+    try {
+      await deleteBeaconZoneById(zoneId);
+      setZoneMessage("비콘 구역이 삭제되었습니다.");
+    } catch (err) {
+      console.warn("[admin beacon zones] delete failed:", err);
+      setZoneMessage(
+        `${getApiErrorMessage(err, "비콘 구역 API 삭제에 실패했어요.")} 로컬 설정에는 반영했습니다.`
+      );
+    }
   }
 
   return (
@@ -207,6 +286,15 @@ function AdminCMS() {
                 <span className="hidden rounded-full border border-[color:var(--c-border)] bg-[color:var(--c-surface-2)] px-3 py-2 text-xs font-extrabold text-[color:var(--c-primary)] sm:inline-flex">
                   관리자
                 </span>
+                <button
+                  type="button"
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-3 text-xs font-extrabold text-[color:var(--c-muted)] shadow-sm transition hover:bg-[color:var(--c-surface-2)] hover:text-[color:var(--c-text)] active:scale-[0.98]"
+                  onClick={logout}
+                  aria-label="관리자 로그아웃"
+                >
+                  <LogOut size={15} aria-hidden="true" />
+                  <span className="hidden sm:inline">로그아웃</span>
+                </button>
                 <ThemeToggle />
               </div>
             </div>
@@ -333,8 +421,13 @@ function AdminCMS() {
                 <div>
                   <h2 className="text-base font-black">비콘 구역 설정</h2>
                   <p className="mt-1 text-sm font-semibold text-[color:var(--c-muted)]">
-                    구역별 비콘 ID와 수용 인원을 관리합니다.
+                    구역별 비콘 ID, 표시 이름, 수용 인원을 관리합니다.
                   </p>
+                  {zoneMessage ? (
+                    <p className="mt-2 text-xs font-extrabold text-[color:var(--c-primary)]">
+                      {zoneMessage}
+                    </p>
+                  ) : null}
                 </div>
                 <button
                   type="button"
@@ -395,6 +488,26 @@ function AdminCMS() {
                         </td>
                       </tr>
                     ))}
+                    {loadingZones ? (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="border-b border-[color:var(--c-border)] px-3 py-6 text-center text-sm font-bold text-[color:var(--c-muted)]"
+                        >
+                          비콘 구역을 불러오는 중입니다.
+                        </td>
+                      </tr>
+                    ) : null}
+                    {!loadingZones && beaconZones.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="border-b border-[color:var(--c-border)] px-3 py-6 text-center text-sm font-bold text-[color:var(--c-muted)]"
+                        >
+                          등록된 비콘 구역이 없습니다.
+                        </td>
+                      </tr>
+                    ) : null}
                   </tbody>
                 </table>
               </div>
@@ -468,9 +581,10 @@ function AdminCMS() {
               </button>
               <button
                 type="submit"
+                disabled={savingZone}
                 className="h-12 flex-1 rounded-2xl bg-[linear-gradient(135deg,var(--c-primary),var(--c-purple))] text-sm font-extrabold text-white shadow-sm transition hover:brightness-105 active:scale-[0.98]"
               >
-                저장
+                {savingZone ? "저장 중" : "저장"}
               </button>
             </div>
           </form>

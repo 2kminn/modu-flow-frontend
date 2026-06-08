@@ -6,6 +6,11 @@ import { useNavigate } from "react-router-dom";
 import { getApiErrorMessage } from "@/api/client";
 import { fetchRecentCongestion, updateCurrentLocation } from "@/api/attendance";
 import {
+  BEACON_ZONES_EVENT,
+  fetchBeaconZones,
+  loadBeaconZonesFromLocalStorage
+} from "@/api/beaconZones";
+import {
   fetchRoutines,
   loadRoutineRestDaysFromLocalStorage,
   loadRoutinesFromLocalStorage
@@ -154,8 +159,8 @@ function normalizeCongestionLevel(value, metric = "level") {
   if (numericValue == null) return null;
   if (metric === "percent" || metric === "percentage" || metric === "rate") {
     const percent = numericValue <= 1 ? numericValue * 100 : numericValue;
-    if (percent >= 70) return "high";
-    if (percent >= 40) return "mid";
+    if (percent > 100 * (2 / 3)) return "high";
+    if (percent > 100 * (1 / 3)) return "mid";
     return "low";
   }
   if (numericValue >= 2) return "high";
@@ -199,9 +204,97 @@ function findZoneCongestion(data, keywords) {
   return null;
 }
 
-function normalizeZoneCongestion(zoneData) {
+function getBeaconIdentity(item) {
+  if (!item || typeof item !== "object") return null;
+  const value =
+    item.beaconId ??
+    item.zoneId ??
+    item.minor ??
+    item.id ??
+    item.uuid ??
+    item.name ??
+    item.zoneName ??
+    item.beaconName;
+  if (value == null || value === "") return null;
+  return String(value).trim();
+}
+
+function getBeaconCount(item) {
+  if (!item || typeof item !== "object") return null;
+  return readNumeric(
+    item.currentCount ??
+      item.peopleCount ??
+      item.userCount ??
+      item.current ??
+      item.count ??
+      item.population ??
+      item.memberCount
+  );
+}
+
+function getBeaconCapacity(item, zoneConfig) {
+  if (!item || typeof item !== "object") return zoneConfig?.capacity ?? null;
+  return (
+    readNumeric(
+      item.capacity ??
+        item.maxCapacity ??
+        item.limit ??
+        item.acceptableCapacity ??
+        item.totalCapacity
+    ) ??
+    zoneConfig?.capacity ??
+    null
+  );
+}
+
+function normalizeCongestionByCapacity(count, capacity) {
+  if (count == null || capacity == null || capacity <= 0) return null;
+  const ratio = count / capacity;
+  if (ratio > 2 / 3) return "high";
+  if (ratio > 1 / 3) return "mid";
+  return "low";
+}
+
+function createBeaconZoneLookup(beaconZones) {
+  const map = new Map();
+  for (const zone of beaconZones || []) {
+    if (!zone || typeof zone !== "object") continue;
+    for (const key of [zone.id, zone.beaconId, zone.zoneId, zone.name, zone.zoneName]) {
+      if (key == null || key === "") continue;
+      map.set(String(key).trim().toLowerCase(), zone);
+    }
+  }
+  return map;
+}
+
+function findBeaconZoneConfig(item, lookup) {
+  if (!item || !lookup) return null;
+  const keys = [
+    item.beaconId,
+    item.zoneId,
+    item.minor,
+    item.id,
+    item.uuid,
+    item.name,
+    item.zoneName,
+    item.beaconName
+  ];
+  for (const key of keys) {
+    if (key == null || key === "") continue;
+    const match = lookup.get(String(key).trim().toLowerCase());
+    if (match) return match;
+  }
+  return null;
+}
+
+function normalizeZoneCongestion(zoneData, zoneConfig = null) {
   if (zoneData == null) return null;
   if (typeof zoneData !== "object") return normalizeCongestionLevel(zoneData);
+  const capacityLevel = normalizeCongestionByCapacity(
+    getBeaconCount(zoneData),
+    getBeaconCapacity(zoneData, zoneConfig)
+  );
+  if (capacityLevel) return capacityLevel;
   if (zoneData.congestionStatus != null) {
     return normalizeCongestionLevel(zoneData.congestionStatus);
   }
@@ -243,31 +336,36 @@ function normalizeFallbackCongestion(root) {
   return normalizeCongestionLevel(root.count);
 }
 
-function getBeaconTitle(item, index) {
+function getBeaconTitle(item, index, zoneConfig = null) {
+  if (zoneConfig?.name) return zoneConfig.name;
   if (!item || typeof item !== "object") return BEACON_CONGESTION_SLOTS[index].title;
   const label =
+    item.name ??
+    item.beaconName ??
+    item.zoneName ??
     item.beaconId ??
     item.zoneId ??
     item.minor ??
-    item.id ??
-    item.name ??
-    item.beaconName ??
-    item.zoneName;
+    item.id;
   if (label == null || label === "") return BEACON_CONGESTION_SLOTS[index].title;
-  return `비콘 ID ${String(label)}`;
+  return String(label);
 }
 
-function createBeaconCongestionSlots(status = "no-signal", level = "mid") {
-  return BEACON_CONGESTION_SLOTS.map((slot) => ({
+function createBeaconCongestionSlots(status = "no-signal", level = "mid", beaconZones = []) {
+  return BEACON_CONGESTION_SLOTS.map((slot, index) => ({
     ...slot,
+    id: beaconZones[index]?.id ?? slot.id,
+    title: beaconZones[index]?.name ?? slot.title,
     level,
     status
   }));
 }
 
-function createNativeBeaconSignalSlots(payload, status = "signal-api-error") {
-  const slots = createBeaconCongestionSlots("no-signal");
+function createNativeBeaconSignalSlots(payload, status = "signal-api-error", beaconZones = []) {
+  const slots = createBeaconCongestionSlots("no-signal", "mid", beaconZones);
+  const zoneConfig = findBeaconZoneConfig(payload, createBeaconZoneLookup(beaconZones));
   const beaconLabel =
+    zoneConfig?.name ??
     payload?.beaconId ??
     payload?.zoneId ??
     payload?.minor ??
@@ -276,7 +374,7 @@ function createNativeBeaconSignalSlots(payload, status = "signal-api-error") {
     payload?.zoneName;
   slots[0] = {
     ...slots[0],
-    title: beaconLabel == null ? "비콘 ID 없음" : `비콘 ID ${beaconLabel}`,
+    title: beaconLabel == null ? "비콘 ID 없음" : String(beaconLabel),
     status
   };
   return slots;
@@ -316,7 +414,7 @@ function getBeaconCongestionItems(root) {
   return lists.flatMap(getCongestionEntries).slice(0, BEACON_CONGESTION_SLOTS.length);
 }
 
-function normalizeHomeCongestion(data) {
+function normalizeHomeCongestion(data, beaconZones = []) {
   const root = data?.data && typeof data.data === "object" ? data.data : data;
   if (import.meta.env.DEV) {
     console.log("[home congestion] raw response:", data);
@@ -327,17 +425,21 @@ function normalizeHomeCongestion(data) {
   const weightLevel = normalizeZoneCongestion(weight);
   const fallbackLevel = normalizeFallbackCongestion(root);
   const beaconItems = getBeaconCongestionItems(root);
+  const beaconZoneLookup = createBeaconZoneLookup(beaconZones);
   const isSingleNearestBeaconLevel = beaconItems.length === 0 && fallbackLevel != null;
   const beacons = BEACON_CONGESTION_SLOTS.map((slot, index) => {
     const item = beaconItems[index];
-    const level = normalizeZoneCongestion(item);
+    const zoneConfig =
+      findBeaconZoneConfig(item, beaconZoneLookup) ??
+      (beaconItems.length === 0 ? beaconZones[index] : null);
+    const level = normalizeZoneCongestion(item, zoneConfig);
     const hasSignal = level != null || (isSingleNearestBeaconLevel && index === 0);
     return {
-      id: slot.id,
+      id: zoneConfig?.id ?? getBeaconIdentity(item) ?? slot.id,
       title:
         isSingleNearestBeaconLevel && index === 0
-          ? "비콘 ID 없음"
-          : getBeaconTitle(item, index),
+          ? zoneConfig?.name ?? "비콘 ID 없음"
+          : getBeaconTitle(item, index, zoneConfig),
       level: level ?? (index === 0 ? fallbackLevel : null) ?? "mid",
       status: hasSignal ? "ok" : "no-signal"
     };
@@ -455,11 +557,12 @@ export default function Home() {
     hasWorkoutRecordForDate(formatDate(new Date()))
   );
   const [showRoutineOptions, setShowRoutineOptions] = useState(false);
+  const [beaconZones, setBeaconZones] = useState(() => loadBeaconZonesFromLocalStorage());
   const [congestion, setCongestion] = useState({
     cardio: "mid",
     weight: "mid",
     overall: "mid",
-    beacons: createBeaconCongestionSlots("loading"),
+    beacons: createBeaconCongestionSlots("loading", "mid", beaconZones),
     hasZoneBreakdown: false,
     status: "loading",
     updatedAt: null,
@@ -532,6 +635,40 @@ export default function Home() {
     };
   }, [todayDate, workoutHistoryStorageKey]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    let active = true;
+
+    async function syncBeaconZones() {
+      try {
+        const zones = await fetchBeaconZones();
+        if (!active) return;
+        if (zones.length) setBeaconZones(zones);
+      } catch (e) {
+        console.warn("[home beacon zones] fetch failed:", e);
+        if (active) setBeaconZones(loadBeaconZonesFromLocalStorage());
+      }
+    }
+
+    function syncStoredBeaconZones(event) {
+      const next = Array.isArray(event?.detail)
+        ? event.detail
+        : loadBeaconZonesFromLocalStorage();
+      setBeaconZones(next);
+    }
+
+    syncBeaconZones();
+    window.addEventListener("focus", syncBeaconZones);
+    window.addEventListener("storage", syncStoredBeaconZones);
+    window.addEventListener(BEACON_ZONES_EVENT, syncStoredBeaconZones);
+    return () => {
+      active = false;
+      window.removeEventListener("focus", syncBeaconZones);
+      window.removeEventListener("storage", syncStoredBeaconZones);
+      window.removeEventListener(BEACON_ZONES_EVENT, syncStoredBeaconZones);
+    };
+  }, []);
+
   const syncCongestion = useCallback(async ({ silent = false } = {}) => {
     if (!silent) {
       setCongestion((prev) => ({ ...prev, loading: true, error: null }));
@@ -539,7 +676,7 @@ export default function Home() {
     try {
       const data = await fetchRecentCongestion({ gymName: resolveGymName() });
       setCongestion({
-        ...normalizeHomeCongestion(data),
+        ...normalizeHomeCongestion(data, beaconZones),
         loading: false,
         error: null
       });
@@ -547,14 +684,14 @@ export default function Home() {
       console.warn("[home congestion] fetch failed:", e);
       setCongestion((prev) => ({
         ...prev,
-        beacons: createBeaconCongestionSlots("error"),
+        beacons: createBeaconCongestionSlots("error", "mid", beaconZones),
         hasZoneBreakdown: false,
         status: "error",
         loading: false,
         error: getDetailedApiErrorMessage(e)
       }));
     }
-  }, []);
+  }, [beaconZones]);
 
   useEffect(() => {
     let active = true;
@@ -585,7 +722,7 @@ export default function Home() {
       }
       if (detail?.type === "congestion") {
         setCongestion({
-          ...normalizeHomeCongestion(detail),
+          ...normalizeHomeCongestion(detail, beaconZones),
           loading: false,
           error: null
         });
@@ -597,7 +734,11 @@ export default function Home() {
 
       setCongestion((prev) => ({
         ...prev,
-        beacons: createNativeBeaconSignalSlots(locationPayload, "signal-received"),
+        beacons: createNativeBeaconSignalSlots(
+          locationPayload,
+          "signal-received",
+          beaconZones
+        ),
         hasZoneBreakdown: true,
         status: "ok",
         loading: false,
@@ -611,7 +752,7 @@ export default function Home() {
         });
         if (!active) return;
         setCongestion({
-          ...normalizeHomeCongestion(data),
+          ...normalizeHomeCongestion(data, beaconZones),
           loading: false,
           error: null
         });
@@ -620,7 +761,11 @@ export default function Home() {
         if (!active) return;
         setCongestion((prev) => ({
           ...prev,
-          beacons: createNativeBeaconSignalSlots(locationPayload),
+          beacons: createNativeBeaconSignalSlots(
+            locationPayload,
+            "signal-api-error",
+            beaconZones
+          ),
           hasZoneBreakdown: false,
           status: "error",
           loading: false,
@@ -634,7 +779,7 @@ export default function Home() {
       active = false;
       window.removeEventListener("moduflow:native-event", handleNativeEvent);
     };
-  }, []);
+  }, [beaconZones]);
 
   useEffect(() => {
     if (!startNotice) return;

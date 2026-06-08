@@ -146,6 +146,10 @@ apiClient.interceptors.response.use(
     const status = error?.response?.status;
     const message = getApiErrorMessage(error);
 
+    if (error?.config?.skipAuthRedirect) {
+      return Promise.reject(error);
+    }
+
     if (status === 401) {
       clearAuthToken();
       error.userMessage = "로그인이 만료되었어요. 다시 로그인해 주세요.";
