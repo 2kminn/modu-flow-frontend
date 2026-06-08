@@ -69,7 +69,9 @@ export function normalizeAdminDashboardSummary(value) {
 export async function fetchAdminDashboardSummary() {
   if (isDevTestAuthToken()) return DEV_DASHBOARD_SUMMARY;
 
-  const res = await apiClient.get("/api/v1/admin/dashboard/summary");
+  const res = await apiClient.get("/api/v1/admin/dashboard/summary", {
+    skipAuthRedirect: true
+  });
   return normalizeAdminDashboardSummary(res?.data);
 }
 
@@ -90,7 +92,8 @@ export async function fetchAdminAttendances(params) {
   }
 
   const res = await apiClient.get("/api/v1/admin/attendances", {
-    params: params && Object.keys(params).length ? params : undefined
+    params: params && Object.keys(params).length ? params : undefined,
+    skipAuthRedirect: true
   });
   return normalizeAttendanceRecords(res?.data);
 }
