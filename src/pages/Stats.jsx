@@ -1,7 +1,8 @@
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarCheck, ChevronLeft, ChevronRight, Dumbbell, ListChecks } from "lucide-react";
+import { fetchAttendance } from "@/api/attendance";
 import { getApiErrorMessage } from "@/api/client";
 import { validateWorkoutItemDraft } from "@/api/validation";
 import {
@@ -28,6 +29,7 @@ const DAY_LABELS = {
   fri: "금",
   sat: "토"
 };
+const BEACON_ATTENDANCE_STORAGE_PREFIX = "moduflow:beacon-attendance:v1";
 
 function formatMonth(date) {
   const y = date.getFullYear();
@@ -63,6 +65,41 @@ function dateFromDateString(value) {
   const [y, m, d] = String(value || "").split("-").map(Number);
   if (!y || !m || !d) return null;
   return new Date(y, m - 1, d);
+}
+
+function formatAttendanceTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("ko-KR", {
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(date);
+}
+
+function dateKeyFromUnknown(value) {
+  if (!value) return "";
+  const text = String(value);
+  const dateOnly = text.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
+  if (dateOnly) return dateOnly;
+  const date = new Date(text);
+  return Number.isNaN(date.getTime()) ? "" : formatDate(date);
+}
+
+function loadLocalBeaconAttendanceDates() {
+  if (typeof window === "undefined") return [];
+  try {
+    const dates = [];
+    for (let i = 0; i < window.localStorage.length; i += 1) {
+      const key = window.localStorage.key(i);
+      if (!key?.startsWith(BEACON_ATTENDANCE_STORAGE_PREFIX)) continue;
+      const date = dateKeyFromUnknown(window.localStorage.getItem(key));
+      if (date) dates.push(date);
+    }
+    return [...new Set(dates)];
+  } catch {
+    return [];
+  }
 }
 
 function createId() {
@@ -557,6 +594,9 @@ export default function Stats() {
   const [restDays, setRestDays] = useState(() => loadRoutineRestDaysFromLocalStorage());
   const [routinesByDay, setRoutinesByDay] = useState(() => loadRoutinesFromLocalStorage());
   const [savingAdd, setSavingAdd] = useState(false);
+  const [activeTab, setActiveTab] = useState("workouts");
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
+  const [attendanceError, setAttendanceError] = useState("");
 
   const [recordsByDate, setRecordsByDate] = useState(() => {
     return normalizeRecordsByDate(loadWorkoutHistoryFromLocalStorage());
@@ -660,6 +700,32 @@ export default function Stats() {
   }, [month, monthLabel]);
 
   useEffect(() => {
+    let cancelled = false;
+    async function syncAttendance() {
+      try {
+        const data = await fetchAttendance();
+        if (cancelled) return;
+        const records = Array.isArray(data?.attendances)
+          ? data.attendances
+          : Array.isArray(data)
+            ? data
+            : [];
+        setAttendanceRecords(records);
+        setAttendanceError("");
+      } catch (e) {
+        console.warn("[stats attendance] fetch failed:", e);
+        if (!cancelled) {
+          setAttendanceError(getApiErrorMessage(e, "출석 기록을 불러오지 못했어요."));
+        }
+      }
+    }
+    syncAttendance();
+    return () => {
+      cancelled = true;
+    };
+  }, [monthLabel]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
     try {
       const out = Object.create(null);
@@ -675,14 +741,72 @@ export default function Stats() {
     }
   }, [recordsByDate]);
 
+  const attendanceByDate = useMemo(() => {
+    const map = Object.create(null);
+    for (const date of loadLocalBeaconAttendanceDates()) {
+      if (!date.startsWith(monthLabel)) continue;
+      map[date] = {
+        id: `local-${date}`,
+        date,
+        time: "",
+        zoneName: "비콘 자동출석",
+        status: "출석 완료"
+      };
+    }
+    for (const record of attendanceRecords) {
+      const checkInValue =
+        record?.checkInAt ??
+        record?.checkedInAt ??
+        record?.attendanceTime ??
+        record?.createdAt ??
+        record?.date;
+      const date = dateKeyFromUnknown(checkInValue);
+      if (!date.startsWith(monthLabel)) continue;
+      map[date] = {
+        id: record?.id ?? record?.attendanceId ?? date,
+        date,
+        time: formatAttendanceTime(checkInValue),
+        zoneName:
+          record?.zoneName ??
+          record?.zone ??
+          record?.beaconZoneName ??
+          record?.currentZoneName ??
+          "자동출석",
+        status: record?.status ?? record?.attendanceStatus ?? "출석 완료"
+      };
+    }
+    return map;
+  }, [attendanceRecords, monthLabel]);
+
+  const attendanceList = useMemo(() => {
+    return Object.values(attendanceByDate).sort((a, b) => b.date.localeCompare(a.date));
+  }, [attendanceByDate]);
+
+  const workoutDaysCount = useMemo(() => {
+    return Object.keys(workoutByDate).filter((d) => d.startsWith(monthLabel)).length;
+  }, [monthLabel, workoutByDate]);
+
+  const workoutItemsCount = useMemo(() => {
+    return Object.values(workoutByDate).reduce(
+      (sum, list) => sum + (Array.isArray(list) ? list.length : 0),
+      0
+    );
+  }, [workoutByDate]);
+
   const attendanceRate = useMemo(() => {
-    const totalDays = daysInMonth(month);
-    const countedDays = Math.max(0, totalDays - restDateSet.size);
-    const attended = Object.keys(workoutByDate).filter(
-      (d) => d.startsWith(monthLabel) && !restDateSet.has(d)
+    const totalDays =
+      monthLabel === todayMonthLabel ? today.getDate() : daysInMonth(month);
+    const elapsedDates = new Set();
+    for (let day = 1; day <= totalDays; day += 1) {
+      elapsedDates.add(`${monthLabel}-${String(day).padStart(2, "0")}`);
+    }
+    const elapsedRestDays = [...restDateSet].filter((date) => elapsedDates.has(date)).length;
+    const countedDays = Math.max(0, elapsedDates.size - elapsedRestDays);
+    const attended = Object.keys(attendanceByDate).filter(
+      (d) => elapsedDates.has(d) && !restDateSet.has(d)
     ).length;
     return Math.round((attended / Math.max(1, countedDays)) * 100);
-  }, [month, monthLabel, restDateSet, workoutByDate]);
+  }, [attendanceByDate, month, monthLabel, restDateSet, today, todayMonthLabel]);
 
   const [selectedDate, setSelectedDate] = useState(null);
 
@@ -788,7 +912,49 @@ export default function Stats() {
           <p className="text-sm font-semibold text-[color:var(--c-muted)]">
             기록
           </p>
-          <p className="mt-1 text-lg font-extrabold">한눈에 보기</p>
+          <p className="mt-1 text-lg font-extrabold">출석과 운동을 따로 보기</p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Card className="p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-extrabold text-[color:var(--c-muted)]">
+                  이번 달 출석률
+                </p>
+                <p className="mt-2 text-2xl font-black">{attendanceRate}%</p>
+              </div>
+              <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)]">
+                <CalendarCheck size={19} aria-hidden="true" />
+              </span>
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-extrabold text-[color:var(--c-muted)]">
+                  출석일
+                </p>
+                <p className="mt-2 text-2xl font-black">{attendanceList.length}일</p>
+              </div>
+              <span className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-500/10 text-[color:var(--c-success)]">
+                <ListChecks size={19} aria-hidden="true" />
+              </span>
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-extrabold text-[color:var(--c-muted)]">
+                  운동 완료
+                </p>
+                <p className="mt-2 text-2xl font-black">{workoutDaysCount}일</p>
+              </div>
+              <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[color:var(--c-purple-soft)] text-[color:var(--c-purple)]">
+                <Dumbbell size={19} aria-hidden="true" />
+              </span>
+            </div>
+          </Card>
         </div>
 
         <Card className="p-0">
@@ -796,10 +962,11 @@ export default function Stats() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold text-[color:var(--c-muted)]">
-                  출석률
+                  {monthLabelKo}
                 </p>
-                <p className="mt-1 text-2xl font-extrabold">{attendanceRate}%</p>
+                <p className="mt-1 text-xl font-extrabold">월간 기록 캘린더</p>
                 <p className="mt-1 text-xs font-semibold text-[color:var(--c-muted-2)]">
+                  출석과 운동 기록을 같은 날짜에서 구분해요.
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -814,22 +981,22 @@ export default function Stats() {
                 <span className="min-w-[84px] text-center text-xs font-extrabold text-[color:var(--c-text)]">
                   {monthLabelKo}
                 </span>
-              <button
-                type="button"
-                onClick={nextMonth}
-                className="grid h-11 w-11 place-items-center rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-[color:var(--c-text)] transition hover:bg-[color:var(--c-surface-2)] active:scale-[0.98]"
-                aria-label="다음 달"
-                disabled={nextDisabled}
-              >
-                <ChevronRight
-                  size={18}
-                  aria-hidden="true"
-                  className={nextDisabled ? "opacity-40" : undefined}
-                />
-              </button>
+                <button
+                  type="button"
+                  onClick={nextMonth}
+                  className="grid h-11 w-11 place-items-center rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-[color:var(--c-text)] transition hover:bg-[color:var(--c-surface-2)] active:scale-[0.98]"
+                  aria-label="다음 달"
+                  disabled={nextDisabled}
+                >
+                  <ChevronRight
+                    size={18}
+                    aria-hidden="true"
+                    className={nextDisabled ? "opacity-40" : undefined}
+                  />
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
           <div className="px-4 pb-4">
             <div className="rounded-3xl bg-[color:var(--c-surface-2)] p-3">
@@ -845,17 +1012,24 @@ export default function Stats() {
                   if (!day) return <div key={`empty-${idx}`} />;
                   const dateStr = `${monthLabel}-${String(day).padStart(2, "0")}`;
                   const hasWorkout = Boolean(workoutByDate[dateStr]?.length);
+                  const hasAttendance = Boolean(attendanceByDate[dateStr]);
                   const isRestDay = restDateSet.has(dateStr);
                   const isToday = dateStr === todayLabel;
                   return (
                     <button
                       key={dateStr}
                       type="button"
-                      onClick={() => setSelectedDate(dateStr)}
+                      onClick={() => {
+                        if (activeTab === "workouts") setSelectedDate(dateStr);
+                      }}
                       className={[
-                        "flex aspect-square flex-col items-center justify-center rounded-2xl text-xs font-extrabold transition active:scale-[0.98]",
+                        "relative flex aspect-square flex-col items-center justify-center rounded-2xl text-xs font-extrabold transition active:scale-[0.98]",
                         isRestDay
                             ? "border border-[color:var(--c-primary)]/20 bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)] hover:bg-[color:var(--c-primary-soft)]"
+                          : hasAttendance && hasWorkout
+                            ? "bg-[linear-gradient(135deg,var(--c-primary),var(--c-purple))] text-white hover:opacity-90"
+                          : hasAttendance
+                            ? "bg-emerald-500 text-white hover:opacity-90"
                           : hasWorkout
                             ? "bg-[color:var(--c-primary)] text-white hover:opacity-90"
                             : "bg-[color:var(--c-surface)] text-[color:var(--c-muted-2)] hover:bg-[color:var(--c-surface)]/80",
@@ -865,6 +1039,14 @@ export default function Stats() {
                       aria-label={`${dateStr}${isToday ? " 오늘" : ""}${hasWorkout ? " 운동 기록 있음" : ""}${isRestDay ? " 쉬는 날" : ""}`}
                     >
                       <span>{day}</span>
+                      <span className="mt-1 flex h-1.5 items-center gap-1">
+                        {hasAttendance ? (
+                          <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                        ) : null}
+                        {hasWorkout ? (
+                          <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
+                        ) : null}
+                      </span>
                       {isToday ? (
                         <span className="mt-0.5 text-[10px] leading-none">오늘</span>
                       ) : null}
@@ -877,8 +1059,16 @@ export default function Stats() {
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold text-[color:var(--c-muted-2)]">
                 <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  출석
+                </span>
+                <span className="inline-flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full bg-[color:var(--c-primary)]" />
                   운동 기록
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-[linear-gradient(135deg,var(--c-primary),var(--c-purple))]" />
+                  출석+운동
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full bg-[color:var(--c-primary-soft)] ring-1 ring-[color:var(--c-primary)]/30" />
@@ -892,6 +1082,104 @@ export default function Stats() {
               </div>
             </div>
           </div>
+        </Card>
+
+        <Card className="p-4">
+          <div className="grid grid-cols-2 rounded-2xl bg-[color:var(--c-surface-2)] p-1">
+            {[
+              ["workouts", "운동 기록"],
+              ["attendance", "출석 기록"]
+            ].map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setActiveTab(id)}
+                className={[
+                  "h-10 rounded-xl text-sm font-extrabold transition",
+                  activeTab === id
+                    ? "bg-[color:var(--c-surface)] text-[color:var(--c-text)] shadow-sm"
+                    : "text-[color:var(--c-muted)]"
+                ].join(" ")}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {activeTab === "workouts" ? (
+            <div className="mt-4 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-black">운동 기록</p>
+                  <p className="mt-1 text-xs font-semibold text-[color:var(--c-muted-2)]">
+                    총 {workoutItemsCount}개 운동, {workoutDaysCount}일 완료
+                  </p>
+                </div>
+              </div>
+              {Object.entries(workoutByDate)
+                .sort(([a], [b]) => b.localeCompare(a))
+                .map(([date, items]) => (
+                  <button
+                    key={date}
+                    type="button"
+                    onClick={() => setSelectedDate(date)}
+                    className="flex w-full items-center justify-between gap-3 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 py-3 text-left transition hover:bg-[color:var(--c-surface-2)] active:scale-[0.99]"
+                  >
+                    <span>
+                      <span className="block text-sm font-black">{date}</span>
+                      <span className="mt-1 block text-xs font-semibold text-[color:var(--c-muted)]">
+                        {(items || []).slice(0, 2).map((it) => it.name).join(", ")}
+                        {(items || []).length > 2 ? ` 외 ${(items || []).length - 2}개` : ""}
+                      </span>
+                    </span>
+                    <span className="shrink-0 rounded-full bg-[color:var(--c-primary-soft)] px-3 py-1 text-xs font-extrabold text-[color:var(--c-primary)]">
+                      {(items || []).length}개
+                    </span>
+                  </button>
+                ))}
+              {workoutDaysCount === 0 ? (
+                <div className="rounded-2xl border border-dashed border-[color:var(--c-border)] p-6 text-center text-sm font-semibold text-[color:var(--c-muted)]">
+                  이번 달 운동 기록이 없어요.
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <div className="mt-4 space-y-3">
+              <div>
+                <p className="text-sm font-black">출석 기록</p>
+                <p className="mt-1 text-xs font-semibold text-[color:var(--c-muted-2)]">
+                  비콘 자동출석으로 방문한 날짜를 따로 보여줘요.
+                </p>
+                {attendanceError ? (
+                  <p className="mt-2 text-xs font-extrabold text-[color:var(--c-danger)]">
+                    {attendanceError}
+                  </p>
+                ) : null}
+              </div>
+              {attendanceList.map((record) => (
+                <div
+                  key={`${record.id}-${record.date}`}
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 py-3"
+                >
+                  <div>
+                    <p className="text-sm font-black">{record.date}</p>
+                    <p className="mt-1 text-xs font-semibold text-[color:var(--c-muted)]">
+                      {record.zoneName}
+                      {record.time ? ` · ${record.time}` : ""}
+                    </p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-extrabold text-[color:var(--c-success)]">
+                    {record.status}
+                  </span>
+                </div>
+              ))}
+              {attendanceList.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-[color:var(--c-border)] p-6 text-center text-sm font-semibold text-[color:var(--c-muted)]">
+                  이번 달 출석 기록이 없어요.
+                </div>
+              ) : null}
+            </div>
+          )}
         </Card>
 
       </section>
