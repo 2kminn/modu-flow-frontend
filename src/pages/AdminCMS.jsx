@@ -10,6 +10,7 @@ import {
   updateBeaconZone
 } from "@/api/beaconZones";
 import { getApiErrorMessage } from "@/api/client";
+import { fetchAttendance, normalizeAttendanceRecords } from "@/api/attendance";
 import { clearAuthToken } from "@/auth/auth";
 import Card from "@/components/ui/Card";
 import ThemeToggle from "@/components/ui/ThemeToggle";
@@ -29,8 +30,8 @@ import {
 } from "lucide-react";
 
 const menuItems = [
-  { label: "대시보드", icon: BarChart3 },
-  { label: "출결 현황", icon: Users }
+  { id: "dashboard", label: "대시보드", icon: BarChart3 },
+  { id: "attendance", label: "출결 현황", icon: Users }
 ];
 
 const congestionZones = [
@@ -40,7 +41,36 @@ const congestionZones = [
 
 const emptyForm = { id: "", name: "", capacity: "" };
 
-function Sidebar({ open, onClose }) {
+function maskEmail(value) {
+  const text = String(value || "").trim();
+  if (!text) return "-";
+  const [local, domain] = text.split("@");
+  if (!domain) return local.length <= 2 ? `${local[0] ?? "*"}**` : `${local.slice(0, 2)}**`;
+  const visible = local.length <= 2 ? local.slice(0, 1) : local.slice(0, 4);
+  return `${visible}**@${domain}`;
+}
+
+function maskName(value) {
+  const text = String(value || "").trim();
+  if (!text) return "-";
+  if (text.length <= 1) return `${text}*`;
+  if (text.length === 2) return `${text[0]}*`;
+  return `${text[0]}*${text[text.length - 1]}`;
+}
+
+function formatDateTime(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return new Intl.DateTimeFormat("ko-KR", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(date);
+}
+
+function Sidebar({ open, activeSection, onSelect, onClose }) {
   return (
     <>
       <div
@@ -80,9 +110,9 @@ function Sidebar({ open, onClose }) {
         </div>
 
         <nav className="mt-8 space-y-2" aria-label="관리자 메뉴">
-          {menuItems.map((item, index) => {
+          {menuItems.map((item) => {
             const Icon = item.icon;
-            const isActive = index === 0;
+            const isActive = item.id === activeSection;
 
             return (
               <button
@@ -94,7 +124,10 @@ function Sidebar({ open, onClose }) {
                     ? "bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)]"
                     : "text-[color:var(--c-muted)] hover:bg-[color:var(--c-surface-2)] hover:text-[color:var(--c-text)]"
                 ].join(" ")}
-                onClick={onClose}
+                onClick={() => {
+                  onSelect(item.id);
+                  onClose();
+                }}
               >
                 <span className="flex items-center gap-3">
                   <Icon size={18} aria-hidden="true" />
@@ -128,8 +161,12 @@ function StatCard({ icon: Icon, label, value, tone }) {
 
 function AdminCMS() {
   const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [beaconZones, setBeaconZones] = useState(() => loadBeaconZonesFromLocalStorage());
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
+  const [loadingAttendance, setLoadingAttendance] = useState(false);
+  const [attendanceMessage, setAttendanceMessage] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -137,7 +174,13 @@ function AdminCMS() {
   const [savingZone, setSavingZone] = useState(false);
   const [zoneMessage, setZoneMessage] = useState("");
 
-  const attendanceRate = useMemo(() => Math.round((124 / 328) * 1000) / 10, []);
+  const totalMembers = 328;
+  const checkedInCount = attendanceRecords.length || 124;
+  const absentCount = Math.max(0, totalMembers - checkedInCount);
+  const attendanceRate = useMemo(
+    () => Math.round((checkedInCount / totalMembers) * 1000) / 10,
+    [checkedInCount]
+  );
   const isEditing = editingId != null;
 
   function logout() {
@@ -170,6 +213,33 @@ function AdminCMS() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadAttendance() {
+      if (activeSection !== "attendance") return;
+      setLoadingAttendance(true);
+      try {
+        const data = await fetchAttendance();
+        if (!active) return;
+        setAttendanceRecords(normalizeAttendanceRecords(data));
+        setAttendanceMessage("");
+      } catch (err) {
+        console.warn("[admin attendance] fetch failed:", err);
+        if (!active) return;
+        setAttendanceRecords([]);
+        setAttendanceMessage(getApiErrorMessage(err, "출결 현황을 불러오지 못했어요."));
+      } finally {
+        if (active) setLoadingAttendance(false);
+      }
+    }
+
+    loadAttendance();
+    return () => {
+      active = false;
+    };
+  }, [activeSection]);
 
   function openAddModal() {
     setEditingId(null);
@@ -257,7 +327,12 @@ function AdminCMS() {
   return (
     <div className="min-h-dvh bg-[color:var(--c-bg)] text-[color:var(--c-text)]">
       <div className="lg:grid lg:grid-cols-[280px_minmax(0,1fr)]">
-        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <Sidebar
+          open={sidebarOpen}
+          activeSection={activeSection}
+          onSelect={setActiveSection}
+          onClose={() => setSidebarOpen(false)}
+        />
 
         <main className="min-w-0">
           <header className="sticky top-0 z-30 border-b border-[color:var(--c-border)] bg-[color:var(--c-surface)]/95 backdrop-blur">
@@ -273,10 +348,12 @@ function AdminCMS() {
                 </button>
                 <div className="min-w-0">
                   <h1 className="truncate text-xl font-black tracking-tight sm:text-2xl">
-                    대시보드
+                    {activeSection === "dashboard" ? "대시보드" : "출결 현황"}
                   </h1>
                   <p className="mt-1 hidden text-sm font-semibold text-[color:var(--c-muted)] sm:block">
-                    헬스장 운영 현황을 한눈에 확인하세요.
+                    {activeSection === "dashboard"
+                      ? "헬스장 운영 현황을 한눈에 확인하세요."
+                      : "회원의 출석 상태와 이용 구역을 확인하세요."}
                   </p>
                 </div>
               </div>
@@ -301,20 +378,24 @@ function AdminCMS() {
 
           <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
             <p className="mb-4 text-sm font-semibold text-[color:var(--c-muted)] sm:hidden">
-              헬스장 운영 현황을 한눈에 확인하세요.
+              {activeSection === "dashboard"
+                ? "헬스장 운영 현황을 한눈에 확인하세요."
+                : "회원의 출석 상태와 이용 구역을 확인하세요."}
             </p>
 
-            <section className="grid gap-4 md:grid-cols-3">
+            {activeSection === "dashboard" ? (
+              <>
+              <section className="grid gap-4 md:grid-cols-3">
               <StatCard
                 icon={Activity}
                 label="현재 출석 인원"
-                value="124명"
+                value={`${checkedInCount}명`}
                 tone="bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)]"
               />
               <StatCard
                 icon={Users}
                 label="총 회원 수"
-                value="328명"
+                value={`${totalMembers}명`}
                 tone="bg-[color:var(--c-purple-soft)] text-[color:var(--c-purple)]"
               />
               <StatCard
@@ -357,9 +438,9 @@ function AdminCMS() {
 
                   <div className="space-y-3">
                     {[
-                      ["총 회원 수", "328명"],
-                      ["출석 회원", "124명"],
-                      ["미출석 회원", "204명"]
+                      ["총 회원 수", `${totalMembers}명`],
+                      ["출석 회원", `${checkedInCount}명`],
+                      ["미출석 회원", `${absentCount}명`]
                     ].map(([label, value]) => (
                       <div
                         key={label}
@@ -511,6 +592,97 @@ function AdminCMS() {
                 </table>
               </div>
             </Card>
+              </>
+            ) : (
+              <Card className="rounded-2xl p-5">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h2 className="text-base font-black">회원 출결 목록</h2>
+                    <p className="mt-1 text-sm font-semibold text-[color:var(--c-muted)]">
+                      개인정보 보호를 위해 아이디와 이름은 일부만 표시됩니다.
+                    </p>
+                    {attendanceMessage ? (
+                      <p className="mt-2 text-xs font-extrabold text-[color:var(--c-danger)]">
+                        {attendanceMessage}
+                      </p>
+                    ) : null}
+                  </div>
+                  <span className="w-fit rounded-full bg-[color:var(--c-primary-soft)] px-3 py-1 text-xs font-extrabold text-[color:var(--c-primary)]">
+                    {attendanceRecords.length}명
+                  </span>
+                </div>
+
+                <div className="mt-5 overflow-x-auto">
+                  <table className="w-full min-w-[760px] border-separate border-spacing-0 text-left">
+                    <thead>
+                      <tr className="text-xs font-extrabold uppercase tracking-wide text-[color:var(--c-muted-2)]">
+                        <th className="border-b border-[color:var(--c-border)] px-3 py-3">
+                          사용자 아이디
+                        </th>
+                        <th className="border-b border-[color:var(--c-border)] px-3 py-3">
+                          이름
+                        </th>
+                        <th className="border-b border-[color:var(--c-border)] px-3 py-3">
+                          출석 시간
+                        </th>
+                        <th className="border-b border-[color:var(--c-border)] px-3 py-3">
+                          이용 구역
+                        </th>
+                        <th className="border-b border-[color:var(--c-border)] px-3 py-3">
+                          상태
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {attendanceRecords.map((record, index) => (
+                        <tr
+                          key={`${record.id}-${record.checkInAt || index}`}
+                          className="text-sm font-bold"
+                        >
+                          <td className="border-b border-[color:var(--c-border)] px-3 py-4 text-[color:var(--c-primary)]">
+                            {maskEmail(record.email)}
+                          </td>
+                          <td className="border-b border-[color:var(--c-border)] px-3 py-4">
+                            {maskName(record.name)}
+                          </td>
+                          <td className="border-b border-[color:var(--c-border)] px-3 py-4 text-[color:var(--c-muted)]">
+                            {formatDateTime(record.checkInAt)}
+                          </td>
+                          <td className="border-b border-[color:var(--c-border)] px-3 py-4">
+                            {record.zoneName || "-"}
+                          </td>
+                          <td className="border-b border-[color:var(--c-border)] px-3 py-4">
+                            <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-extrabold text-[color:var(--c-success)]">
+                              {record.status || (record.checkOutAt ? "퇴실" : "출석")}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                      {loadingAttendance ? (
+                        <tr>
+                          <td
+                            colSpan={5}
+                            className="border-b border-[color:var(--c-border)] px-3 py-8 text-center text-sm font-bold text-[color:var(--c-muted)]"
+                          >
+                            출결 현황을 불러오는 중입니다.
+                          </td>
+                        </tr>
+                      ) : null}
+                      {!loadingAttendance && attendanceRecords.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={5}
+                            className="border-b border-[color:var(--c-border)] px-3 py-8 text-center text-sm font-bold text-[color:var(--c-muted)]"
+                          >
+                            표시할 출결 기록이 없습니다.
+                          </td>
+                        </tr>
+                      ) : null}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            )}
           </div>
         </main>
       </div>
