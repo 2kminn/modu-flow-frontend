@@ -222,7 +222,6 @@ function AdminCMS() {
   const [attendanceFilters, setAttendanceFilters] = useState({
     query: "",
     datePreset: "today",
-    zone: "all",
     status: "all"
   });
   const [loadingAttendance, setLoadingAttendance] = useState(false);
@@ -244,12 +243,6 @@ function AdminCMS() {
 
   const { totalMembers, checkedInCount, absentCount, attendanceRate } = dashboardSummary;
   const isEditing = editingId != null;
-  const attendanceZones = useMemo(() => {
-    const zones = attendanceRecords
-      .map((record) => String(record.zoneName || "").trim())
-      .filter(Boolean);
-    return [...new Set(zones)].sort((a, b) => a.localeCompare(b, "ko"));
-  }, [attendanceRecords]);
   const attendanceStatuses = useMemo(() => {
     const statuses = attendanceRecords.map(getRecordStatus).filter(Boolean);
     return [...new Set(statuses)].sort((a, b) => a.localeCompare(b, "ko"));
@@ -260,9 +253,6 @@ function AdminCMS() {
       const dateKey = dateKeyFromRecord(record);
       if (!isWithinPreset(dateKey, attendanceFilters.datePreset)) return false;
 
-      const zoneName = String(record.zoneName || "").trim();
-      if (attendanceFilters.zone !== "all" && zoneName !== attendanceFilters.zone) return false;
-
       const status = getRecordStatus(record);
       if (attendanceFilters.status !== "all" && status !== attendanceFilters.status) return false;
 
@@ -271,7 +261,6 @@ function AdminCMS() {
         record.email,
         record.name,
         record.id,
-        zoneName,
         status,
         formatDateTime(record.checkInAt)
       ]
@@ -486,6 +475,7 @@ function AdminCMS() {
                 <span className="hidden rounded-full border border-[color:var(--c-border)] bg-[color:var(--c-surface-2)] px-3 py-2 text-xs font-extrabold text-[color:var(--c-primary)] sm:inline-flex">
                   관리자
                 </span>
+                <ThemeToggle />
                 <button
                   type="button"
                   className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-3 text-xs font-extrabold text-[color:var(--c-muted)] shadow-sm transition hover:bg-[color:var(--c-surface-2)] hover:text-[color:var(--c-text)] active:scale-[0.98]"
@@ -495,7 +485,6 @@ function AdminCMS() {
                   <LogOut size={15} aria-hidden="true" />
                   <span className="hidden sm:inline">로그아웃</span>
                 </button>
-                <ThemeToggle />
               </div>
             </div>
           </header>
@@ -756,7 +745,7 @@ function AdminCMS() {
                       onChange={(e) =>
                         setAttendanceFilters((prev) => ({ ...prev, query: e.target.value }))
                       }
-                      placeholder="이메일, 이름, 구역 검색"
+                      placeholder="이메일, 이름, 상태 검색"
                     />
                   </label>
 
@@ -783,24 +772,6 @@ function AdminCMS() {
 
                 <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                   <label className="min-w-0 flex-1">
-                    <span className="sr-only">이용 구역 필터</span>
-                    <select
-                      className="h-12 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-sm font-extrabold text-[color:var(--c-text)] outline-none transition focus:border-[color:var(--c-primary)] focus:ring-2 focus:ring-[color:var(--c-focus-ring)]"
-                      value={attendanceFilters.zone}
-                      onChange={(e) =>
-                        setAttendanceFilters((prev) => ({ ...prev, zone: e.target.value }))
-                      }
-                    >
-                      <option value="all">전체 구역</option>
-                      {attendanceZones.map((zone) => (
-                        <option key={zone} value={zone}>
-                          {zone}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="min-w-0 flex-1">
                     <span className="sr-only">출결 상태 필터</span>
                     <select
                       className="h-12 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-sm font-extrabold text-[color:var(--c-text)] outline-none transition focus:border-[color:var(--c-primary)] focus:ring-2 focus:ring-[color:var(--c-focus-ring)]"
@@ -825,7 +796,6 @@ function AdminCMS() {
                       setAttendanceFilters({
                         query: "",
                         datePreset: "today",
-                        zone: "all",
                         status: "all"
                       })
                     }
@@ -835,7 +805,7 @@ function AdminCMS() {
                 </div>
 
                 <div className="mt-5 overflow-x-auto">
-                  <table className="w-full min-w-[760px] border-separate border-spacing-0 text-left">
+                  <table className="w-full min-w-[640px] border-separate border-spacing-0 text-left">
                     <thead>
                       <tr className="text-xs font-extrabold uppercase tracking-wide text-[color:var(--c-muted-2)]">
                         <th className="border-b border-[color:var(--c-border)] px-3 py-3">
@@ -846,9 +816,6 @@ function AdminCMS() {
                         </th>
                         <th className="border-b border-[color:var(--c-border)] px-3 py-3">
                           출석 시간
-                        </th>
-                        <th className="border-b border-[color:var(--c-border)] px-3 py-3">
-                          이용 구역
                         </th>
                         <th className="border-b border-[color:var(--c-border)] px-3 py-3">
                           상태
@@ -871,9 +838,6 @@ function AdminCMS() {
                             {formatDateTime(record.checkInAt)}
                           </td>
                           <td className="border-b border-[color:var(--c-border)] px-3 py-4">
-                            {record.zoneName || "-"}
-                          </td>
-                          <td className="border-b border-[color:var(--c-border)] px-3 py-4">
                             <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-extrabold text-[color:var(--c-success)]">
                               {getRecordStatus(record)}
                             </span>
@@ -883,7 +847,7 @@ function AdminCMS() {
                       {loadingAttendance ? (
                         <tr>
                           <td
-                            colSpan={5}
+                            colSpan={4}
                             className="border-b border-[color:var(--c-border)] px-3 py-8 text-center text-sm font-bold text-[color:var(--c-muted)]"
                           >
                             출결 현황을 불러오는 중입니다.
@@ -893,7 +857,7 @@ function AdminCMS() {
                       {!loadingAttendance && filteredAttendanceRecords.length === 0 ? (
                         <tr>
                           <td
-                            colSpan={5}
+                            colSpan={4}
                             className="border-b border-[color:var(--c-border)] px-3 py-8 text-center text-sm font-bold text-[color:var(--c-muted)]"
                           >
                             조건에 맞는 출결 기록이 없습니다.
