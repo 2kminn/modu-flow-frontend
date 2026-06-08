@@ -59,5 +59,10 @@ export async function updateMyProfileName(name) {
     { name: normalizedName },
     { skipAuthRedirect: true }
   );
-  return normalizeProfile(res?.data) ?? { id: "", email: "", name: normalizedName };
+  const profile = normalizeProfile(res?.data);
+  return {
+    id: profile?.id ?? "",
+    email: profile?.email ?? "",
+    name: normalizedName
+  };
 }

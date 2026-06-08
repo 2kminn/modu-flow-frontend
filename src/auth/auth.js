@@ -6,6 +6,7 @@ const EXPIRES_AT_KEY = "auth_expires_at";
 const AUTH_PROVIDER_KEY = "auth_provider";
 const AUTH_SESSION_SECONDS = 60 * 60;
 const PROFILE_NAME_KEY_PREFIX = "moduflow:profile-name:v1:";
+const CURRENT_PROFILE_NAME_KEY = "moduflow:profile-name:current:v1";
 export const PROFILE_NAME_CHANGED_EVENT = "moduflow:profile-name-changed";
 export const DEV_TEST_AUTH_TOKEN = "dev-test-token";
 
@@ -52,6 +53,7 @@ function clearStoredAuth() {
   safeRemove(localStorage, ACCOUNT_KEY);
   safeRemove(localStorage, EXPIRES_AT_KEY);
   safeRemove(localStorage, AUTH_PROVIDER_KEY);
+  safeRemove(localStorage, CURRENT_PROFILE_NAME_KEY);
 }
 
 function isLocalAuthExpired() {
@@ -141,16 +143,20 @@ function getProfileNameKey(accountHint) {
 
 export function getStoredProfileName(accountHint) {
   const key = getProfileNameKey(accountHint);
-  if (!key) return "";
-  return String(safeGet(localStorage, key) || "").trim();
+  const accountName = key ? safeGet(localStorage, key) : "";
+  return String(accountName || safeGet(localStorage, CURRENT_PROFILE_NAME_KEY) || "").trim();
 }
 
 export function setStoredProfileName(name, accountHint) {
   const key = getProfileNameKey(accountHint);
-  if (!key) return "";
   const normalizedName = String(name || "").trim();
-  if (normalizedName) safeSet(localStorage, key, normalizedName);
-  else safeRemove(localStorage, key);
+  if (normalizedName) {
+    safeSet(localStorage, CURRENT_PROFILE_NAME_KEY, normalizedName);
+    if (key) safeSet(localStorage, key, normalizedName);
+  } else {
+    safeRemove(localStorage, CURRENT_PROFILE_NAME_KEY);
+    if (key) safeRemove(localStorage, key);
+  }
   try {
     window.dispatchEvent(
       new CustomEvent(PROFILE_NAME_CHANGED_EVENT, {
@@ -175,8 +181,10 @@ export function setAuthToken(token, accountHint, profileName, authProvider = "em
   persistLocalAuth(token, accountHint, authProvider);
   setNativeAuthToken(token);
   const identity = String(accountHint || "").trim().toLowerCase();
-  if (identity && String(profileName || "").trim()) {
+  if (String(profileName || "").trim()) {
     setStoredProfileName(profileName, identity);
+  } else {
+    safeRemove(localStorage, CURRENT_PROFILE_NAME_KEY);
   }
   safeRemove(sessionStorage);
   safeRemove(sessionStorage, ACCOUNT_KEY);
