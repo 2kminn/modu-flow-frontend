@@ -1,10 +1,28 @@
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-import { BedDouble, CheckCircle, Dumbbell, Pencil, RefreshCw, X, Zap } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  BedDouble,
+  CheckCircle,
+  Dumbbell,
+  Pencil,
+  RadioTower,
+  RefreshCw,
+  X,
+  Zap
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getApiErrorMessage } from "@/api/client";
-import { fetchRecentCongestion, updateCurrentLocation } from "@/api/attendance";
+import {
+  checkInAttendance,
+  fetchRecentCongestion,
+  updateCurrentLocation
+} from "@/api/attendance";
+import {
+  AUTO_ATTENDANCE_EVENT,
+  isAutoAttendanceEnabled,
+  saveAutoAttendanceEnabled
+} from "@/api/autoAttendance";
 import {
   BEACON_ZONES_EVENT,
   fetchBeaconZones,
@@ -21,10 +39,11 @@ import {
   loadWorkoutHistoryFromLocalStorage,
   replaceWorkoutDay
 } from "@/api/workouts";
-import { getAuthProfileName } from "@/auth/auth";
+import { getAuthProfileName, getStoredAuthIdentity } from "@/auth/auth";
 import { startNativeWorkout } from "@/native/androidBridge";
 
 const GYM_NAME_STORAGE_KEY = "moduflow:gym-name:v1";
+const BEACON_ATTENDANCE_STORAGE_PREFIX = "moduflow:beacon-attendance:v1";
 const DEFAULT_GYM_NAME = "ModuFlow";
 const DAY_LABELS = {
   mon: "월",
@@ -71,6 +90,33 @@ function hasWorkoutRecordForDate(date) {
     return Array.isArray(parsed?.[date]) && parsed[date].length > 0;
   } catch {
     return false;
+  }
+}
+
+function getBeaconAttendanceStorageKey(gymName = resolveGymName()) {
+  const identity = getStoredAuthIdentity() || "anonymous";
+  return [
+    BEACON_ATTENDANCE_STORAGE_PREFIX,
+    encodeURIComponent(identity),
+    encodeURIComponent(resolveGymName({ gymName }))
+  ].join(":");
+}
+
+function readBeaconAttendanceDate(gymName = resolveGymName()) {
+  if (typeof window === "undefined") return "";
+  try {
+    return window.localStorage.getItem(getBeaconAttendanceStorageKey(gymName)) || "";
+  } catch {
+    return "";
+  }
+}
+
+function markBeaconAttendanceDate(date, gymName = resolveGymName()) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(getBeaconAttendanceStorageKey(gymName), date);
+  } catch {
+    // ignore
   }
 }
 
@@ -548,11 +594,18 @@ function CongestionPill({ level, title, loading, status }) {
 export default function Home() {
   const navigate = useNavigate();
   const userName = getAuthProfileName();
-  const attendance = { status: "출석 완료", streakDays: 3 };
   const todayDayKey = useMemo(() => dayKeyFromDate(new Date()), []);
   const todayDate = useMemo(() => formatDate(new Date()), []);
   const [startNotice, setStartNotice] = useState(null);
   const [savingWorkout, setSavingWorkout] = useState(false);
+  const [checkingInAttendance, setCheckingInAttendance] = useState(false);
+  const attendanceRequestDateRef = useRef(null);
+  const [autoAttendanceEnabled, setAutoAttendanceEnabled] = useState(() =>
+    isAutoAttendanceEnabled()
+  );
+  const [beaconAttendanceDate, setBeaconAttendanceDate] = useState(() =>
+    readBeaconAttendanceDate(resolveGymName())
+  );
   const [workoutSavedToday, setWorkoutSavedToday] = useState(() =>
     hasWorkoutRecordForDate(formatDate(new Date()))
   );
@@ -573,6 +626,21 @@ export default function Home() {
     normalizeRoutinesByDay(loadRoutinesFromLocalStorage())
   );
   const [restDays, setRestDays] = useState(() => loadRoutineRestDaysFromLocalStorage());
+  const isAttendanceCompletedToday = beaconAttendanceDate === todayDate;
+  const attendance = {
+    status: isAttendanceCompletedToday
+      ? "출석 완료"
+      : checkingInAttendance
+        ? "출석 처리 중"
+        : autoAttendanceEnabled
+          ? "비콘 대기"
+          : "자동출석 꺼짐",
+    description: isAttendanceCompletedToday
+      ? "오늘 출석 완료"
+      : autoAttendanceEnabled
+        ? "비콘 신호 수신 시 출석"
+        : "관리자 설정에서 켤 수 있어요"
+  };
   const isTodayRestDay = restDays.includes(todayDayKey);
   const hasAnyRoutine = useMemo(() => {
     return Object.values(routinesByDay || {}).some(
@@ -669,6 +737,21 @@ export default function Home() {
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    function syncAutoAttendance(event) {
+      setAutoAttendanceEnabled(
+        typeof event?.detail === "boolean" ? event.detail : isAutoAttendanceEnabled()
+      );
+    }
+    window.addEventListener("storage", syncAutoAttendance);
+    window.addEventListener(AUTO_ATTENDANCE_EVENT, syncAutoAttendance);
+    return () => {
+      window.removeEventListener("storage", syncAutoAttendance);
+      window.removeEventListener(AUTO_ATTENDANCE_EVENT, syncAutoAttendance);
+    };
+  }, []);
+
   const syncCongestion = useCallback(async ({ silent = false } = {}) => {
     if (!silent) {
       setCongestion((prev) => ({ ...prev, loading: true, error: null }));
@@ -746,6 +829,37 @@ export default function Home() {
       }));
 
       try {
+        const attendanceDate = formatDate(new Date());
+        const gymName = resolveGymName(locationPayload);
+        if (
+          autoAttendanceEnabled &&
+          readBeaconAttendanceDate(gymName) !== attendanceDate &&
+          attendanceRequestDateRef.current !== attendanceDate
+        ) {
+          attendanceRequestDateRef.current = attendanceDate;
+          setCheckingInAttendance(true);
+          try {
+            await checkInAttendance({ gymName });
+            markBeaconAttendanceDate(attendanceDate, gymName);
+            if (active) {
+              setBeaconAttendanceDate(attendanceDate);
+              setStartNotice("비콘 신호로 출석 완료되었습니다.");
+            }
+          } catch (attendanceError) {
+            console.warn("[home beacon attendance] check-in failed:", attendanceError);
+            if (active) {
+              setStartNotice(
+                getApiErrorMessage(attendanceError, "비콘 출석 처리에 실패했어요.")
+              );
+            }
+          } finally {
+            if (active) setCheckingInAttendance(false);
+            if (attendanceRequestDateRef.current === attendanceDate) {
+              attendanceRequestDateRef.current = null;
+            }
+          }
+        }
+
         await updateCurrentLocation(locationPayload);
         const data = await fetchRecentCongestion({
           gymName: resolveGymName(locationPayload)
@@ -779,7 +893,7 @@ export default function Home() {
       active = false;
       window.removeEventListener("moduflow:native-event", handleNativeEvent);
     };
-  }, [beaconZones]);
+  }, [autoAttendanceEnabled, beaconZones]);
 
   useEffect(() => {
     if (!startNotice) return;
@@ -795,6 +909,10 @@ export default function Home() {
   function goToWorkoutSelection() {
     setShowRoutineOptions(false);
     navigate("/workout");
+  }
+
+  function toggleAutoAttendance() {
+    setAutoAttendanceEnabled((enabled) => saveAutoAttendanceEnabled(!enabled));
   }
 
   async function completeTodayWorkout() {
@@ -846,10 +964,56 @@ export default function Home() {
               </span>
             </div>
             <p className="mt-2 text-[11px] font-semibold text-[color:var(--c-muted-2)]">
-              연속 {attendance.streakDays}일째
+              {attendance.description}
             </p>
           </div>
         </div>
+
+        <button
+          type="button"
+          role="switch"
+          aria-checked={autoAttendanceEnabled}
+          className="flex w-full items-center justify-between gap-3 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 py-3 text-left shadow-sm transition hover:bg-[color:var(--c-surface-2)] active:scale-[0.99]"
+          onClick={toggleAutoAttendance}
+        >
+          <span className="flex min-w-0 items-center gap-3">
+            <span
+              className={[
+                "grid h-10 w-10 shrink-0 place-items-center rounded-2xl",
+                autoAttendanceEnabled
+                  ? "bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)]"
+                  : "bg-[color:var(--c-surface-2)] text-[color:var(--c-muted)]"
+              ].join(" ")}
+            >
+              <RadioTower size={18} aria-hidden="true" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-black text-[color:var(--c-text)]">
+                자동출석
+              </span>
+              <span className="mt-0.5 block truncate text-xs font-semibold text-[color:var(--c-muted)]">
+                {autoAttendanceEnabled
+                  ? "비콘 신호를 잡으면 오늘 출석을 자동 처리해요."
+                  : "꺼져 있으면 비콘을 잡아도 출석하지 않아요."}
+              </span>
+            </span>
+          </span>
+          <span
+            className={[
+              "relative h-8 w-14 shrink-0 rounded-full border p-1 transition",
+              autoAttendanceEnabled
+                ? "border-[color:var(--c-primary)] bg-[color:var(--c-primary)]"
+                : "border-[color:var(--c-border)] bg-[color:var(--c-surface-2)]"
+            ].join(" ")}
+          >
+            <span
+              className={[
+                "block h-6 w-6 rounded-full bg-white shadow-sm transition-transform",
+                autoAttendanceEnabled ? "translate-x-6" : "translate-x-0"
+              ].join(" ")}
+            />
+          </span>
+        </button>
 
         <Card className="overflow-hidden bg-[linear-gradient(135deg,var(--c-primary-soft),var(--c-surface))] p-0">
           <div className="p-4">

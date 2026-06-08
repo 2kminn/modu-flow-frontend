@@ -23,7 +23,6 @@ import {
   LogOut,
   Menu,
   Plus,
-  RadioTower,
   Trash2,
   Users,
   X
