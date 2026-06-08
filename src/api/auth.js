@@ -6,6 +6,7 @@ import {
 
 const SOCIAL_PROVIDERS = new Set(["google", "kakao"]);
 export const SOCIAL_LOGIN_RETURN_TO_KEY = "moduflow:social-login-return-to:v1";
+export const SOCIAL_LOGIN_PROVIDER_KEY = "moduflow:social-login-provider:v1";
 
 function pickDisplayName(source) {
   if (!source || typeof source !== "object") return "";

@@ -5,7 +5,12 @@ import Button from "@/components/ui/Button";
 import FloatingLabelInput from "@/components/ui/FloatingLabelInput";
 import { DEV_TEST_AUTH_TOKEN, setAuthToken } from "@/auth/auth";
 import { Eye, EyeOff, Lock, LogIn, Mail, ShieldCheck } from "lucide-react";
-import { getSocialLoginUrl, loginWithEmail, SOCIAL_LOGIN_RETURN_TO_KEY } from "@/api/auth";
+import {
+  getSocialLoginUrl,
+  loginWithEmail,
+  SOCIAL_LOGIN_PROVIDER_KEY,
+  SOCIAL_LOGIN_RETURN_TO_KEY
+} from "@/api/auth";
 
 function safeRedirectPath(value) {
   if (!value || typeof value !== "string") return "/";
@@ -48,6 +53,7 @@ export default function Login() {
 
     try {
       window.sessionStorage.setItem(SOCIAL_LOGIN_RETURN_TO_KEY, fromPath);
+      window.sessionStorage.setItem(SOCIAL_LOGIN_PROVIDER_KEY, provider);
     } catch {
       // ignore
     }

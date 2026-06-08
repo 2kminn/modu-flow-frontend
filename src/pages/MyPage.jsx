@@ -5,6 +5,7 @@ import {
   clearAuthToken,
   getAuthDisplayIdentity,
   getAuthProfileName,
+  isSocialAuthSession,
   setStoredProfileName
 } from "@/auth/auth";
 import { useState } from "react";
@@ -164,6 +165,7 @@ export default function MyPage() {
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [profileName, setProfileName] = useState(() => getAuthProfileName());
   const accountEmail = getAuthDisplayIdentity();
+  const isSocialAccount = isSocialAuthSession();
   const user = {
     name: profileName,
     bio: accountEmail
@@ -171,7 +173,9 @@ export default function MyPage() {
 
   const menus = [
     { label: "루틴 설정", to: "/mypage/routines", description: "자주 하는 루틴 관리", icon: CalendarCheck },
-    { label: "비밀번호 변경", to: "/mypage/password", description: "보안 설정", icon: Lock }
+    ...(!isSocialAccount
+      ? [{ label: "비밀번호 변경", to: "/mypage/password", description: "보안 설정", icon: Lock }]
+      : [])
   ];
 
   const handleLogout = () => {
@@ -246,7 +250,9 @@ export default function MyPage() {
             계정
           </p>
           <p className="mt-1 text-xs font-semibold text-[color:var(--c-muted-2)]">
-            로그인/보안 관련 설정
+            {isSocialAccount
+              ? "소셜 로그인 계정은 비밀번호를 연결된 소셜 서비스에서 관리해요."
+              : "로그인/보안 관련 설정"}
           </p>
         </div>
 

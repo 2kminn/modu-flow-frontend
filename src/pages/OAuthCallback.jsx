@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Card from "@/components/ui/Card";
 import { setAuthToken } from "@/auth/auth";
-import { SOCIAL_LOGIN_RETURN_TO_KEY } from "@/api/auth";
+import { SOCIAL_LOGIN_PROVIDER_KEY, SOCIAL_LOGIN_RETURN_TO_KEY } from "@/api/auth";
 
 function readParams(location) {
   const params = new URLSearchParams(location.search);
@@ -29,9 +29,18 @@ function safeGetReturnTo() {
   }
 }
 
+function safeGetSocialProvider() {
+  try {
+    return window.sessionStorage.getItem(SOCIAL_LOGIN_PROVIDER_KEY) || "social";
+  } catch {
+    return "social";
+  }
+}
+
 function safeClearReturnTo() {
   try {
     window.sessionStorage.removeItem(SOCIAL_LOGIN_RETURN_TO_KEY);
+    window.sessionStorage.removeItem(SOCIAL_LOGIN_PROVIDER_KEY);
   } catch {
     // ignore
   }
@@ -77,8 +86,9 @@ export default function OAuthCallback() {
 
     const accountHint = pickParam(params, ["email", "userId", "username"]);
     const profileName = pickParam(params, ["name", "nickname", "userName", "displayName"]);
+    const authProvider = pickParam(params, ["provider", "registrationId", "socialProvider"]) || safeGetSocialProvider();
 
-    setAuthToken(token, accountHint || profileName, profileName);
+    setAuthToken(token, accountHint || profileName, profileName, authProvider);
     const nextPath = safePath(params.get("redirect") || safeGetReturnTo());
     safeClearReturnTo();
     navigate(nextPath, { replace: true });

@@ -3,6 +3,7 @@ import { setNativeAuthToken } from "@/native/androidBridge";
 const TOKEN_KEY = "auth_token";
 const ACCOUNT_KEY = "auth_account";
 const EXPIRES_AT_KEY = "auth_expires_at";
+const AUTH_PROVIDER_KEY = "auth_provider";
 const AUTH_SESSION_SECONDS = 60 * 60;
 const PROFILE_NAME_KEY_PREFIX = "moduflow:profile-name:v1:";
 export const PROFILE_NAME_CHANGED_EVENT = "moduflow:profile-name-changed";
@@ -46,9 +47,11 @@ function clearStoredAuth() {
   safeRemove(sessionStorage);
   safeRemove(sessionStorage, ACCOUNT_KEY);
   safeRemove(sessionStorage, EXPIRES_AT_KEY);
+  safeRemove(sessionStorage, AUTH_PROVIDER_KEY);
   safeRemove(localStorage);
   safeRemove(localStorage, ACCOUNT_KEY);
   safeRemove(localStorage, EXPIRES_AT_KEY);
+  safeRemove(localStorage, AUTH_PROVIDER_KEY);
 }
 
 function isLocalAuthExpired() {
@@ -58,9 +61,15 @@ function isLocalAuthExpired() {
   return !expiresAt || Date.now() >= expiresAt;
 }
 
-function persistLocalAuth(token, accountHint) {
+function normalizeAuthProvider(provider) {
+  const value = String(provider || "").trim().toLowerCase();
+  return value || "email";
+}
+
+function persistLocalAuth(token, accountHint, authProvider = "email") {
   safeSet(localStorage, TOKEN_KEY, token);
   safeSet(localStorage, EXPIRES_AT_KEY, String(getNextAuthExpiresAt()));
+  safeSet(localStorage, AUTH_PROVIDER_KEY, normalizeAuthProvider(authProvider));
 
   const identity = String(accountHint || "").trim().toLowerCase();
   if (identity) safeSet(localStorage, ACCOUNT_KEY, identity);
@@ -80,10 +89,15 @@ export function getAuthToken() {
   const legacySessionToken = safeGet(sessionStorage);
   if (!legacySessionToken) return null;
 
-  persistLocalAuth(legacySessionToken, safeGet(sessionStorage, ACCOUNT_KEY));
+  persistLocalAuth(
+    legacySessionToken,
+    safeGet(sessionStorage, ACCOUNT_KEY),
+    safeGet(sessionStorage, AUTH_PROVIDER_KEY)
+  );
   safeRemove(sessionStorage);
   safeRemove(sessionStorage, ACCOUNT_KEY);
   safeRemove(sessionStorage, EXPIRES_AT_KEY);
+  safeRemove(sessionStorage, AUTH_PROVIDER_KEY);
   return legacySessionToken;
 }
 
@@ -98,6 +112,21 @@ export function getStoredAuthIdentity() {
     return null;
   }
   return safeGet(localStorage, ACCOUNT_KEY) || safeGet(sessionStorage, ACCOUNT_KEY) || null;
+}
+
+export function getStoredAuthProvider() {
+  if (isLocalAuthExpired()) {
+    clearStoredAuth();
+    setNativeAuthToken("");
+    return "email";
+  }
+  return normalizeAuthProvider(
+    safeGet(localStorage, AUTH_PROVIDER_KEY) || safeGet(sessionStorage, AUTH_PROVIDER_KEY)
+  );
+}
+
+export function isSocialAuthSession() {
+  return getStoredAuthProvider() !== "email";
 }
 
 function normalizeAccount(accountHint = getStoredAuthIdentity()) {
@@ -142,8 +171,8 @@ export function getAuthProfileName() {
   return getStoredProfileName() || getAuthDisplayIdentity();
 }
 
-export function setAuthToken(token, accountHint, profileName) {
-  persistLocalAuth(token, accountHint);
+export function setAuthToken(token, accountHint, profileName, authProvider = "email") {
+  persistLocalAuth(token, accountHint, authProvider);
   setNativeAuthToken(token);
   const identity = String(accountHint || "").trim().toLowerCase();
   if (identity && String(profileName || "").trim()) {
@@ -152,6 +181,7 @@ export function setAuthToken(token, accountHint, profileName) {
   safeRemove(sessionStorage);
   safeRemove(sessionStorage, ACCOUNT_KEY);
   safeRemove(sessionStorage, EXPIRES_AT_KEY);
+  safeRemove(sessionStorage, AUTH_PROVIDER_KEY);
 }
 
 export function syncStoredAuthTokenToNative() {
