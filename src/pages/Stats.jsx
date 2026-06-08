@@ -86,6 +86,10 @@ function dateKeyFromUnknown(value) {
   return Number.isNaN(date.getTime()) ? "" : formatDate(date);
 }
 
+function isFutureDateKey(dateKey, todayLabel) {
+  return Boolean(dateKey && todayLabel && dateKey > todayLabel);
+}
+
 function loadLocalBeaconAttendanceDates() {
   if (typeof window === "undefined") return [];
   try {
@@ -881,6 +885,7 @@ export default function Stats() {
 
   async function handleAddItems(itemsToAdd, options = {}) {
     if (!selectedDate) return;
+    if (isFutureDateKey(selectedDate, todayLabel)) return;
     const safeItems = (Array.isArray(itemsToAdd) ? itemsToAdd : []).filter(Boolean);
     if (!safeItems.length) return;
 
@@ -1034,18 +1039,24 @@ export default function Stats() {
                   const hasWorkout = Boolean(workoutByDate[dateStr]?.length);
                   const hasAttendance = Boolean(attendanceByDate[dateStr]);
                   const isToday = dateStr === todayLabel;
+                  const isFutureWorkoutDate =
+                    activeTab === "workouts" && isFutureDateKey(dateStr, todayLabel);
                   const hasActiveRecord =
                     activeTab === "attendance" ? hasAttendance : hasWorkout;
                   return (
                     <button
                       key={dateStr}
                       type="button"
+                      disabled={isFutureWorkoutDate}
                       onClick={() => {
+                        if (isFutureWorkoutDate) return;
                         if (activeTab === "workouts") setSelectedDate(dateStr);
                       }}
                       className={[
                         "relative flex aspect-square flex-col items-center justify-center rounded-2xl text-xs font-extrabold transition active:scale-[0.98]",
-                        hasActiveRecord && activeTab === "attendance"
+                        isFutureWorkoutDate
+                          ? "cursor-not-allowed bg-[color:var(--c-surface)] text-[color:var(--c-muted-2)] opacity-40 active:scale-100"
+                          : hasActiveRecord && activeTab === "attendance"
                           ? "bg-emerald-500 text-white hover:opacity-90"
                           : hasActiveRecord
                             ? "bg-[color:var(--c-primary)] text-white hover:opacity-90"
@@ -1053,7 +1064,7 @@ export default function Stats() {
                         isToday ? "ring-2 ring-[color:var(--c-purple)] ring-offset-2 ring-offset-[color:var(--c-surface-2)]" : "",
                         activeTab === "workouts" && selectedDate === dateStr ? "ring-2 ring-[color:var(--c-purple)] ring-offset-2 ring-offset-[color:var(--c-surface-2)]" : ""
                       ].join(" ")}
-                      aria-label={`${dateStr}${isToday ? " 오늘" : ""}${hasActiveRecord ? ` ${activeTab === "attendance" ? "출석" : "운동 기록"} 있음` : ""}`}
+                      aria-label={`${dateStr}${isToday ? " 오늘" : ""}${isFutureWorkoutDate ? " 선택 불가" : ""}${hasActiveRecord ? ` ${activeTab === "attendance" ? "출석" : "운동 기록"} 있음` : ""}`}
                     >
                       <span>{day}</span>
                       {isToday ? (
@@ -1096,25 +1107,34 @@ export default function Stats() {
               </div>
               {Object.entries(workoutByDate)
                 .sort(([a], [b]) => b.localeCompare(a))
-                .map(([date, items]) => (
-                  <button
-                    key={date}
-                    type="button"
-                    onClick={() => setSelectedDate(date)}
-                    className="flex w-full items-center justify-between gap-3 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 py-3 text-left transition hover:bg-[color:var(--c-surface-2)] active:scale-[0.99]"
-                  >
-                    <span>
-                      <span className="block text-sm font-black">{date}</span>
-                      <span className="mt-1 block text-xs font-semibold text-[color:var(--c-muted)]">
-                        {(items || []).slice(0, 2).map((it) => it.name).join(", ")}
-                        {(items || []).length > 2 ? ` 외 ${(items || []).length - 2}개` : ""}
+                .map(([date, items]) => {
+                  const disabled = isFutureDateKey(date, todayLabel);
+                  return (
+                    <button
+                      key={date}
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => {
+                        if (!disabled) setSelectedDate(date);
+                      }}
+                      className={[
+                        "flex w-full items-center justify-between gap-3 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 py-3 text-left transition hover:bg-[color:var(--c-surface-2)] active:scale-[0.99]",
+                        disabled ? "cursor-not-allowed opacity-50 hover:bg-[color:var(--c-surface)] active:scale-100" : ""
+                      ].join(" ")}
+                    >
+                      <span>
+                        <span className="block text-sm font-black">{date}</span>
+                        <span className="mt-1 block text-xs font-semibold text-[color:var(--c-muted)]">
+                          {(items || []).slice(0, 2).map((it) => it.name).join(", ")}
+                          {(items || []).length > 2 ? ` 외 ${(items || []).length - 2}개` : ""}
+                        </span>
                       </span>
-                    </span>
-                    <span className="shrink-0 rounded-full bg-[color:var(--c-primary-soft)] px-3 py-1 text-xs font-extrabold text-[color:var(--c-primary)]">
-                      {(items || []).length}개
-                    </span>
-                  </button>
-                ))}
+                      <span className="shrink-0 rounded-full bg-[color:var(--c-primary-soft)] px-3 py-1 text-xs font-extrabold text-[color:var(--c-primary)]">
+                        {(items || []).length}개
+                      </span>
+                    </button>
+                  );
+                })}
               {workoutDaysCount === 0 ? (
                 <div className="rounded-2xl border border-dashed border-[color:var(--c-border)] p-6 text-center text-sm font-semibold text-[color:var(--c-muted)]">
                   이번 달 운동 기록이 없어요.
