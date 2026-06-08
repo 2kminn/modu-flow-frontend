@@ -749,7 +749,6 @@ export default function Stats() {
         id: `local-${date}`,
         date,
         time: "",
-        zoneName: "비콘 자동출석",
         status: "출석 완료"
       };
     }
@@ -766,12 +765,6 @@ export default function Stats() {
         id: record?.id ?? record?.attendanceId ?? date,
         date,
         time: formatAttendanceTime(checkInValue),
-        zoneName:
-          record?.zoneName ??
-          record?.zone ??
-          record?.beaconZoneName ??
-          record?.currentZoneName ??
-          "자동출석",
         status: record?.status ?? record?.attendanceStatus ?? "출석 완료"
       };
     }
@@ -1148,7 +1141,7 @@ export default function Stats() {
               <div>
                 <p className="text-sm font-black">출석 기록</p>
                 <p className="mt-1 text-xs font-semibold text-[color:var(--c-muted-2)]">
-                  비콘 자동출석으로 방문한 날짜를 따로 보여줘요.
+                  비콘 신호로 출석 처리된 날짜만 보여줘요.
                 </p>
                 {attendanceError ? (
                   <p className="mt-2 text-xs font-extrabold text-[color:var(--c-danger)]">
@@ -1164,8 +1157,7 @@ export default function Stats() {
                   <div>
                     <p className="text-sm font-black">{record.date}</p>
                     <p className="mt-1 text-xs font-semibold text-[color:var(--c-muted)]">
-                      {record.zoneName}
-                      {record.time ? ` · ${record.time}` : ""}
+                      {record.time ? `${record.time} 출석` : "출석 처리됨"}
                     </p>
                   </div>
                   <span className="shrink-0 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-extrabold text-[color:var(--c-success)]">
