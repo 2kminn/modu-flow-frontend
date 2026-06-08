@@ -477,7 +477,8 @@ function normalizeHomeCongestion(data, beaconZones = []) {
     const item = beaconItems[index];
     const zoneConfig =
       findBeaconZoneConfig(item, beaconZoneLookup) ??
-      (beaconItems.length === 0 ? beaconZones[index] : null);
+      beaconZones[index] ??
+      null;
     const level = normalizeZoneCongestion(item, zoneConfig);
     const hasSignal = level != null || (isSingleNearestBeaconLevel && index === 0);
     return {
