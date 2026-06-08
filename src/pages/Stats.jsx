@@ -1039,22 +1039,21 @@ export default function Stats() {
                   const hasWorkout = Boolean(workoutByDate[dateStr]?.length);
                   const hasAttendance = Boolean(attendanceByDate[dateStr]);
                   const isToday = dateStr === todayLabel;
-                  const isFutureWorkoutDate =
-                    activeTab === "workouts" && isFutureDateKey(dateStr, todayLabel);
+                  const isFutureActiveDate = isFutureDateKey(dateStr, todayLabel);
                   const hasActiveRecord =
                     activeTab === "attendance" ? hasAttendance : hasWorkout;
                   return (
                     <button
                       key={dateStr}
                       type="button"
-                      disabled={isFutureWorkoutDate}
+                      disabled={isFutureActiveDate}
                       onClick={() => {
-                        if (isFutureWorkoutDate) return;
+                        if (isFutureActiveDate) return;
                         if (activeTab === "workouts") setSelectedDate(dateStr);
                       }}
                       className={[
                         "relative flex aspect-square flex-col items-center justify-center rounded-2xl text-xs font-extrabold transition active:scale-[0.98]",
-                        isFutureWorkoutDate
+                        isFutureActiveDate
                           ? "cursor-not-allowed bg-[color:var(--c-surface)] text-[color:var(--c-muted-2)] opacity-40 active:scale-100"
                           : hasActiveRecord && activeTab === "attendance"
                           ? "bg-emerald-500 text-white hover:opacity-90"
@@ -1064,7 +1063,7 @@ export default function Stats() {
                         isToday ? "ring-2 ring-[color:var(--c-purple)] ring-offset-2 ring-offset-[color:var(--c-surface-2)]" : "",
                         activeTab === "workouts" && selectedDate === dateStr ? "ring-2 ring-[color:var(--c-purple)] ring-offset-2 ring-offset-[color:var(--c-surface-2)]" : ""
                       ].join(" ")}
-                      aria-label={`${dateStr}${isToday ? " 오늘" : ""}${isFutureWorkoutDate ? " 선택 불가" : ""}${hasActiveRecord ? ` ${activeTab === "attendance" ? "출석" : "운동 기록"} 있음` : ""}`}
+                      aria-label={`${dateStr}${isToday ? " 오늘" : ""}${isFutureActiveDate ? " 선택 불가" : ""}${hasActiveRecord ? ` ${activeTab === "attendance" ? "출석" : "운동 기록"} 있음` : ""}`}
                     >
                       <span>{day}</span>
                       {isToday ? (
