@@ -39,7 +39,13 @@ import {
   loadWorkoutHistoryFromLocalStorage,
   replaceWorkoutDay
 } from "@/api/workouts";
-import { getAuthProfileName, getStoredAuthIdentity } from "@/auth/auth";
+import { fetchMyProfile } from "@/api/profile";
+import {
+  PROFILE_NAME_CHANGED_EVENT,
+  getAuthProfileName,
+  getStoredAuthIdentity,
+  setStoredProfileName
+} from "@/auth/auth";
 import { startNativeWorkout } from "@/native/androidBridge";
 
 const GYM_NAME_STORAGE_KEY = "moduflow:gym-name:v1";
@@ -594,7 +600,7 @@ function CongestionPill({ level, title, loading, status }) {
 
 export default function Home() {
   const navigate = useNavigate();
-  const userName = getAuthProfileName();
+  const [userName, setUserName] = useState(() => getAuthProfileName());
   const todayDayKey = useMemo(() => dayKeyFromDate(new Date()), []);
   const todayDate = useMemo(() => formatDate(new Date()), []);
   const [startNotice, setStartNotice] = useState(null);
@@ -657,6 +663,36 @@ export default function Home() {
     return todayRoutines.map(resolveRoutineExerciseId).filter(Boolean);
   }, [todayRoutines]);
   const workoutHistoryStorageKey = getWorkoutHistoryStorageKey();
+
+  useEffect(() => {
+    let active = true;
+
+    async function syncProfileName() {
+      try {
+        const profile = await fetchMyProfile();
+        if (!active || !profile?.name) return;
+        setStoredProfileName(profile.name);
+        setUserName(profile.name);
+      } catch (e) {
+        console.warn("[home profile] fetch failed:", e);
+        if (active) setUserName(getAuthProfileName());
+      }
+    }
+
+    function syncStoredProfileName(event) {
+      const nextName = String(event?.detail?.name || getAuthProfileName()).trim();
+      setUserName(nextName || getAuthProfileName());
+    }
+
+    syncProfileName();
+    window.addEventListener("focus", syncProfileName);
+    window.addEventListener(PROFILE_NAME_CHANGED_EVENT, syncStoredProfileName);
+    return () => {
+      active = false;
+      window.removeEventListener("focus", syncProfileName);
+      window.removeEventListener(PROFILE_NAME_CHANGED_EVENT, syncStoredProfileName);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

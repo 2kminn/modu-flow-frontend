@@ -200,7 +200,7 @@ export default function MyPage() {
         if (!active || !profile) return;
         if (profile.email) setAccountEmail(profile.email);
         if (profile.name) {
-          setStoredProfileName(profile.name, profile.email || accountEmail);
+          setStoredProfileName(profile.name);
           setProfileName(profile.name);
         }
       } catch (err) {
@@ -219,7 +219,7 @@ export default function MyPage() {
     setSavingProfile(true);
     try {
       const profile = await updateMyProfileName(nextName);
-      const savedName = setStoredProfileName(profile?.name || nextName, profile?.email || accountEmail);
+      const savedName = setStoredProfileName(profile?.name || nextName);
       setProfileName(savedName || accountEmail);
       if (profile?.email) setAccountEmail(profile.email);
       setIsProfileDialogOpen(false);
