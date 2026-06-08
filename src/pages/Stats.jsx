@@ -1,6 +1,5 @@
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-import WeeklyWorkoutChart from "@/components/charts/WeeklyWorkoutChart";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getApiErrorMessage } from "@/api/client";
@@ -687,9 +686,6 @@ export default function Stats() {
 
   const [selectedDate, setSelectedDate] = useState(null);
 
-  const postureAvg = 86;
-  const postureTrend = [82, 84, 83, 86, 88, 87, 86];
-
   const calendarCells = useMemo(() => {
     const total = daysInMonth(month);
     const offset = startWeekday(month);
@@ -898,41 +894,6 @@ export default function Stats() {
           </div>
         </Card>
 
-        <Card className="p-0">
-          <div className="p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-[color:var(--c-muted)]">
-                  자세 정확도
-                </p>
-                <p className="mt-1 text-2xl font-extrabold">{postureAvg}%</p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs font-semibold text-[color:var(--c-muted-2)]">
-                  최근 7일
-                </p>
-                <p className="mt-1 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface-2)] px-3 py-2 text-xs font-extrabold text-[color:var(--c-text)] transition-[background-color,border-color] duration-200">
-                  추이
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="px-4 pb-4">
-            <div className="rounded-3xl bg-[color:var(--c-surface-2)] p-3">
-              <WeeklyWorkoutChart
-                data={postureTrend}
-                unit="%"
-                datasetLabel="자세 정확도"
-                suggestedMax={100}
-              />
-            </div>
-          </div>
-        </Card>
-
-        <Button type="button" variant="secondary">
-          자세 분석 데이터 연동 (추후)
-        </Button>
       </section>
 
       <WorkoutListModal
