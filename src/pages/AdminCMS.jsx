@@ -311,7 +311,7 @@ function AdminCMS() {
       const saved = isEditing
         ? await updateBeaconZone(editingId, nextZone)
         : await createBeaconZone(nextZone);
-      const zoneToStore = saved ?? nextZone;
+      const zoneToStore = { ...(saved ?? {}), ...nextZone };
       setBeaconZones((zones) => {
         const next = isEditing
           ? zones.map((zone) => (zone.id === editingId ? zoneToStore : zone))

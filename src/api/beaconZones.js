@@ -100,7 +100,10 @@ export async function createBeaconZone(zone) {
   const res = await apiClient.post(
     "/api/v1/beacon-zones",
     {
+      id: normalized.id,
       beaconId: normalized.id,
+      name: normalized.name,
+      beaconName: normalized.name,
       zoneName: normalized.name,
       capacity: normalized.capacity
     },
@@ -119,7 +122,10 @@ export async function updateBeaconZone(previousId, zone) {
   const res = await apiClient.put(
     `/api/v1/beacon-zones/${encodeURIComponent(previousId)}`,
     {
+      id: normalized.id,
       beaconId: normalized.id,
+      name: normalized.name,
+      beaconName: normalized.name,
       zoneName: normalized.name,
       capacity: normalized.capacity
     },
