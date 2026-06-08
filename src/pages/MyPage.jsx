@@ -1,6 +1,8 @@
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import FloatingLabelInput from "@/components/ui/FloatingLabelInput";
+import { getApiErrorMessage } from "@/api/client";
+import { fetchMyProfile, updateMyProfileName } from "@/api/profile";
 import {
   clearAuthToken,
   getAuthDisplayIdentity,
@@ -8,7 +10,7 @@ import {
   isSocialAuthSession,
   setStoredProfileName
 } from "@/auth/auth";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CalendarCheck, ChevronRight, Lock, LogOut, Pencil, UserCircle } from "lucide-react";
 
@@ -88,18 +90,23 @@ function LogoutConfirmDialog({ onCancel, onConfirm }) {
   );
 }
 
-function ProfileNameDialog({ initialName, accountEmail, onCancel, onSave }) {
+function ProfileNameDialog({ initialName, accountEmail, onCancel, onSave, saving }) {
   const [name, setName] = useState(initialName);
   const [error, setError] = useState(null);
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     const nextName = String(name || "").trim();
     if (!nextName) {
       setError("이름을 입력해 주세요.");
       return;
     }
-    onSave(nextName);
+    setError(null);
+    try {
+      await onSave(nextName);
+    } catch (err) {
+      setError(getApiErrorMessage(err, "이름을 저장하지 못했어요."));
+    }
   }
 
   return (
@@ -147,11 +154,11 @@ function ProfileNameDialog({ initialName, accountEmail, onCancel, onSave }) {
         </div>
 
         <div className="mt-5 grid grid-cols-2 gap-2">
-          <Button type="button" variant="secondary" onClick={onCancel}>
+          <Button type="button" variant="secondary" onClick={onCancel} disabled={saving}>
             취소
           </Button>
-          <Button type="submit">
-            저장
+          <Button type="submit" disabled={saving}>
+            {saving ? "저장 중" : "저장"}
           </Button>
         </div>
       </form>
@@ -164,7 +171,8 @@ export default function MyPage() {
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [profileName, setProfileName] = useState(() => getAuthProfileName());
-  const accountEmail = getAuthDisplayIdentity();
+  const [accountEmail, setAccountEmail] = useState(() => getAuthDisplayIdentity());
+  const [savingProfile, setSavingProfile] = useState(false);
   const isSocialAccount = isSocialAuthSession();
   const user = {
     name: profileName,
@@ -183,10 +191,41 @@ export default function MyPage() {
     navigate("/login", { replace: true });
   };
 
-  const handleSaveProfileName = (nextName) => {
-    const savedName = setStoredProfileName(nextName, accountEmail);
-    setProfileName(savedName || accountEmail);
-    setIsProfileDialogOpen(false);
+  useEffect(() => {
+    let active = true;
+
+    async function loadProfile() {
+      try {
+        const profile = await fetchMyProfile();
+        if (!active || !profile) return;
+        if (profile.email) setAccountEmail(profile.email);
+        if (profile.name) {
+          setStoredProfileName(profile.name, profile.email || accountEmail);
+          setProfileName(profile.name);
+        }
+      } catch (err) {
+        console.warn("[profile] fetch failed:", err);
+      }
+    }
+
+    loadProfile();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleSaveProfileName = async (nextName) => {
+    if (savingProfile) return;
+    setSavingProfile(true);
+    try {
+      const profile = await updateMyProfileName(nextName);
+      const savedName = setStoredProfileName(profile?.name || nextName, profile?.email || accountEmail);
+      setProfileName(savedName || accountEmail);
+      if (profile?.email) setAccountEmail(profile.email);
+      setIsProfileDialogOpen(false);
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
   return (
@@ -282,6 +321,7 @@ export default function MyPage() {
           accountEmail={accountEmail}
           onCancel={() => setIsProfileDialogOpen(false)}
           onSave={handleSaveProfileName}
+          saving={savingProfile}
         />
       ) : null}
     </section>

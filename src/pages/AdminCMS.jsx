@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   DEFAULT_BEACON_ZONES,
@@ -9,8 +9,11 @@ import {
   saveBeaconZonesToLocalStorage,
   updateBeaconZone
 } from "@/api/beaconZones";
+import {
+  fetchAdminAttendances,
+  fetchAdminDashboardSummary
+} from "@/api/admin";
 import { getApiErrorMessage } from "@/api/client";
-import { fetchAttendance, normalizeAttendanceRecords } from "@/api/attendance";
 import { clearAuthToken } from "@/auth/auth";
 import Card from "@/components/ui/Card";
 import ThemeToggle from "@/components/ui/ThemeToggle";
@@ -167,6 +170,14 @@ function AdminCMS() {
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [loadingAttendance, setLoadingAttendance] = useState(false);
   const [attendanceMessage, setAttendanceMessage] = useState("");
+  const [dashboardSummary, setDashboardSummary] = useState({
+    totalMembers: 0,
+    checkedInCount: 0,
+    absentCount: 0,
+    attendanceRate: 0
+  });
+  const [loadingDashboard, setLoadingDashboard] = useState(true);
+  const [dashboardMessage, setDashboardMessage] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -174,13 +185,7 @@ function AdminCMS() {
   const [savingZone, setSavingZone] = useState(false);
   const [zoneMessage, setZoneMessage] = useState("");
 
-  const totalMembers = 328;
-  const checkedInCount = attendanceRecords.length || 124;
-  const absentCount = Math.max(0, totalMembers - checkedInCount);
-  const attendanceRate = useMemo(
-    () => Math.round((checkedInCount / totalMembers) * 1000) / 10,
-    [checkedInCount]
-  );
+  const { totalMembers, checkedInCount, absentCount, attendanceRate } = dashboardSummary;
   const isEditing = editingId != null;
 
   function logout() {
@@ -217,13 +222,39 @@ function AdminCMS() {
   useEffect(() => {
     let active = true;
 
+    async function loadDashboardSummary() {
+      if (activeSection !== "dashboard") return;
+      setLoadingDashboard(true);
+      try {
+        const summary = await fetchAdminDashboardSummary();
+        if (!active) return;
+        setDashboardSummary(summary);
+        setDashboardMessage("");
+      } catch (err) {
+        console.warn("[admin dashboard] fetch failed:", err);
+        if (!active) return;
+        setDashboardMessage(getApiErrorMessage(err, "대시보드 요약을 불러오지 못했어요."));
+      } finally {
+        if (active) setLoadingDashboard(false);
+      }
+    }
+
+    loadDashboardSummary();
+    return () => {
+      active = false;
+    };
+  }, [activeSection]);
+
+  useEffect(() => {
+    let active = true;
+
     async function loadAttendance() {
       if (activeSection !== "attendance") return;
       setLoadingAttendance(true);
       try {
-        const data = await fetchAttendance();
+        const records = await fetchAdminAttendances();
         if (!active) return;
-        setAttendanceRecords(normalizeAttendanceRecords(data));
+        setAttendanceRecords(records);
         setAttendanceMessage("");
       } catch (err) {
         console.warn("[admin attendance] fetch failed:", err);
@@ -385,23 +416,28 @@ function AdminCMS() {
 
             {activeSection === "dashboard" ? (
               <>
+              {dashboardMessage ? (
+                <p className="mb-4 text-sm font-extrabold text-[color:var(--c-danger)]">
+                  {dashboardMessage}
+                </p>
+              ) : null}
               <section className="grid gap-4 md:grid-cols-3">
               <StatCard
                 icon={Activity}
                 label="현재 출석 인원"
-                value={`${checkedInCount}명`}
+                value={loadingDashboard ? "..." : `${checkedInCount}명`}
                 tone="bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)]"
               />
               <StatCard
                 icon={Users}
                 label="총 회원 수"
-                value={`${totalMembers}명`}
+                value={loadingDashboard ? "..." : `${totalMembers}명`}
                 tone="bg-[color:var(--c-purple-soft)] text-[color:var(--c-purple)]"
               />
               <StatCard
                 icon={Check}
                 label="출석률"
-                value={`${attendanceRate}%`}
+                value={loadingDashboard ? "..." : `${attendanceRate}%`}
                 tone="bg-emerald-500/10 text-[color:var(--c-success)]"
               />
             </section>
@@ -412,7 +448,7 @@ function AdminCMS() {
                   <div>
                     <h2 className="text-base font-black">출결 현황</h2>
                     <p className="mt-1 text-sm font-semibold text-[color:var(--c-muted)]">
-                      총 회원 수 328명 기준
+                      총 회원 수 {totalMembers}명 기준
                     </p>
                   </div>
                   <span className="rounded-full bg-[color:var(--c-primary-soft)] px-3 py-1 text-xs font-extrabold text-[color:var(--c-primary)]">
