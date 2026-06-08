@@ -15,7 +15,7 @@ export function normalizeProfile(value) {
   if (!profile || typeof profile !== "object") return null;
 
   const id = profile.id ?? profile.userId ?? profile.memberId;
-  const email = profile.email ?? profile.userEmail ?? profile.username;
+  const email = profile.email ?? profile.userEmail;
   const name =
     profile.name ??
     profile.nickname ??

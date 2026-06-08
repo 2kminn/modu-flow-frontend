@@ -221,7 +221,6 @@ export default function MyPage() {
       const profile = await updateMyProfileName(nextName);
       const savedName = setStoredProfileName(profile?.name || nextName);
       setProfileName(savedName || accountEmail);
-      if (profile?.email) setAccountEmail(profile.email);
       setIsProfileDialogOpen(false);
     } finally {
       setSavingProfile(false);
