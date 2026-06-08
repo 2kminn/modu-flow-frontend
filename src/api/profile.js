@@ -1,4 +1,9 @@
 import { apiClient } from "@/api/client";
+import {
+  getAuthDisplayIdentity,
+  getAuthProfileName,
+  isDevTestAuthToken
+} from "@/auth/auth";
 
 function unwrapProfile(value) {
   const root = value?.data && typeof value.data === "object" ? value.data : value;
@@ -25,12 +30,34 @@ export function normalizeProfile(value) {
 }
 
 export async function fetchMyProfile() {
-  const res = await apiClient.get("/api/v1/me");
+  if (isDevTestAuthToken()) {
+    return {
+      id: "dev-user",
+      email: getAuthDisplayIdentity(),
+      name: getAuthProfileName()
+    };
+  }
+
+  const res = await apiClient.get("/api/v1/me", {
+    skipAuthRedirect: true
+  });
   return normalizeProfile(res?.data);
 }
 
 export async function updateMyProfileName(name) {
   const normalizedName = String(name || "").trim();
-  const res = await apiClient.patch("/api/v1/me", { name: normalizedName });
+  if (isDevTestAuthToken()) {
+    return {
+      id: "dev-user",
+      email: getAuthDisplayIdentity(),
+      name: normalizedName
+    };
+  }
+
+  const res = await apiClient.patch(
+    "/api/v1/me",
+    { name: normalizedName },
+    { skipAuthRedirect: true }
+  );
   return normalizeProfile(res?.data) ?? { id: "", email: "", name: normalizedName };
 }
