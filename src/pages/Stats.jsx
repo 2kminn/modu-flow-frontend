@@ -594,7 +594,7 @@ export default function Stats() {
   const [restDays, setRestDays] = useState(() => loadRoutineRestDaysFromLocalStorage());
   const [routinesByDay, setRoutinesByDay] = useState(() => loadRoutinesFromLocalStorage());
   const [savingAdd, setSavingAdd] = useState(false);
-  const [activeTab, setActiveTab] = useState("workouts");
+  const [activeTab, setActiveTab] = useState("attendance");
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [attendanceError, setAttendanceError] = useState("");
 
@@ -950,6 +950,27 @@ export default function Stats() {
           </Card>
         </div>
 
+        <div className="grid grid-cols-2 rounded-2xl bg-[color:var(--c-surface-2)] p-1">
+          {[
+            ["attendance", "출석"],
+            ["workouts", "운동"]
+          ].map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setActiveTab(id)}
+              className={[
+                "h-11 rounded-xl text-sm font-extrabold transition",
+                activeTab === id
+                  ? "bg-[color:var(--c-surface)] text-[color:var(--c-text)] shadow-sm"
+                  : "text-[color:var(--c-muted)]"
+              ].join(" ")}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         <Card className="p-0">
           <div className="p-4">
             <div className="flex items-center justify-between gap-3">
@@ -957,9 +978,13 @@ export default function Stats() {
                 <p className="text-sm font-semibold text-[color:var(--c-muted)]">
                   {monthLabelKo}
                 </p>
-                <p className="mt-1 text-xl font-extrabold">월간 기록 캘린더</p>
+                <p className="mt-1 text-xl font-extrabold">
+                  {activeTab === "attendance" ? "월간 출석 캘린더" : "월간 운동 캘린더"}
+                </p>
                 <p className="mt-1 text-xs font-semibold text-[color:var(--c-muted-2)]">
-                  출석과 운동 기록을 같은 날짜에서 구분해요.
+                  {activeTab === "attendance"
+                    ? "비콘 신호로 출석 처리된 날짜만 표시해요."
+                    : "운동 기록이 있는 날짜만 표시해요."}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -1006,8 +1031,9 @@ export default function Stats() {
                   const dateStr = `${monthLabel}-${String(day).padStart(2, "0")}`;
                   const hasWorkout = Boolean(workoutByDate[dateStr]?.length);
                   const hasAttendance = Boolean(attendanceByDate[dateStr]);
-                  const isRestDay = restDateSet.has(dateStr);
                   const isToday = dateStr === todayLabel;
+                  const hasActiveRecord =
+                    activeTab === "attendance" ? hasAttendance : hasWorkout;
                   return (
                     <button
                       key={dateStr}
@@ -1017,34 +1043,19 @@ export default function Stats() {
                       }}
                       className={[
                         "relative flex aspect-square flex-col items-center justify-center rounded-2xl text-xs font-extrabold transition active:scale-[0.98]",
-                        isRestDay
-                            ? "border border-[color:var(--c-primary)]/20 bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)] hover:bg-[color:var(--c-primary-soft)]"
-                          : hasAttendance && hasWorkout
-                            ? "bg-[linear-gradient(135deg,var(--c-primary),var(--c-purple))] text-white hover:opacity-90"
-                          : hasAttendance
-                            ? "bg-emerald-500 text-white hover:opacity-90"
-                          : hasWorkout
+                        hasActiveRecord && activeTab === "attendance"
+                          ? "bg-emerald-500 text-white hover:opacity-90"
+                          : hasActiveRecord
                             ? "bg-[color:var(--c-primary)] text-white hover:opacity-90"
                             : "bg-[color:var(--c-surface)] text-[color:var(--c-muted-2)] hover:bg-[color:var(--c-surface)]/80",
                         isToday ? "ring-2 ring-[color:var(--c-purple)] ring-offset-2 ring-offset-[color:var(--c-surface-2)]" : "",
-                        selectedDate === dateStr ? "ring-2 ring-[color:var(--c-purple)] ring-offset-2 ring-offset-[color:var(--c-surface-2)]" : ""
+                        activeTab === "workouts" && selectedDate === dateStr ? "ring-2 ring-[color:var(--c-purple)] ring-offset-2 ring-offset-[color:var(--c-surface-2)]" : ""
                       ].join(" ")}
-                      aria-label={`${dateStr}${isToday ? " 오늘" : ""}${hasWorkout ? " 운동 기록 있음" : ""}${isRestDay ? " 쉬는 날" : ""}`}
+                      aria-label={`${dateStr}${isToday ? " 오늘" : ""}${hasActiveRecord ? ` ${activeTab === "attendance" ? "출석" : "운동 기록"} 있음` : ""}`}
                     >
                       <span>{day}</span>
-                      <span className="mt-1 flex h-1.5 items-center gap-1">
-                        {hasAttendance ? (
-                          <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                        ) : null}
-                        {hasWorkout ? (
-                          <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
-                        ) : null}
-                      </span>
                       {isToday ? (
                         <span className="mt-0.5 text-[10px] leading-none">오늘</span>
-                      ) : null}
-                      {isRestDay ? (
-                        <span className="mt-0.5 text-[10px] leading-none">휴</span>
                       ) : null}
                     </button>
                   );
@@ -1052,24 +1063,17 @@ export default function Stats() {
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold text-[color:var(--c-muted-2)]">
                 <span className="inline-flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  출석
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-[color:var(--c-primary)]" />
-                  운동 기록
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-[linear-gradient(135deg,var(--c-primary),var(--c-purple))]" />
-                  출석+운동
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-[color:var(--c-primary-soft)] ring-1 ring-[color:var(--c-primary)]/30" />
-                  쉬는 날
+                  <span
+                    className={[
+                      "h-2 w-2 rounded-full",
+                      activeTab === "attendance" ? "bg-emerald-500" : "bg-[color:var(--c-primary)]"
+                    ].join(" ")}
+                  />
+                  {activeTab === "attendance" ? "출석" : "운동 기록"}
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full bg-white ring-1 ring-[color:var(--c-border)] dark:bg-[color:var(--c-surface)]" />
-                  미기록
+                  {activeTab === "attendance" ? "미출석" : "운동 없음"}
                 </span>
                 <span>(기준일: {todayLabel})</span>
               </div>
@@ -1078,29 +1082,8 @@ export default function Stats() {
         </Card>
 
         <Card className="p-4">
-          <div className="grid grid-cols-2 rounded-2xl bg-[color:var(--c-surface-2)] p-1">
-            {[
-              ["workouts", "운동 기록"],
-              ["attendance", "출석 기록"]
-            ].map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setActiveTab(id)}
-                className={[
-                  "h-10 rounded-xl text-sm font-extrabold transition",
-                  activeTab === id
-                    ? "bg-[color:var(--c-surface)] text-[color:var(--c-text)] shadow-sm"
-                    : "text-[color:var(--c-muted)]"
-                ].join(" ")}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
           {activeTab === "workouts" ? (
-            <div className="mt-4 space-y-3">
+            <div className="space-y-3">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-black">운동 기록</p>
@@ -1137,7 +1120,7 @@ export default function Stats() {
               ) : null}
             </div>
           ) : (
-            <div className="mt-4 space-y-3">
+            <div className="space-y-3">
               <div>
                 <p className="text-sm font-black">출석 기록</p>
                 <p className="mt-1 text-xs font-semibold text-[color:var(--c-muted-2)]">
