@@ -89,11 +89,42 @@ function formatDate(date) {
   return `${y}-${m}-${d}`;
 }
 
-function hasWorkoutRecordForDate(date) {
+function normalizeWorkoutName(value) {
+  return String(value || "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function getWorkoutItemMatchKeys(item) {
+  const keys = [];
+  const exerciseId = String(item?.exerciseId || "").trim();
+  const name = normalizeWorkoutName(item?.name);
+  if (exerciseId) keys.push(`exercise:${exerciseId}`);
+  if (name) keys.push(`name:${name}`);
+  return keys;
+}
+
+function workoutItemsMatch(a, b) {
+  const aKeys = getWorkoutItemMatchKeys(a);
+  const bKeys = new Set(getWorkoutItemMatchKeys(b));
+  return aKeys.some((key) => bKeys.has(key));
+}
+
+function hasSavedAllRoutineItemsForDate(date, routineItems) {
+  if (!Array.isArray(routineItems) || !routineItems.length) return false;
   if (typeof window === "undefined") return false;
   try {
     const parsed = loadWorkoutHistoryFromLocalStorage();
-    return Array.isArray(parsed?.[date]) && parsed[date].length > 0;
+    const savedItems = Array.isArray(parsed?.[date]) ? parsed[date] : [];
+    const usedSavedIndexes = new Set();
+
+    return routineItems.every((routineItem) => {
+      const matchIndex = savedItems.findIndex(
+        (savedItem, idx) =>
+          !usedSavedIndexes.has(idx) && workoutItemsMatch(routineItem, savedItem)
+      );
+      if (matchIndex < 0) return false;
+      usedSavedIndexes.add(matchIndex);
+      return true;
+    });
   } catch {
     return false;
   }
@@ -613,9 +644,7 @@ export default function Home() {
   const [beaconAttendanceDate, setBeaconAttendanceDate] = useState(() =>
     readBeaconAttendanceDate(resolveGymName())
   );
-  const [workoutSavedToday, setWorkoutSavedToday] = useState(() =>
-    hasWorkoutRecordForDate(formatDate(new Date()))
-  );
+  const [workoutSavedToday, setWorkoutSavedToday] = useState(false);
   const [showRoutineOptions, setShowRoutineOptions] = useState(false);
   const [beaconZones, setBeaconZones] = useState(() => loadBeaconZonesFromLocalStorage());
   const [congestion, setCongestion] = useState({
@@ -727,7 +756,7 @@ export default function Home() {
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
     function syncWorkoutSavedToday() {
-      setWorkoutSavedToday(hasWorkoutRecordForDate(todayDate));
+      setWorkoutSavedToday(hasSavedAllRoutineItemsForDate(todayDate, todayRoutines));
     }
     syncWorkoutSavedToday();
     window.addEventListener("focus", syncWorkoutSavedToday);
@@ -738,7 +767,7 @@ export default function Home() {
       window.removeEventListener("storage", syncWorkoutSavedToday);
       window.removeEventListener(WORKOUT_HISTORY_EVENT, syncWorkoutSavedToday);
     };
-  }, [todayDate, workoutHistoryStorageKey]);
+  }, [todayDate, todayRoutines, workoutHistoryStorageKey]);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
