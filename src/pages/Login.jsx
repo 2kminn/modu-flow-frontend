@@ -81,7 +81,7 @@ export default function Login() {
       return;
     }
 
-    setAuthToken(result.accessToken, result.email || nextEmail, result.name);
+    setAuthToken(result.accessToken, result.email || nextEmail, result.name, "email", result.roles);
     navigate(fromPath, { replace: true });
   }
 
@@ -166,7 +166,7 @@ export default function Login() {
           variant="secondary"
           className="gap-2"
           onClick={() => {
-            setAuthToken(DEV_TEST_AUTH_TOKEN, "cms-test");
+            setAuthToken(DEV_TEST_AUTH_TOKEN, "cms-test", "", "email", ["ROLE_ADMIN"]);
             navigate("/admin", { replace: true });
           }}
         >

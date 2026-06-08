@@ -4,6 +4,7 @@ const TOKEN_KEY = "auth_token";
 const ACCOUNT_KEY = "auth_account";
 const EXPIRES_AT_KEY = "auth_expires_at";
 const AUTH_PROVIDER_KEY = "auth_provider";
+const AUTH_ROLES_KEY = "auth_roles";
 const AUTH_SESSION_SECONDS = 60 * 60;
 const PROFILE_NAME_KEY_PREFIX = "moduflow:profile-name:v1:";
 const CURRENT_PROFILE_NAME_KEY = "moduflow:profile-name:current:v1";
@@ -49,10 +50,12 @@ function clearStoredAuth() {
   safeRemove(sessionStorage, ACCOUNT_KEY);
   safeRemove(sessionStorage, EXPIRES_AT_KEY);
   safeRemove(sessionStorage, AUTH_PROVIDER_KEY);
+  safeRemove(sessionStorage, AUTH_ROLES_KEY);
   safeRemove(localStorage);
   safeRemove(localStorage, ACCOUNT_KEY);
   safeRemove(localStorage, EXPIRES_AT_KEY);
   safeRemove(localStorage, AUTH_PROVIDER_KEY);
+  safeRemove(localStorage, AUTH_ROLES_KEY);
   safeRemove(localStorage, CURRENT_PROFILE_NAME_KEY);
 }
 
@@ -68,7 +71,58 @@ function normalizeAuthProvider(provider) {
   return value || "email";
 }
 
-function persistLocalAuth(token, accountHint, authProvider = "email") {
+function decodeJwtPayload(token) {
+  if (!token || typeof token !== "string") return null;
+  const [, payload] = token.split(".");
+  if (!payload) return null;
+
+  try {
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+    return JSON.parse(atob(padded));
+  } catch {
+    return null;
+  }
+}
+
+function normalizeRoles(...sources) {
+  const roles = [];
+
+  function add(value) {
+    if (!value) return;
+    if (Array.isArray(value)) {
+      value.forEach(add);
+      return;
+    }
+    if (typeof value === "object") {
+      add(value.role ?? value.name ?? value.authority ?? value.value);
+      return;
+    }
+    String(value)
+      .split(/[,\s]+/)
+      .map((role) => role.trim())
+      .filter(Boolean)
+      .forEach((role) => roles.push(role));
+  }
+
+  sources.forEach(add);
+  return [...new Set(roles)];
+}
+
+function getJwtRoles(token = getAuthToken()) {
+  const payload = decodeJwtPayload(token);
+  if (!payload) return [];
+  return normalizeRoles(
+    payload.role,
+    payload.roles,
+    payload.authority,
+    payload.authorities,
+    payload.scope,
+    payload.scopes
+  );
+}
+
+function persistLocalAuth(token, accountHint, authProvider = "email", roles = []) {
   safeSet(localStorage, TOKEN_KEY, token);
   safeSet(localStorage, EXPIRES_AT_KEY, String(getNextAuthExpiresAt()));
   safeSet(localStorage, AUTH_PROVIDER_KEY, normalizeAuthProvider(authProvider));
@@ -76,6 +130,10 @@ function persistLocalAuth(token, accountHint, authProvider = "email") {
   const identity = String(accountHint || "").trim().toLowerCase();
   if (identity) safeSet(localStorage, ACCOUNT_KEY, identity);
   else safeRemove(localStorage, ACCOUNT_KEY);
+
+  const normalizedRoles = normalizeRoles(roles, getJwtRoles(token));
+  if (normalizedRoles.length) safeSet(localStorage, AUTH_ROLES_KEY, JSON.stringify(normalizedRoles));
+  else safeRemove(localStorage, AUTH_ROLES_KEY);
 }
 
 export function getAuthToken() {
@@ -94,12 +152,14 @@ export function getAuthToken() {
   persistLocalAuth(
     legacySessionToken,
     safeGet(sessionStorage, ACCOUNT_KEY),
-    safeGet(sessionStorage, AUTH_PROVIDER_KEY)
+    safeGet(sessionStorage, AUTH_PROVIDER_KEY),
+    safeGet(sessionStorage, AUTH_ROLES_KEY)
   );
   safeRemove(sessionStorage);
   safeRemove(sessionStorage, ACCOUNT_KEY);
   safeRemove(sessionStorage, EXPIRES_AT_KEY);
   safeRemove(sessionStorage, AUTH_PROVIDER_KEY);
+  safeRemove(sessionStorage, AUTH_ROLES_KEY);
   return legacySessionToken;
 }
 
@@ -129,6 +189,34 @@ export function getStoredAuthProvider() {
 
 export function isSocialAuthSession() {
   return getStoredAuthProvider() !== "email";
+}
+
+export function getStoredAuthRoles() {
+  if (isLocalAuthExpired()) {
+    clearStoredAuth();
+    setNativeAuthToken("");
+    return [];
+  }
+
+  let storedRoles = [];
+  const raw = safeGet(localStorage, AUTH_ROLES_KEY) || safeGet(sessionStorage, AUTH_ROLES_KEY);
+  if (raw) {
+    try {
+      storedRoles = JSON.parse(raw);
+    } catch {
+      storedRoles = raw;
+    }
+  }
+
+  return normalizeRoles(storedRoles, getJwtRoles());
+}
+
+export function isAdminSession() {
+  if (isDevTestAuthToken()) return true;
+  return getStoredAuthRoles().some((role) => {
+    const normalized = String(role || "").trim().toUpperCase();
+    return normalized === "ADMIN" || normalized === "ROLE_ADMIN";
+  });
 }
 
 function normalizeAccount(accountHint = getStoredAuthIdentity()) {
@@ -177,8 +265,8 @@ export function getAuthProfileName() {
   return getStoredProfileName() || getAuthDisplayIdentity();
 }
 
-export function setAuthToken(token, accountHint, profileName, authProvider = "email") {
-  persistLocalAuth(token, accountHint, authProvider);
+export function setAuthToken(token, accountHint, profileName, authProvider = "email", roles = []) {
+  persistLocalAuth(token, accountHint, authProvider, roles);
   setNativeAuthToken(token);
   const identity = String(accountHint || "").trim().toLowerCase();
   if (String(profileName || "").trim()) {

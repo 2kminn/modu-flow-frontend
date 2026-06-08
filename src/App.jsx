@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import RequireAdmin from "@/auth/RequireAdmin";
 import RequireAuth from "@/auth/RequireAuth";
 import AuthLayout from "@/layouts/AuthLayout";
 import RootLayout from "@/layouts/RootLayout";
@@ -30,8 +31,22 @@ export default function App() {
           <Route path="/signup" element={<SignUp />} />
         </Route>
 
-        <Route path="/admin" element={<AdminCMS />} />
-        <Route path="/cms" element={<AdminCMS />} />
+        <Route
+          path="/admin"
+          element={
+            <RequireAdmin>
+              <AdminCMS />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/cms"
+          element={
+            <RequireAdmin>
+              <AdminCMS />
+            </RequireAdmin>
+          }
+        />
 
         <Route
           element={

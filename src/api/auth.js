@@ -23,6 +23,20 @@ function pickDisplayName(source) {
   ).trim();
 }
 
+function pickRoles(source) {
+  if (!source || typeof source !== "object") return [];
+  const roles =
+    source.roles ??
+    source.role ??
+    source.authorities ??
+    source.authority ??
+    source.user?.roles ??
+    source.user?.role ??
+    source.user?.authorities ??
+    source.user?.authority;
+  return Array.isArray(roles) ? roles : roles ? [roles] : [];
+}
+
 export async function loginWithEmail({ email, password }) {
   try {
     const normalizedEmail = String(email || "").trim().toLowerCase();
@@ -45,6 +59,7 @@ export async function loginWithEmail({ email, password }) {
       expiresInSeconds: data?.expiresInSeconds,
       email: data?.email ?? data?.user?.email,
       name: pickDisplayName(data),
+      roles: pickRoles(data),
       debug: { response: res?.data ?? null }
     };
   } catch (e) {
@@ -113,6 +128,7 @@ export async function signupWithEmail({ email, password, name }) {
       expiresInSeconds: data?.expiresInSeconds,
       email: data?.email ?? data?.user?.email,
       name: pickDisplayName(data) || normalizedName,
+      roles: pickRoles(data),
       debug: { response: res?.data ?? null }
     };
   } catch (e) {

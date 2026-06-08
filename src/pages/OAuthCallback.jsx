@@ -87,8 +87,9 @@ export default function OAuthCallback() {
     const accountHint = pickParam(params, ["email", "userId", "username"]);
     const profileName = pickParam(params, ["name", "nickname", "userName", "displayName"]);
     const authProvider = pickParam(params, ["provider", "registrationId", "socialProvider"]) || safeGetSocialProvider();
+    const role = pickParam(params, ["role", "roles", "authority", "authorities"]);
 
-    setAuthToken(token, accountHint || profileName, profileName, authProvider);
+    setAuthToken(token, accountHint || profileName, profileName, authProvider, role ? [role] : []);
     const nextPath = safePath(params.get("redirect") || safeGetReturnTo());
     safeClearReturnTo();
     navigate(nextPath, { replace: true });
