@@ -1130,7 +1130,7 @@ function AdminCMS() {
           />
           <div className="relative w-full max-w-sm rounded-3xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] p-5 shadow-2xl">
             <div className="flex items-start gap-3">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-red-500/10 text-[color:var(--c-danger)]">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)]">
                 <LogOut size={20} aria-hidden="true" />
               </span>
               <div>
@@ -1153,7 +1153,7 @@ function AdminCMS() {
               </button>
               <button
                 type="button"
-                className="h-12 rounded-2xl bg-[color:var(--c-danger)] text-sm font-extrabold text-white shadow-sm transition hover:brightness-105 active:scale-[0.98]"
+                className="h-12 rounded-2xl bg-[color:var(--c-primary)] text-sm font-extrabold text-white shadow-sm transition hover:brightness-105 active:scale-[0.98]"
                 onClick={confirmLogout}
               >
                 로그아웃
