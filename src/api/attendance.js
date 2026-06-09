@@ -30,22 +30,26 @@ function getDevCongestion() {
   };
 }
 
-function unwrapData(value) {
-  return value?.data && typeof value.data === "object" ? value.data : value;
-}
-
 function pickList(value) {
-  const root = unwrapData(value);
-  const list =
-    root?.attendances ??
-    root?.attendanceList ??
-    root?.records ??
-    root?.items ??
-    root?.content ??
-    root?.data ??
-    root;
+  let current = value;
+  const visited = new Set();
 
-  return Array.isArray(list) ? list : [];
+  while (current && typeof current === "object" && !visited.has(current)) {
+    if (Array.isArray(current)) return current;
+    visited.add(current);
+
+    const list =
+      current.attendances ??
+      current.attendanceList ??
+      current.records ??
+      current.items ??
+      current.content;
+    if (Array.isArray(list)) return list;
+
+    current = current.data;
+  }
+
+  return [];
 }
 
 export function normalizeAttendanceRecord(item) {
@@ -84,10 +88,14 @@ export function normalizeAttendanceRecord(item) {
     item.checkInAt ??
     item.checkInTime ??
     item.checkedInAt ??
+    item.checkedAt ??
     item.enteredAt ??
     item.createdAt ??
     item.startTime ??
-    item.attendanceTime;
+    item.attendanceTime ??
+    item.attendanceDate ??
+    item.occurredAt ??
+    item.date;
   const checkOutAt =
     item.checkOutAt ??
     item.checkedOutAt ??
@@ -100,10 +108,18 @@ export function normalizeAttendanceRecord(item) {
     item.beaconZoneName ??
     item.currentZoneName;
 
-  if (id == null && email == null && name == null) return null;
+  if (
+    id == null &&
+    email == null &&
+    name == null &&
+    checkInAt == null &&
+    status == null
+  ) {
+    return null;
+  }
 
   return {
-    id: id == null ? `${email ?? name}` : String(id),
+    id: id == null ? String(email ?? name ?? checkInAt ?? "") : String(id),
     email: email == null ? "" : String(email),
     name: name == null ? "" : String(name),
     status: status == null ? "" : String(status),

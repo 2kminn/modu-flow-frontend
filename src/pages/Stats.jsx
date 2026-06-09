@@ -2,9 +2,10 @@ import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { useEffect, useMemo, useState } from "react";
 import { CalendarCheck, ChevronLeft, ChevronRight, Dumbbell, ListChecks } from "lucide-react";
-import { fetchAttendance } from "@/api/attendance";
+import { fetchAttendance, normalizeAttendanceRecords } from "@/api/attendance";
 import { getApiErrorMessage } from "@/api/client";
 import { validateWorkoutItemDraft } from "@/api/validation";
+import { getStoredAuthIdentity } from "@/auth/auth";
 import {
   fetchRoutines,
   loadRoutineRestDaysFromLocalStorage,
@@ -80,7 +81,7 @@ function formatAttendanceTime(value) {
 function dateKeyFromUnknown(value) {
   if (!value) return "";
   const text = String(value);
-  const dateOnly = text.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
+  const dateOnly = text.match(/^\d{4}-\d{2}-\d{2}$/)?.[0];
   if (dateOnly) return dateOnly;
   const date = new Date(text);
   return Number.isNaN(date.getTime()) ? "" : formatDate(date);
@@ -94,9 +95,11 @@ function loadLocalBeaconAttendanceDates() {
   if (typeof window === "undefined") return [];
   try {
     const dates = [];
+    const identity = encodeURIComponent(getStoredAuthIdentity() || "anonymous");
+    const accountPrefix = `${BEACON_ATTENDANCE_STORAGE_PREFIX}:${identity}:`;
     for (let i = 0; i < window.localStorage.length; i += 1) {
       const key = window.localStorage.key(i);
-      if (!key?.startsWith(BEACON_ATTENDANCE_STORAGE_PREFIX)) continue;
+      if (!key?.startsWith(accountPrefix)) continue;
       const date = dateKeyFromUnknown(window.localStorage.getItem(key));
       if (date) dates.push(date);
     }
@@ -710,12 +713,7 @@ export default function Stats() {
       try {
         const data = await fetchAttendance();
         if (cancelled) return;
-        const records = Array.isArray(data?.attendances)
-          ? data.attendances
-          : Array.isArray(data)
-            ? data
-            : [];
-        setAttendanceRecords(records);
+        setAttendanceRecords(normalizeAttendanceRecords(data));
         setAttendanceError("");
       } catch (e) {
         console.warn("[stats attendance] fetch failed:", e);

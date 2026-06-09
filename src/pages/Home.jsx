@@ -166,7 +166,10 @@ function markBeaconAttendanceDate(date, gymName = resolveGymName()) {
 async function hasAttendanceForDate(date, gymName) {
   const data = await fetchAttendance({ gymName });
   return normalizeAttendanceRecords(data).some(
-    (record) => formatDate(record.checkInAt) === date
+    (record) => {
+      const checkInAt = new Date(record.checkInAt);
+      return !Number.isNaN(checkInAt.getTime()) && formatDate(checkInAt) === date;
+    }
   );
 }
 

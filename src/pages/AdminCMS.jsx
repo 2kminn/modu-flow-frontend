@@ -43,7 +43,7 @@ const menuItems = [
 const emptyForm = { id: "", name: "", capacity: "" };
 const DEFAULT_GYM_NAME = "ModuFlow";
 const GYM_NAME_STORAGE_KEY = "moduflow:gym-name:v1";
-const CONGESTION_SIGNAL_STALE_MS = 2 * 60 * 1000;
+const CONGESTION_SIGNAL_STALE_MS = 60 * 1000;
 
 function readNumber(...values) {
   for (const value of values) {
@@ -212,7 +212,8 @@ function normalizeCongestionZones(data, beaconZones) {
     const updatedAt = getCongestionUpdatedAt(item, data);
     const hasSignal =
       item != null &&
-      (updatedAt == null || Date.now() - updatedAt <= CONGESTION_SIGNAL_STALE_MS);
+      updatedAt != null &&
+      Date.now() - updatedAt <= CONGESTION_SIGNAL_STALE_MS;
     const rate = hasSignal ? Math.round(normalizeRate(item, current, capacity)) : 0;
 
     return {
