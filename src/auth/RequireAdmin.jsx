@@ -1,16 +1,67 @@
+import { useEffect, useState } from "react";
 import { Link, Navigate, useLocation } from "react-router-dom";
-import { getAuthToken, isAdminSession } from "@/auth/auth";
+import {
+  getAuthToken,
+  isAdminSession,
+  isDevTestAuthToken
+} from "@/auth/auth";
+import { fetchAdminDashboardSummary } from "@/api/admin";
 import Card from "@/components/ui/Card";
 
 export default function RequireAdmin({ children }) {
   const location = useLocation();
   const token = getAuthToken();
+  const hasStoredAdminRole = isAdminSession();
+  const [serverPermission, setServerPermission] = useState(
+    hasStoredAdminRole ? "allowed" : "checking"
+  );
+
+  useEffect(() => {
+    let active = true;
+
+    if (!token || hasStoredAdminRole) {
+      setServerPermission(hasStoredAdminRole ? "allowed" : "denied");
+      return () => {
+        active = false;
+      };
+    }
+
+    if (isDevTestAuthToken(token)) {
+      setServerPermission("denied");
+      return () => {
+        active = false;
+      };
+    }
+
+    setServerPermission("checking");
+    fetchAdminDashboardSummary()
+      .then(() => {
+        if (active) setServerPermission("allowed");
+      })
+      .catch(() => {
+        if (active) setServerPermission("denied");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [hasStoredAdminRole, token]);
 
   if (!token) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  if (!isAdminSession()) {
+  if (serverPermission === "checking") {
+    return (
+      <div className="grid min-h-dvh place-items-center bg-[color:var(--c-bg)] px-4 text-[color:var(--c-text)]">
+        <p className="text-sm font-bold text-[color:var(--c-muted)]">
+          관리자 권한을 확인하는 중입니다.
+        </p>
+      </div>
+    );
+  }
+
+  if (serverPermission !== "allowed") {
     return (
       <div className="grid min-h-dvh place-items-center bg-[color:var(--c-bg)] px-4 text-[color:var(--c-text)]">
         <Card className="w-full max-w-md rounded-3xl p-6 text-center">

@@ -1,5 +1,6 @@
 import {
   apiClient,
+  DEFAULT_API_BASE_URL,
   getApiBaseUrl,
   getApiErrorMessage
 } from "@/api/client";
@@ -115,7 +116,9 @@ export function getSocialLoginUrl(provider) {
   }
 
   const path = `/oauth2/authorization/${normalizedProvider}`;
-  const baseUrl = getApiBaseUrl() ?? "";
+  // OAuth starts with a top-level browser navigation, so it can safely use the
+  // backend origin directly. Production API calls still use the same-origin proxy.
+  const baseUrl = getApiBaseUrl() ?? DEFAULT_API_BASE_URL;
 
   return {
     ok: true,

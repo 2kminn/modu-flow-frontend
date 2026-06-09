@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/oauth2/authorization/:provider",
+      "destination": "/api/oauth2/authorization/:provider"
+    },
+    {
       "source": "/api/v1/:path*",
       "destination": "/api/proxy?path=:path*"
     },

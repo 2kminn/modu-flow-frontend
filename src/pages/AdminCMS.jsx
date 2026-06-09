@@ -783,9 +783,9 @@ function AdminCMS() {
                   <Card className="rounded-2xl p-5">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <h2 className="text-base font-black">공간별 혼잡도</h2>
+                        <h2 className="text-base font-black">최근 구역 출석 현황</h2>
                         <p className="mt-1 text-xs font-semibold text-[color:var(--c-muted)]">
-                          비콘 구역 기준 · 1분마다 갱신
+                          최근 1시간 출석 기록 기준 · 1분마다 갱신
                         </p>
                       </div>
                       <button
@@ -815,7 +815,7 @@ function AdminCMS() {
                             <div>
                               <p className="font-black">{zone.name}</p>
                               <p className="mt-1 text-sm font-semibold text-[color:var(--c-muted)]">
-                                {zone.current == null ? "-" : `${Math.round(zone.current)}명`} /{" "}
+                                {zone.current == null ? "-" : `${Math.round(zone.current)}건`} /{" "}
                                 {zone.capacity}명
                               </p>
                             </div>
