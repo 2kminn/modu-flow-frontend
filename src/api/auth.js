@@ -52,7 +52,11 @@ function pickRoles(source) {
 export async function loginWithEmail({ email, password }) {
   try {
     const normalizedEmail = String(email || "").trim().toLowerCase();
-    const res = await apiClient.post("/api/v1/auth/login", { email: normalizedEmail, password });
+    const res = await apiClient.post(
+      "/api/v1/auth/login",
+      { email: normalizedEmail, password },
+      { skipAuth: true }
+    );
     const response = res?.data;
     const data = unwrapData(response) ?? {};
     const accessToken = normalizeAccessToken(data.accessToken ?? data.token ?? data.jwt);
@@ -118,11 +122,15 @@ export async function signupWithEmail({ email, password, name }) {
   try {
     const normalizedEmail = String(email || "").trim().toLowerCase();
     const normalizedName = String(name || "").trim();
-    const res = await apiClient.post("/api/v1/auth/signup", {
-      email: normalizedEmail,
-      password,
-      name: normalizedName
-    });
+    const res = await apiClient.post(
+      "/api/v1/auth/signup",
+      {
+        email: normalizedEmail,
+        password,
+        name: normalizedName
+      },
+      { skipAuth: true }
+    );
     const response = res?.data;
     const data = unwrapData(response) ?? {};
     const accessToken = normalizeAccessToken(data.accessToken ?? data.token ?? data.jwt);

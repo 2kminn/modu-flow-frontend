@@ -81,7 +81,15 @@ export default function Login() {
       return;
     }
 
-    setAuthToken(result.accessToken, result.email || nextEmail, result.name, "email", result.roles);
+    const requestedEmail = String(nextEmail || "").trim().toLowerCase();
+    const responseEmail = String(result.email || "").trim().toLowerCase();
+    if (responseEmail && responseEmail !== requestedEmail) {
+      setError("로그인 응답의 계정 정보가 일치하지 않아요. 다시 로그인해 주세요.");
+      setDebugInfo(result.debug || null);
+      return;
+    }
+
+    setAuthToken(result.accessToken, requestedEmail, result.name, "email", result.roles);
     navigate(isAdminSession() ? "/admin" : fromPath, { replace: true });
   }
 

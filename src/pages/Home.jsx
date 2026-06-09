@@ -39,7 +39,7 @@ import {
   loadWorkoutHistoryFromLocalStorage,
   replaceWorkoutDay
 } from "@/api/workouts";
-import { fetchMyProfile } from "@/api/profile";
+import { fetchMyProfile, isCurrentAccountProfile } from "@/api/profile";
 import {
   PROFILE_NAME_CHANGED_EVENT,
   getAuthProfileName,
@@ -759,7 +759,7 @@ export default function Home() {
     async function syncProfileName() {
       try {
         const profile = await fetchMyProfile();
-        if (!active || !profile?.name) return;
+        if (!active || !profile?.name || !isCurrentAccountProfile(profile)) return;
         setStoredProfileName(profile.name);
         setUserName(profile.name);
       } catch (e) {

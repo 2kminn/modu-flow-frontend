@@ -2,7 +2,11 @@ import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import FloatingLabelInput from "@/components/ui/FloatingLabelInput";
 import { getApiErrorMessage } from "@/api/client";
-import { fetchMyProfile, updateMyProfileName } from "@/api/profile";
+import {
+  fetchMyProfile,
+  isCurrentAccountProfile,
+  updateMyProfileName
+} from "@/api/profile";
 import {
   clearAuthToken,
   getAuthDisplayIdentity,
@@ -197,7 +201,7 @@ export default function MyPage() {
     async function loadProfile() {
       try {
         const profile = await fetchMyProfile();
-        if (!active || !profile) return;
+        if (!active || !profile || !isCurrentAccountProfile(profile)) return;
         if (profile.email) setAccountEmail(profile.email);
         if (profile.name) {
           setStoredProfileName(profile.name);

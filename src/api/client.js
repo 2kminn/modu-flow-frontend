@@ -144,9 +144,15 @@ apiClient.interceptors.request.use((config) => {
     }
   }
 
-  const token = getAuthToken();
   config.headers = config.headers ?? {};
 
+  if (config.skipAuth) {
+    delete config.headers.Authorization;
+    delete config.headers.authorization;
+    return config;
+  }
+
+  const token = getAuthToken();
   if (!token) return config;
 
   config.headers.Authorization = `Bearer ${token}`;

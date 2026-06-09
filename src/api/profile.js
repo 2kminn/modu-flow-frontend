@@ -2,6 +2,7 @@ import { apiClient } from "@/api/client";
 import {
   getAuthDisplayIdentity,
   getAuthProfileName,
+  getStoredAuthIdentity,
   isDevTestAuthToken
 } from "@/auth/auth";
 
@@ -29,6 +30,12 @@ export function normalizeProfile(value) {
   };
 }
 
+export function isCurrentAccountProfile(profile) {
+  const currentIdentity = String(getStoredAuthIdentity() || "").trim().toLowerCase();
+  const profileEmail = String(profile?.email || "").trim().toLowerCase();
+  return !currentIdentity || !profileEmail || currentIdentity === profileEmail;
+}
+
 export async function fetchMyProfile() {
   if (isDevTestAuthToken()) {
     return {
@@ -39,7 +46,11 @@ export async function fetchMyProfile() {
   }
 
   const res = await apiClient.get("/api/v1/me", {
-    skipAuthRedirect: true
+    skipAuthRedirect: true,
+    headers: {
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache"
+    }
   });
   return normalizeProfile(res?.data);
 }
