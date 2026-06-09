@@ -88,11 +88,31 @@ function dateKeyFromRecord(record) {
 }
 
 function getRecordStatus(record) {
-  return String(record?.status || (record?.checkOutAt ? "퇴실" : "출석")).trim() || "출석";
+  const status = String(record?.status || (record?.checkOutAt ? "퇴실" : "출석"))
+    .trim()
+    .toUpperCase();
+  const labels = {
+    ABSENT: "미출석",
+    PRESENT: "출석",
+    CHECKED_IN: "출석",
+    CHECKED_OUT: "퇴실"
+  };
+  return labels[status] ?? status ?? "출석";
+}
+
+function getRecordStatusTone(record) {
+  const status = getRecordStatus(record);
+  if (status === "미출석") {
+    return "bg-red-500/10 text-[color:var(--c-danger)]";
+  }
+  if (status === "퇴실") {
+    return "bg-[color:var(--c-surface-2)] text-[color:var(--c-muted)]";
+  }
+  return "bg-emerald-500/10 text-[color:var(--c-success)]";
 }
 
 function isWithinPreset(dateKey, preset) {
-  if (!dateKey || preset === "all") return preset === "all";
+  if (!dateKey || preset === "all") return true;
 
   const today = new Date();
   const target = new Date(`${dateKey}T00:00:00`);
@@ -838,7 +858,12 @@ function AdminCMS() {
                             {formatDateTime(record.checkInAt)}
                           </td>
                           <td className="border-b border-[color:var(--c-border)] px-3 py-4">
-                            <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-extrabold text-[color:var(--c-success)]">
+                            <span
+                              className={[
+                                "rounded-full px-3 py-1 text-xs font-extrabold",
+                                getRecordStatusTone(record)
+                              ].join(" ")}
+                            >
                               {getRecordStatus(record)}
                             </span>
                           </td>

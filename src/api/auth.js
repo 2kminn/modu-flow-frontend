@@ -23,17 +23,29 @@ function pickDisplayName(source) {
   ).trim();
 }
 
+function unwrapData(value) {
+  return value?.data && typeof value.data === "object" ? value.data : value;
+}
+
+function normalizeAccessToken(value) {
+  return String(value || "").trim().replace(/^Bearer\s+/i, "");
+}
+
 function pickRoles(source) {
   if (!source || typeof source !== "object") return [];
   const roles =
     source.roles ??
     source.role ??
+    source.auth ??
     source.authorities ??
     source.authority ??
+    source.permissions ??
     source.user?.roles ??
     source.user?.role ??
+    source.user?.auth ??
     source.user?.authorities ??
-    source.user?.authority;
+    source.user?.authority ??
+    source.user?.permissions;
   return Array.isArray(roles) ? roles : roles ? [roles] : [];
 }
 
@@ -41,14 +53,15 @@ export async function loginWithEmail({ email, password }) {
   try {
     const normalizedEmail = String(email || "").trim().toLowerCase();
     const res = await apiClient.post("/api/v1/auth/login", { email: normalizedEmail, password });
-    const data = res?.data;
-    const accessToken = data?.accessToken;
+    const response = res?.data;
+    const data = unwrapData(response) ?? {};
+    const accessToken = normalizeAccessToken(data.accessToken ?? data.token ?? data.jwt);
     if (!accessToken) {
       return {
         ok: false,
         message: "로그인 응답에 accessToken이 없어요.",
         httpStatus: res?.status ?? null,
-        debug: { response: res?.data ?? null }
+        debug: { response: response ?? null }
       };
     }
     return {
@@ -60,7 +73,7 @@ export async function loginWithEmail({ email, password }) {
       email: data?.email ?? data?.user?.email,
       name: pickDisplayName(data),
       roles: pickRoles(data),
-      debug: { response: res?.data ?? null }
+      debug: { response: response ?? null }
     };
   } catch (e) {
     const httpStatus = e?.response?.status ?? null;
@@ -110,14 +123,15 @@ export async function signupWithEmail({ email, password, name }) {
       password,
       name: normalizedName
     });
-    const data = res?.data;
-    const accessToken = data?.accessToken;
+    const response = res?.data;
+    const data = unwrapData(response) ?? {};
+    const accessToken = normalizeAccessToken(data.accessToken ?? data.token ?? data.jwt);
     if (!accessToken) {
       return {
         ok: false,
         message: "회원가입 응답에 accessToken이 없어요.",
         httpStatus: res?.status ?? null,
-        debug: { response: res?.data ?? null }
+        debug: { response: response ?? null }
       };
     }
     return {
@@ -129,7 +143,7 @@ export async function signupWithEmail({ email, password, name }) {
       email: data?.email ?? data?.user?.email,
       name: pickDisplayName(data) || normalizedName,
       roles: pickRoles(data),
-      debug: { response: res?.data ?? null }
+      debug: { response: response ?? null }
     };
   } catch (e) {
     return {

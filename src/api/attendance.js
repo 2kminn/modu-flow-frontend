@@ -61,18 +61,22 @@ export function normalizeAttendanceRecord(item) {
     user.userId;
   const email =
     item.email ??
+    item.maskedEmail ??
     item.userEmail ??
     item.userId ??
     item.username ??
     user.email ??
+    user.maskedEmail ??
     user.userEmail ??
     user.username;
   const name =
     item.name ??
+    item.maskedName ??
     item.userName ??
     item.nickname ??
     item.memberName ??
     user.name ??
+    user.maskedName ??
     user.userName ??
     user.nickname;
   const status = item.status ?? item.attendanceStatus ?? item.state;

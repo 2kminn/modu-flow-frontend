@@ -115,8 +115,10 @@ function getJwtRoles(token = getAuthToken()) {
   return normalizeRoles(
     payload.role,
     payload.roles,
+    payload.auth,
     payload.authority,
     payload.authorities,
+    payload.permissions,
     payload.scope,
     payload.scopes
   );

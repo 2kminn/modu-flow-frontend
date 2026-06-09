@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import FloatingLabelInput from "@/components/ui/FloatingLabelInput";
-import { DEV_TEST_AUTH_TOKEN, setAuthToken } from "@/auth/auth";
+import { DEV_TEST_AUTH_TOKEN, isAdminSession, setAuthToken } from "@/auth/auth";
 import { Eye, EyeOff, Lock, LogIn, Mail, ShieldCheck } from "lucide-react";
 import {
   getSocialLoginUrl,
@@ -82,7 +82,7 @@ export default function Login() {
     }
 
     setAuthToken(result.accessToken, result.email || nextEmail, result.name, "email", result.roles);
-    navigate(fromPath, { replace: true });
+    navigate(isAdminSession() ? "/admin" : fromPath, { replace: true });
   }
 
   async function onSubmit(e) {
@@ -161,33 +161,35 @@ export default function Login() {
           {loading ? "로그인 중..." : "로그인"}
         </Button>
 
-        <Button
-          type="button"
-          variant="secondary"
-          className="gap-2"
-          onClick={() => {
-            setAuthToken(DEV_TEST_AUTH_TOKEN, "cms-test", "", "email", ["ROLE_ADMIN"]);
-            navigate("/admin", { replace: true });
-          }}
-        >
-          <ShieldCheck size={18} aria-hidden="true" />
-          CMS 테스트 로그인
-        </Button>
-
         {import.meta.env.DEV ? (
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={loading}
-            onClick={() => {
-              // DEV convenience: bypass backend auth and just set a dummy token.
-              // This is only for local/testing flows.
-              setAuthToken(DEV_TEST_AUTH_TOKEN, "dev-test");
-              navigate(fromPath, { replace: true });
-            }}
-          >
-            테스트 로그인
-          </Button>
+          <>
+            <Button
+              type="button"
+              variant="secondary"
+              className="gap-2"
+              onClick={() => {
+                setAuthToken(DEV_TEST_AUTH_TOKEN, "cms-test", "", "email", ["ROLE_ADMIN"]);
+                navigate("/admin", { replace: true });
+              }}
+            >
+              <ShieldCheck size={18} aria-hidden="true" />
+              CMS 테스트 로그인
+            </Button>
+
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={loading}
+              onClick={() => {
+                // DEV convenience: bypass backend auth and just set a dummy token.
+                // This is only for local/testing flows.
+                setAuthToken(DEV_TEST_AUTH_TOKEN, "dev-test");
+                navigate(fromPath, { replace: true });
+              }}
+            >
+              테스트 로그인
+            </Button>
+          </>
         ) : null}
 
         <div className="pt-2">
