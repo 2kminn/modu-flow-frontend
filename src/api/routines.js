@@ -134,14 +134,18 @@ export function loadRoutinesFromLocalStorage() {
   }
 }
 
-export function cacheRoutinesToLocalStorage(routinesByDay) {
+function cacheRoutinesToStorageKey(storageKey, routinesByDay) {
   if (typeof window === "undefined") return;
   try {
     const out = extractRoutinesByDay(routinesByDay);
-    window.localStorage.setItem(getRoutineStorageKey(), JSON.stringify(out));
+    window.localStorage.setItem(storageKey, JSON.stringify(out));
   } catch {
     // ignore
   }
+}
+
+export function cacheRoutinesToLocalStorage(routinesByDay) {
+  cacheRoutinesToStorageKey(getRoutineStorageKey(), routinesByDay);
 }
 
 export function loadRoutineRestDaysFromLocalStorage() {
@@ -157,22 +161,37 @@ export function loadRoutineRestDaysFromLocalStorage() {
   }
 }
 
-export function cacheRoutineRestDaysToLocalStorage(restDays) {
+function loadRoutineRestDaysFromStorageKey(storageKey) {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(storageKey);
+    if (!raw) return [];
+    const parsed = safeJsonParse(raw);
+    return sanitizeRestDays(parsed);
+  } catch {
+    return [];
+  }
+}
+
+function cacheRoutineRestDaysToStorageKey(storageKey, restDays, emitEvent = true) {
   if (typeof window === "undefined") return;
   try {
     const safeRestDays = sanitizeRestDays(restDays);
-    window.localStorage.setItem(
-      getRoutineRestDaysStorageKey(),
-      JSON.stringify(safeRestDays)
-    );
-    window.dispatchEvent(
-      new CustomEvent("moduflow:routine-rest-days", {
-        detail: { restDays: safeRestDays }
-      })
-    );
+    window.localStorage.setItem(storageKey, JSON.stringify(safeRestDays));
+    if (emitEvent) {
+      window.dispatchEvent(
+        new CustomEvent("moduflow:routine-rest-days", {
+          detail: { restDays: safeRestDays }
+        })
+      );
+    }
   } catch {
     // ignore
   }
+}
+
+export function cacheRoutineRestDaysToLocalStorage(restDays) {
+  cacheRoutineRestDaysToStorageKey(getRoutineRestDaysStorageKey(), restDays);
 }
 
 export function removeLegacyRoutineCache() {
@@ -193,6 +212,8 @@ export async function fetchRoutines() {
   }
 
   const userId = getStoredAuthUserId();
+  const routineStorageKey = getRoutineStorageKey();
+  const restDaysStorageKey = getRoutineRestDaysStorageKey();
   const res = await apiClient.get("/api/v1/routines", {
     params: userId ? { userId } : undefined
   });
@@ -200,9 +221,13 @@ export async function fetchRoutines() {
   if (data && typeof data === "object") {
     const restDays = hasRestDays(data)
       ? extractRestDays(data)
-      : loadRoutineRestDaysFromLocalStorage();
-    cacheRoutinesToLocalStorage(data);
-    cacheRoutineRestDaysToLocalStorage(restDays);
+      : loadRoutineRestDaysFromStorageKey(restDaysStorageKey);
+    cacheRoutinesToStorageKey(routineStorageKey, data);
+    cacheRoutineRestDaysToStorageKey(
+      restDaysStorageKey,
+      restDays,
+      getRoutineStorageKey() === routineStorageKey
+    );
     return {
       ...extractRoutinesByDay(data),
       restDays
@@ -254,10 +279,16 @@ export async function saveRoutines(routinesByDay, restDays) {
   }
 
   const userId = getStoredAuthUserId();
+  const routineStorageKey = getRoutineStorageKey();
+  const restDaysStorageKey = getRoutineRestDaysStorageKey();
   const res = await apiClient.put("/api/v1/routines", payload, {
     params: userId ? { userId } : undefined
   });
-  cacheRoutinesToLocalStorage(routinesByDay);
-  cacheRoutineRestDaysToLocalStorage(payload.restDays);
+  cacheRoutinesToStorageKey(routineStorageKey, routinesByDay);
+  cacheRoutineRestDaysToStorageKey(
+    restDaysStorageKey,
+    payload.restDays,
+    getRoutineStorageKey() === routineStorageKey
+  );
   return res?.data;
 }

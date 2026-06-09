@@ -185,7 +185,7 @@ export default function Routines() {
   const selectedDayLabel = DAYS.find((d) => d.key === selectedDay)?.label || "";
   const isSelectedDayRest = restDays.includes(selectedDay);
 
-  // Load routines from backend (silent; keeps existing UI)
+  // Load the current account's routines from the backend.
   useEffect(() => {
     let cancelled = false;
     async function run() {
@@ -193,30 +193,10 @@ export default function Routines() {
         const serverData = await fetchRoutines();
         if (cancelled) return;
         const safeServerData = sanitizeRoutinesByDay(serverData);
-        if (Array.isArray(serverData?.restDays)) {
-          setRestDays(serverData.restDays);
-        }
-        if (safeServerData && Object.keys(safeServerData).length) {
-          setRoutinesByDay((prev) => {
-            // Merge: preserve local-only fields (e.g. `reps`) when possible.
-            const safePrev = sanitizeRoutinesByDay(prev);
-            const next = { ...(safeServerData || {}) };
-            Object.entries(safePrev || {}).forEach(([dayKey, list]) => {
-              if (!Array.isArray(list)) return;
-              const byId = new Map(list.map((it) => [it?.id, it]));
-              next[dayKey] = Array.isArray(next[dayKey]) ? next[dayKey] : [];
-              next[dayKey] = next[dayKey].map((it) => {
-                const local = byId.get(it?.id);
-                return local ? { ...it, reps: local.reps ?? it.reps ?? null } : it;
-              });
-              // If server has no items for the day but local does, keep local.
-              if (!next[dayKey].length && list.length) next[dayKey] = list;
-            });
-            return next;
-          });
-          // Avoid immediately PUT'ing right after hydration.
-          skipNextAutosaveRef.current = true;
-        }
+        setRestDays(Array.isArray(serverData?.restDays) ? serverData.restDays : []);
+        setRoutinesByDay(safeServerData);
+        // Avoid immediately PUT'ing right after hydration.
+        skipNextAutosaveRef.current = true;
         didHydrateFromServerRef.current = true;
       } catch (e) {
         // Fallback to localStorage only; no UI changes.

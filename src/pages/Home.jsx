@@ -322,12 +322,16 @@ function getBeaconCount(item) {
   if (!item || typeof item !== "object") return null;
   return readNumeric(
     item.currentCount ??
+      item.current_count ??
       item.peopleCount ??
+      item.people_count ??
       item.userCount ??
+      item.user_count ??
       item.current ??
       item.count ??
       item.population ??
-      item.memberCount
+      item.memberCount ??
+      item.member_count
   );
 }
 
@@ -337,9 +341,12 @@ function getBeaconCapacity(item, zoneConfig) {
     readNumeric(
       item.capacity ??
         item.maxCapacity ??
+        item.max_capacity ??
         item.limit ??
         item.acceptableCapacity ??
-        item.totalCapacity
+        item.acceptable_capacity ??
+        item.totalCapacity ??
+        item.total_capacity
     ) ??
     zoneConfig?.capacity ??
     null
@@ -360,27 +367,40 @@ function createBeaconZoneLookup(beaconZones) {
     if (!zone || typeof zone !== "object") continue;
     for (const key of [zone.id, zone.beaconId, zone.zoneId, zone.name, zone.zoneName]) {
       if (key == null || key === "") continue;
-      map.set(String(key).trim().toLowerCase(), zone);
+      map.set(normalizeBeaconKey(key), zone);
     }
   }
   return map;
+}
+
+function normalizeBeaconKey(value) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "");
 }
 
 function findBeaconZoneConfig(item, lookup) {
   if (!item || !lookup) return null;
   const keys = [
     item.beaconId,
+    item.beacon_id,
     item.zoneId,
+    item.zone_id,
+    item.zoneCode,
+    item.zone_code,
     item.minor,
     item.id,
     item.uuid,
     item.name,
     item.zoneName,
-    item.beaconName
+    item.zone_name,
+    item.beaconName,
+    item.beacon_name
   ];
   for (const key of keys) {
     if (key == null || key === "") continue;
-    const match = lookup.get(String(key).trim().toLowerCase());
+    const match = lookup.get(normalizeBeaconKey(key));
     if (match) return match;
   }
   return null;
@@ -397,8 +417,14 @@ function normalizeZoneCongestion(zoneData, zoneConfig = null) {
   if (zoneData.congestionStatus != null) {
     return normalizeCongestionLevel(zoneData.congestionStatus);
   }
+  if (zoneData.congestion_status != null) {
+    return normalizeCongestionLevel(zoneData.congestion_status);
+  }
   if (zoneData.congestionRate != null) {
     return normalizeCongestionLevel(zoneData.congestionRate, "rate");
+  }
+  if (zoneData.congestion_rate != null) {
+    return normalizeCongestionLevel(zoneData.congestion_rate, "rate");
   }
   if (zoneData.occupancy != null) {
     return normalizeCongestionLevel(zoneData.occupancy, "rate");
@@ -410,6 +436,9 @@ function normalizeZoneCongestion(zoneData, zoneConfig = null) {
   if (zoneData.status != null) return normalizeCongestionLevel(zoneData.status);
   if (zoneData.congestionLevel != null) {
     return normalizeCongestionLevel(zoneData.congestionLevel);
+  }
+  if (zoneData.congestion_level != null) {
+    return normalizeCongestionLevel(zoneData.congestion_level);
   }
   if (zoneData.congestion != null) return normalizeCongestionLevel(zoneData.congestion);
   if (zoneData.percent != null) return normalizeCongestionLevel(zoneData.percent, "percent");
@@ -450,7 +479,7 @@ function getBeaconTitle(item, index, zoneConfig = null) {
   return String(label);
 }
 
-function createBeaconCongestionSlots(status = "no-signal", level = "mid", beaconZones = []) {
+function createBeaconCongestionSlots(status = "no-signal", level = null, beaconZones = []) {
   return BEACON_CONGESTION_SLOTS.map((slot, index) => ({
     ...slot,
     id: beaconZones[index]?.id ?? slot.id,
@@ -461,7 +490,7 @@ function createBeaconCongestionSlots(status = "no-signal", level = "mid", beacon
 }
 
 function createNativeBeaconSignalSlots(payload, status = "signal-api-error", beaconZones = []) {
-  const slots = createBeaconCongestionSlots("no-signal", "mid", beaconZones);
+  const slots = createBeaconCongestionSlots("no-signal", null, beaconZones);
   const zoneConfig = findBeaconZoneConfig(payload, createBeaconZoneLookup(beaconZones));
   const beaconLabel =
     zoneConfig?.name ??
@@ -504,17 +533,36 @@ function getBeaconCongestionItems(root) {
   const lists = [
     root.beacons,
     root.beaconCongestion,
+    root.beacon_congestion,
     root.zones,
     root.zoneCongestion,
+    root.zone_congestion,
+    root.congestionByZone,
+    root.congestion_by_zone,
+    root.zoneCounts,
+    root.zone_counts,
     root.congestion,
     root.items,
+    root.content,
     Array.isArray(root) ? root : null
   ];
   return lists.flatMap(getCongestionEntries).slice(0, BEACON_CONGESTION_SLOTS.length);
 }
 
 function normalizeHomeCongestion(data, beaconZones = []) {
-  const root = data?.data && typeof data.data === "object" ? data.data : data;
+  let root = data;
+  const visited = new Set();
+  while (
+    root &&
+    typeof root === "object" &&
+    !Array.isArray(root) &&
+    !visited.has(root)
+  ) {
+    visited.add(root);
+    const nested = root.data ?? root.result ?? root.payload;
+    if (!nested || typeof nested !== "object") break;
+    root = nested;
+  }
   if (import.meta.env.DEV) {
     console.log("[home congestion] raw response:", data);
   }
@@ -540,7 +588,7 @@ function normalizeHomeCongestion(data, beaconZones = []) {
         isSingleNearestBeaconLevel && index === 0
           ? zoneConfig?.name ?? "비콘 ID 없음"
           : getBeaconTitle(item, index, zoneConfig),
-      level: level ?? (index === 0 ? fallbackLevel : null) ?? "mid",
+      level: level ?? (index === 0 ? fallbackLevel : null),
       status: hasSignal ? "ok" : "no-signal"
     };
   });
@@ -549,9 +597,9 @@ function normalizeHomeCongestion(data, beaconZones = []) {
   const hasCongestionSignal = hasZoneBreakdown || fallbackLevel != null;
 
   return {
-    cardio: cardioLevel ?? fallbackLevel ?? "mid",
-    weight: weightLevel ?? fallbackLevel ?? "mid",
-    overall: fallbackLevel ?? cardioLevel ?? weightLevel ?? "mid",
+    cardio: cardioLevel ?? fallbackLevel,
+    weight: weightLevel ?? fallbackLevel,
+    overall: fallbackLevel ?? cardioLevel ?? weightLevel,
     beacons,
     hasZoneBreakdown,
     status: hasCongestionSignal ? "ok" : "no-signal",
@@ -687,7 +735,7 @@ function CongestionPill({ level, title, loading, status }) {
     }
   };
 
-  const ui = map[level] ?? map.mid;
+  const ui = map[level] ?? map.low;
   const statusLabel =
     status === "error"
       ? "API 응답 실패"
@@ -746,10 +794,10 @@ export default function Home() {
   const [showRoutineOptions, setShowRoutineOptions] = useState(false);
   const [beaconZones, setBeaconZones] = useState(() => loadBeaconZonesFromLocalStorage());
   const [congestion, setCongestion] = useState({
-    cardio: "mid",
-    weight: "mid",
-    overall: "mid",
-    beacons: createBeaconCongestionSlots("loading", "mid", beaconZones),
+    cardio: null,
+    weight: null,
+    overall: null,
+    beacons: createBeaconCongestionSlots("loading", null, beaconZones),
     hasZoneBreakdown: false,
     status: "loading",
     updatedAt: null,
@@ -949,7 +997,7 @@ export default function Home() {
       console.warn("[home congestion] fetch failed:", e);
       setCongestion((prev) => ({
         ...prev,
-        beacons: createBeaconCongestionSlots("error", "mid", beaconZones),
+        beacons: createBeaconCongestionSlots("error", null, beaconZones),
         hasZoneBreakdown: false,
         status: "error",
         loading: false,

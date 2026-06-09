@@ -43,7 +43,7 @@ const menuItems = [
 const emptyForm = { id: "", name: "", capacity: "" };
 const DEFAULT_GYM_NAME = "ModuFlow";
 const GYM_NAME_STORAGE_KEY = "moduflow:gym-name:v1";
-const CONGESTION_SIGNAL_STALE_MS = 60 * 1000;
+const CONGESTION_SIGNAL_STALE_MS = 2 * 60 * 1000;
 
 function readNumber(...values) {
   for (const value of values) {
@@ -70,16 +70,35 @@ function resolveGymName() {
 }
 
 function getCongestionItems(value) {
-  const root = value?.data && typeof value.data === "object" ? value.data : value;
+  let root = value;
+  const visited = new Set();
+  while (
+    root &&
+    typeof root === "object" &&
+    !Array.isArray(root) &&
+    !visited.has(root)
+  ) {
+    visited.add(root);
+    const nested = root.data ?? root.result ?? root.payload;
+    if (!nested || typeof nested !== "object") break;
+    root = nested;
+  }
   if (!root || typeof root !== "object") return [];
 
   const source =
     root.beacons ??
+    root.beacon_congestion ??
     root.beaconCongestion ??
     root.zones ??
+    root.zone_congestion ??
     root.zoneCongestion ??
+    root.congestionByZone ??
+    root.congestion_by_zone ??
+    root.zoneCounts ??
+    root.zone_counts ??
     root.congestion ??
     root.items ??
+    root.content ??
     (Array.isArray(root) ? root : []);
 
   if (Array.isArray(source)) return source;
@@ -93,12 +112,18 @@ function getCongestionItemKeys(item) {
   if (!item || typeof item !== "object") return [];
   return [
     item.beaconId,
+    item.beacon_id,
     item.zoneId,
+    item.zone_id,
+    item.zoneCode,
+    item.zone_code,
     item.minor,
     item.id,
     item.uuid,
     item.zoneName,
+    item.zone_name,
     item.beaconName,
+    item.beacon_name,
     item.name
   ]
     .filter((value) => value != null && value !== "")
@@ -128,6 +153,7 @@ function normalizeRate(item, current, capacity) {
     item?.percentage,
     item?.occupancy,
     item?.congestionRate,
+    item?.congestion_rate,
     item?.rate
   );
   if (explicitRate != null) {
@@ -139,7 +165,9 @@ function normalizeRate(item, current, capacity) {
   return (
     getRateFromLevel(
       item?.congestionStatus ??
+      item?.congestion_status ??
       item?.congestionLevel ??
+      item?.congestion_level ??
       item?.level ??
       item?.status ??
       item?.congestion
@@ -154,14 +182,31 @@ function getCongestionStatus(rate, hasSignal) {
   return "여유";
 }
 
-function getCongestionUpdatedAt(item) {
+function getCongestionUpdatedAt(item, data) {
+  const root = data?.data && typeof data.data === "object" ? data.data : data;
   const value =
     item?.lastSeenAt ??
+    item?.last_seen_at ??
     item?.lastDetectedAt ??
+    item?.last_detected_at ??
     item?.detectedAt ??
+    item?.detected_at ??
     item?.recordedAt ??
+    item?.recorded_at ??
     item?.updatedAt ??
-    item?.timestamp;
+    item?.updated_at ??
+    item?.createdAt ??
+    item?.created_at ??
+    item?.occurredAt ??
+    item?.occurred_at ??
+    item?.timestamp ??
+    root?.updatedAt ??
+    root?.updated_at ??
+    root?.createdAt ??
+    root?.created_at ??
+    root?.occurredAt ??
+    root?.occurred_at ??
+    root?.timestamp;
   if (!value) return null;
 
   const numericValue = Number(value);
@@ -179,15 +224,18 @@ function normalizeCongestionZones(data, beaconZones) {
   const items = getCongestionItems(data);
   const usedIndexes = new Set();
 
-  return beaconZones.slice(0, 3).map((zone) => {
+  return beaconZones.slice(0, 3).map((zone, zoneIndex) => {
     const zoneKeys = [zone.id, zone.name]
       .filter(Boolean)
       .map(normalizeZoneKey);
-    const itemIndex = items.findIndex(
+    let itemIndex = items.findIndex(
       (item, index) =>
         !usedIndexes.has(index) &&
         getCongestionItemKeys(item).some((key) => zoneKeys.includes(key))
     );
+    if (itemIndex < 0 && items[zoneIndex] && !usedIndexes.has(zoneIndex)) {
+      itemIndex = zoneIndex;
+    }
 
     const item = itemIndex >= 0 ? items[itemIndex] : null;
     if (itemIndex >= 0) usedIndexes.add(itemIndex);
@@ -195,21 +243,30 @@ function normalizeCongestionZones(data, beaconZones) {
       readNumber(
         item?.capacity,
         item?.maxCapacity,
+        item?.max_capacity,
         item?.limit,
         item?.acceptableCapacity,
-        item?.totalCapacity
+        item?.acceptable_capacity,
+        item?.totalCapacity,
+        item?.total_capacity
       ) ?? zone.capacity;
     const current = readNumber(
       item?.currentCount,
+      item?.current_count,
       item?.peopleCount,
+      item?.people_count,
       item?.userCount,
-      item?.memberCount
+      item?.user_count,
+      item?.current,
+      item?.count,
+      item?.population,
+      item?.memberCount,
+      item?.member_count
     );
-    const updatedAt = getCongestionUpdatedAt(item);
+    const updatedAt = getCongestionUpdatedAt(item, data);
     const hasSignal =
       item != null &&
-      updatedAt != null &&
-      Date.now() - updatedAt <= CONGESTION_SIGNAL_STALE_MS;
+      (updatedAt == null || Date.now() - updatedAt <= CONGESTION_SIGNAL_STALE_MS);
     const rate = hasSignal ? Math.round(normalizeRate(item, current, capacity)) : 0;
 
     return {
