@@ -131,10 +131,10 @@ function normalizeRate(item, current, capacity) {
   return (
     getRateFromLevel(
       item?.congestionStatus ??
-        item?.congestionLevel ??
-        item?.level ??
-        item?.status ??
-        item?.congestion
+      item?.congestionLevel ??
+      item?.level ??
+      item?.status ??
+      item?.congestion
     ) ?? 0
   );
 }
@@ -704,249 +704,249 @@ function AdminCMS() {
 
             {activeSection === "dashboard" ? (
               <>
-              {dashboardMessage ? (
-                <p className="mb-4 text-sm font-extrabold text-[color:var(--c-danger)]">
-                  {dashboardMessage}
-                </p>
-              ) : null}
-              <section className="grid gap-4 md:grid-cols-3">
-              <StatCard
-                icon={Activity}
-                label="현재 출석 인원"
-                value={loadingDashboard ? "..." : `${checkedInCount}명`}
-                tone="bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)]"
-              />
-              <StatCard
-                icon={Users}
-                label="총 회원 수"
-                value={loadingDashboard ? "..." : `${totalMembers}명`}
-                tone="bg-[color:var(--c-purple-soft)] text-[color:var(--c-purple)]"
-              />
-              <StatCard
-                icon={Check}
-                label="출석률"
-                value={loadingDashboard ? "..." : `${attendanceRate}%`}
-                tone="bg-emerald-500/10 text-[color:var(--c-success)]"
-              />
-            </section>
-
-            <section className="mt-4 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-              <Card className="rounded-2xl p-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h2 className="text-base font-black">출결 현황</h2>
-                    <p className="mt-1 text-sm font-semibold text-[color:var(--c-muted)]">
-                      총 회원 수 {totalMembers}명 기준
-                    </p>
-                  </div>
-                  <span className="rounded-full bg-[color:var(--c-primary-soft)] px-3 py-1 text-xs font-extrabold text-[color:var(--c-primary)]">
-                    실시간
-                  </span>
-                </div>
-
-                <div className="mt-6 grid items-center gap-6 sm:grid-cols-[180px_1fr]">
-                  <div
-                    className="mx-auto grid h-44 w-44 place-items-center rounded-full"
-                    style={{
-                      background: `conic-gradient(var(--c-primary) 0 ${attendanceRate}%, var(--c-surface-2) ${attendanceRate}% 100%)`
-                    }}
-                    aria-label={`출석률 ${attendanceRate}%`}
-                  >
-                    <div className="grid h-28 w-28 place-items-center rounded-full border border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-center">
-                      <div>
-                        <p className="text-2xl font-black">{attendanceRate}%</p>
-                        <p className="text-xs font-bold text-[color:var(--c-muted)]">출석률</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    {[
-                      ["총 회원 수", `${totalMembers}명`],
-                      ["출석 회원", `${checkedInCount}명`],
-                      ["미출석 회원", `${absentCount}명`]
-                    ].map(([label, value]) => (
-                      <div
-                        key={label}
-                        className="flex items-center justify-between rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface-2)] px-4 py-3"
-                      >
-                        <span className="text-sm font-bold text-[color:var(--c-muted)]">
-                          {label}
-                        </span>
-                        <span className="text-base font-black">{value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="rounded-2xl p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h2 className="text-base font-black">공간별 혼잡도</h2>
-                    <p className="mt-1 text-xs font-semibold text-[color:var(--c-muted)]">
-                      비콘 구역 기준 · 1분마다 갱신
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => loadCongestion()}
-                    disabled={loadingCongestion}
-                    className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-3 text-xs font-extrabold text-[color:var(--c-text)] shadow-sm transition hover:bg-[color:var(--c-surface-2)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-                    aria-label="공간별 혼잡도 갱신"
-                  >
-                    <RefreshCw
-                      size={15}
-                      className={loadingCongestion ? "animate-spin" : ""}
-                      aria-hidden="true"
-                    />
-                    {loadingCongestion ? "갱신 중" : "갱신"}
-                  </button>
-                </div>
-                {congestionMessage ? (
-                  <p className="mt-3 text-xs font-extrabold text-[color:var(--c-danger)]">
-                    {congestionMessage}
+                {dashboardMessage ? (
+                  <p className="mb-4 text-sm font-extrabold text-[color:var(--c-danger)]">
+                    {dashboardMessage}
                   </p>
                 ) : null}
-                <div className="mt-5 space-y-5">
-                  {congestionZones.map((zone) => (
-                    <div key={zone.id}>
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="font-black">{zone.name}</p>
-                          <p className="mt-1 text-sm font-semibold text-[color:var(--c-muted)]">
-                            {zone.current == null ? "-" : `${Math.round(zone.current)}명`} /{" "}
-                            {zone.capacity}명
-                          </p>
-                        </div>
-                        <span
-                          className={[
-                            "rounded-full px-3 py-1 text-xs font-extrabold",
-                            zone.status === "혼잡"
-                              ? "bg-red-500/10 text-[color:var(--c-danger)]"
-                              : zone.status === "신호 없음"
-                                ? "bg-[color:var(--c-surface-2)] text-[color:var(--c-muted)]"
-                                : "bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)]"
-                          ].join(" ")}
-                        >
-                          {zone.rate}% · {zone.status}
-                        </span>
+                <section className="grid gap-4 md:grid-cols-3">
+                  <StatCard
+                    icon={Activity}
+                    label="현재 출석 인원"
+                    value={loadingDashboard ? "..." : `${checkedInCount}명`}
+                    tone="bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)]"
+                  />
+                  <StatCard
+                    icon={Users}
+                    label="총 회원 수"
+                    value={loadingDashboard ? "..." : `${totalMembers}명`}
+                    tone="bg-[color:var(--c-purple-soft)] text-[color:var(--c-purple)]"
+                  />
+                  <StatCard
+                    icon={Check}
+                    label="출석률"
+                    value={loadingDashboard ? "..." : `${attendanceRate}%`}
+                    tone="bg-emerald-500/10 text-[color:var(--c-success)]"
+                  />
+                </section>
+
+                <section className="mt-4 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+                  <Card className="rounded-2xl p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h2 className="text-base font-black">출결 현황</h2>
+                        <p className="mt-1 text-sm font-semibold text-[color:var(--c-muted)]">
+                          총 회원 수 {totalMembers}명 기준
+                        </p>
                       </div>
-                      <div className="mt-3 h-3 overflow-hidden rounded-full bg-[color:var(--c-surface-2)]">
-                        <div
-                          className={[
-                            "h-full rounded-full",
-                            zone.status === "혼잡"
-                              ? "bg-[color:var(--c-danger)]"
-                              : zone.status === "신호 없음"
-                                ? "bg-[color:var(--c-muted-2)]"
-                                : "bg-[linear-gradient(135deg,var(--c-primary),var(--c-purple))]"
-                          ].join(" ")}
-                          style={{ width: `${zone.rate}%` }}
-                        />
+                      <span className="rounded-full bg-[color:var(--c-primary-soft)] px-3 py-1 text-xs font-extrabold text-[color:var(--c-primary)]">
+                        실시간
+                      </span>
+                    </div>
+
+                    <div className="mt-6 grid items-center gap-6 sm:grid-cols-[180px_1fr]">
+                      <div
+                        className="mx-auto grid h-44 w-44 place-items-center rounded-full"
+                        style={{
+                          background: `conic-gradient(var(--c-primary) 0 ${attendanceRate}%, var(--c-surface-2) ${attendanceRate}% 100%)`
+                        }}
+                        aria-label={`출석률 ${attendanceRate}%`}
+                      >
+                        <div className="grid h-28 w-28 place-items-center rounded-full border border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-center">
+                          <div>
+                            <p className="text-2xl font-black">{attendanceRate}%</p>
+                            <p className="text-xs font-bold text-[color:var(--c-muted)]">출석률</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        {[
+                          ["총 회원 수", `${totalMembers}명`],
+                          ["출석 회원", `${checkedInCount}명`],
+                          ["미출석 회원", `${absentCount}명`]
+                        ].map(([label, value]) => (
+                          <div
+                            key={label}
+                            className="flex items-center justify-between rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface-2)] px-4 py-3"
+                          >
+                            <span className="text-sm font-bold text-[color:var(--c-muted)]">
+                              {label}
+                            </span>
+                            <span className="text-base font-black">{value}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  ))}
-                </div>
-              </Card>
-            </section>
+                  </Card>
 
-            <Card className="mt-4 rounded-2xl p-5">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="text-base font-black">비콘 구역 설정</h2>
-                  <p className="mt-1 text-sm font-semibold text-[color:var(--c-muted)]">
-                    구역별 비콘 ID, 표시 이름, 수용 인원을 관리합니다.
-                  </p>
-                  {zoneMessage ? (
-                    <p className="mt-2 text-xs font-extrabold text-[color:var(--c-primary)]">
-                      {zoneMessage}
-                    </p>
-                  ) : null}
-                </div>
-                <button
-                  type="button"
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,var(--c-primary),var(--c-purple))] px-4 text-sm font-extrabold text-white shadow-sm transition hover:brightness-105 active:scale-[0.98]"
-                  onClick={openAddModal}
-                >
-                  <Plus size={18} aria-hidden="true" /> 구역 추가
-                </button>
-              </div>
-
-              <div className="mt-5 overflow-x-auto">
-                <table className="min-w-[640px] w-full border-separate border-spacing-0 text-left">
-                  <thead>
-                    <tr className="text-xs font-extrabold uppercase tracking-wide text-[color:var(--c-muted-2)]">
-                      <th className="border-b border-[color:var(--c-border)] px-3 py-3">
-                        비콘 ID
-                      </th>
-                      <th className="border-b border-[color:var(--c-border)] px-3 py-3">
-                        구역명
-                      </th>
-                      <th className="border-b border-[color:var(--c-border)] px-3 py-3">
-                        수용 인원
-                      </th>
-                      <th className="border-b border-[color:var(--c-border)] px-3 py-3 text-right">
-                        관리
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {beaconZones.map((zone) => (
-                      <tr key={zone.id} className="text-sm font-bold">
-                        <td className="border-b border-[color:var(--c-border)] px-3 py-4 text-[color:var(--c-primary)]">
-                          {zone.id}
-                        </td>
-                        <td className="border-b border-[color:var(--c-border)] px-3 py-4">
-                          {zone.name}
-                        </td>
-                        <td className="border-b border-[color:var(--c-border)] px-3 py-4">
-                          {zone.capacity}명
-                        </td>
-                        <td className="border-b border-[color:var(--c-border)] px-3 py-4">
-                          <div className="flex justify-end gap-2">
-                            <button
-                              type="button"
-                              className="inline-flex h-10 items-center gap-1 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-3 text-xs font-extrabold text-[color:var(--c-primary)] transition hover:bg-[color:var(--c-primary-soft)]"
-                              onClick={() => openEditModal(zone)}
+                  <Card className="rounded-2xl p-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h2 className="text-base font-black">공간별 혼잡도</h2>
+                        <p className="mt-1 text-xs font-semibold text-[color:var(--c-muted)]">
+                          비콘 구역 기준 · 1분마다 갱신
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => loadCongestion()}
+                        disabled={loadingCongestion}
+                        className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-3 text-xs font-extrabold text-[color:var(--c-text)] shadow-sm transition hover:bg-[color:var(--c-surface-2)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                        aria-label="공간별 혼잡도 갱신"
+                      >
+                        <RefreshCw
+                          size={15}
+                          className={loadingCongestion ? "animate-spin" : ""}
+                          aria-hidden="true"
+                        />
+                        {loadingCongestion ? "갱신 중" : "갱신"}
+                      </button>
+                    </div>
+                    {congestionMessage ? (
+                      <p className="mt-3 text-xs font-extrabold text-[color:var(--c-danger)]">
+                        {congestionMessage}
+                      </p>
+                    ) : null}
+                    <div className="mt-5 space-y-5">
+                      {congestionZones.map((zone) => (
+                        <div key={zone.id}>
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="font-black">{zone.name}</p>
+                              <p className="mt-1 text-sm font-semibold text-[color:var(--c-muted)]">
+                                {zone.current == null ? "-" : `${Math.round(zone.current)}명`} /{" "}
+                                {zone.capacity}명
+                              </p>
+                            </div>
+                            <span
+                              className={[
+                                "rounded-full px-3 py-1 text-xs font-extrabold",
+                                zone.status === "혼잡"
+                                  ? "bg-red-500/10 text-[color:var(--c-danger)]"
+                                  : zone.status === "신호 없음"
+                                    ? "bg-[color:var(--c-surface-2)] text-[color:var(--c-muted)]"
+                                    : "bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)]"
+                              ].join(" ")}
                             >
-                              <Edit3 size={14} aria-hidden="true" /> 수정
-                            </button>
-                            <button
-                              type="button"
-                              className="inline-flex h-10 items-center gap-1 rounded-2xl border border-red-500/20 bg-red-500/10 px-3 text-xs font-extrabold text-[color:var(--c-danger)] transition hover:bg-red-500/15"
-                              onClick={() => deleteBeaconZone(zone.id)}
-                            >
-                              <Trash2 size={14} aria-hidden="true" /> 삭제
-                            </button>
+                              {zone.rate}% · {zone.status}
+                            </span>
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                    {loadingZones ? (
-                      <tr>
-                        <td
-                          colSpan={4}
-                          className="border-b border-[color:var(--c-border)] px-3 py-6 text-center text-sm font-bold text-[color:var(--c-muted)]"
-                        >
-                          비콘 구역을 불러오는 중입니다.
-                        </td>
-                      </tr>
-                    ) : null}
-                    {!loadingZones && beaconZones.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={4}
-                          className="border-b border-[color:var(--c-border)] px-3 py-6 text-center text-sm font-bold text-[color:var(--c-muted)]"
-                        >
-                          등록된 비콘 구역이 없습니다.
-                        </td>
-                      </tr>
-                    ) : null}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
+                          <div className="mt-3 h-3 overflow-hidden rounded-full bg-[color:var(--c-surface-2)]">
+                            <div
+                              className={[
+                                "h-full rounded-full",
+                                zone.status === "혼잡"
+                                  ? "bg-[color:var(--c-danger)]"
+                                  : zone.status === "신호 없음"
+                                    ? "bg-[color:var(--c-muted-2)]"
+                                    : "bg-[linear-gradient(135deg,var(--c-primary),var(--c-purple))]"
+                              ].join(" ")}
+                              style={{ width: `${zone.rate}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                </section>
+
+                <Card className="mt-4 rounded-2xl p-5">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h2 className="text-base font-black">비콘 구역 설정</h2>
+                      <p className="mt-1 text-sm font-semibold text-[color:var(--c-muted)]">
+                        구역별 비콘 ID, 표시 이름, 수용 인원을 관리합니다.
+                      </p>
+                      {zoneMessage ? (
+                        <p className="mt-2 text-xs font-extrabold text-[color:var(--c-primary)]">
+                          {zoneMessage}
+                        </p>
+                      ) : null}
+                    </div>
+                    <button
+                      type="button"
+                      className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,var(--c-primary),var(--c-purple))] px-4 text-sm font-extrabold text-white shadow-sm transition hover:brightness-105 active:scale-[0.98]"
+                      onClick={openAddModal}
+                    >
+                      <Plus size={18} aria-hidden="true" /> 구역 추가
+                    </button>
+                  </div>
+
+                  <div className="mt-5 overflow-x-auto">
+                    <table className="min-w-[640px] w-full border-separate border-spacing-0 text-left">
+                      <thead>
+                        <tr className="text-xs font-extrabold uppercase tracking-wide text-[color:var(--c-muted-2)]">
+                          <th className="border-b border-[color:var(--c-border)] px-3 py-3">
+                            비콘 ID
+                          </th>
+                          <th className="border-b border-[color:var(--c-border)] px-3 py-3">
+                            구역명
+                          </th>
+                          <th className="border-b border-[color:var(--c-border)] px-3 py-3">
+                            수용 인원
+                          </th>
+                          <th className="border-b border-[color:var(--c-border)] px-3 py-3 text-right">
+                            관리
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {beaconZones.map((zone) => (
+                          <tr key={zone.id} className="text-sm font-bold">
+                            <td className="border-b border-[color:var(--c-border)] px-3 py-4 text-[color:var(--c-primary)]">
+                              {zone.id}
+                            </td>
+                            <td className="border-b border-[color:var(--c-border)] px-3 py-4">
+                              {zone.name}
+                            </td>
+                            <td className="border-b border-[color:var(--c-border)] px-3 py-4">
+                              {zone.capacity}명
+                            </td>
+                            <td className="border-b border-[color:var(--c-border)] px-3 py-4">
+                              <div className="flex justify-end gap-2">
+                                <button
+                                  type="button"
+                                  className="inline-flex h-10 items-center gap-1 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-3 text-xs font-extrabold text-[color:var(--c-primary)] transition hover:bg-[color:var(--c-primary-soft)]"
+                                  onClick={() => openEditModal(zone)}
+                                >
+                                  <Edit3 size={14} aria-hidden="true" /> 수정
+                                </button>
+                                <button
+                                  type="button"
+                                  className="inline-flex h-10 items-center gap-1 rounded-2xl border border-red-500/20 bg-red-500/10 px-3 text-xs font-extrabold text-[color:var(--c-danger)] transition hover:bg-red-500/15"
+                                  onClick={() => deleteBeaconZone(zone.id)}
+                                >
+                                  <Trash2 size={14} aria-hidden="true" /> 삭제
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {loadingZones ? (
+                          <tr>
+                            <td
+                              colSpan={4}
+                              className="border-b border-[color:var(--c-border)] px-3 py-6 text-center text-sm font-bold text-[color:var(--c-muted)]"
+                            >
+                              비콘 구역을 불러오는 중입니다.
+                            </td>
+                          </tr>
+                        ) : null}
+                        {!loadingZones && beaconZones.length === 0 ? (
+                          <tr>
+                            <td
+                              colSpan={4}
+                              className="border-b border-[color:var(--c-border)] px-3 py-6 text-center text-sm font-bold text-[color:var(--c-muted)]"
+                            >
+                              등록된 비콘 구역이 없습니다.
+                            </td>
+                          </tr>
+                        ) : null}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
               </>
             ) : (
               <Card className="rounded-2xl p-5">
