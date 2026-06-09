@@ -574,6 +574,15 @@ function getNativeLocationPayload(detail) {
   };
 }
 
+function hasNativeBeaconSignal(detail) {
+  if (!detail || typeof detail !== "object") return false;
+  const zoneId = detail.zoneId ?? detail.beaconId ?? detail.minor;
+  if (zoneId != null && zoneId !== "") return true;
+
+  const beacons = detail.beacons ?? detail.beaconCongestion ?? detail.zones;
+  return Array.isArray(beacons) && beacons.length > 0;
+}
+
 function normalizeNativeEventDetail(value) {
   let root = value;
   if (typeof root === "string") {
@@ -929,7 +938,8 @@ export default function Home() {
       }
 
       const locationPayload = getNativeLocationPayload(detail);
-      const shouldCheckIn = isNativeAttendanceEvent(detail) || Boolean(locationPayload);
+      const shouldCheckIn =
+        isNativeAttendanceEvent(detail) || hasNativeBeaconSignal(detail);
       if (!shouldCheckIn) return;
 
       if (locationPayload) {
