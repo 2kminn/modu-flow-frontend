@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   DEFAULT_BEACON_ZONES,
@@ -13,6 +13,7 @@ import {
   fetchAdminAttendances,
   fetchAdminDashboardSummary
 } from "@/api/admin";
+import { fetchRecentCongestion } from "@/api/attendance";
 import { getApiErrorMessage } from "@/api/client";
 import { clearAuthToken } from "@/auth/auth";
 import Card from "@/components/ui/Card";
@@ -27,6 +28,7 @@ import {
   LogOut,
   Menu,
   Plus,
+  RefreshCw,
   Search,
   Trash2,
   Users,
@@ -38,12 +40,162 @@ const menuItems = [
   { id: "attendance", label: "출결 현황", icon: Users }
 ];
 
-const congestionZones = [
-  { name: "유산소 존", current: 18, capacity: 30, rate: 60, status: "보통" },
-  { name: "웨이트 존", current: 42, capacity: 50, rate: 84, status: "혼잡" }
-];
-
 const emptyForm = { id: "", name: "", capacity: "" };
+const DEFAULT_GYM_NAME = "ModuFlow";
+const GYM_NAME_STORAGE_KEY = "moduflow:gym-name:v1";
+
+function readNumber(...values) {
+  for (const value of values) {
+    if (value == null || value === "") continue;
+    const number = Number(String(value).trim().replace(/%$/, ""));
+    if (Number.isFinite(number)) return number;
+  }
+  return null;
+}
+
+function resolveGymName() {
+  const globalName =
+    typeof window === "undefined"
+      ? ""
+      : window.__MODUFLOW_GYM_NAME__ ?? window.__MODUFLOW_CONFIG__?.gymName;
+  if (globalName) return String(globalName).trim();
+
+  try {
+    const storedName = window.localStorage.getItem(GYM_NAME_STORAGE_KEY)?.trim();
+    return storedName || import.meta.env.VITE_GYM_NAME || DEFAULT_GYM_NAME;
+  } catch {
+    return import.meta.env.VITE_GYM_NAME || DEFAULT_GYM_NAME;
+  }
+}
+
+function getCongestionItems(value) {
+  const root = value?.data && typeof value.data === "object" ? value.data : value;
+  if (!root || typeof root !== "object") return [];
+
+  const source =
+    root.beacons ??
+    root.beaconCongestion ??
+    root.zones ??
+    root.zoneCongestion ??
+    root.congestion ??
+    root.items ??
+    (Array.isArray(root) ? root : []);
+
+  if (Array.isArray(source)) return source;
+  if (!source || typeof source !== "object") return [];
+  return Object.entries(source).map(([name, item]) =>
+    item && typeof item === "object" ? { name, ...item } : { name, level: item }
+  );
+}
+
+function getCongestionItemKeys(item) {
+  if (!item || typeof item !== "object") return [];
+  return [
+    item.beaconId,
+    item.zoneId,
+    item.minor,
+    item.id,
+    item.uuid,
+    item.zoneName,
+    item.beaconName,
+    item.name
+  ]
+    .filter((value) => value != null && value !== "")
+    .map((value) => String(value).trim().toLowerCase());
+}
+
+function getRateFromLevel(value) {
+  const key = String(value ?? "").trim().toLowerCase();
+  if (["low", "idle", "free", "easy", "여유", "원활"].includes(key)) return 25;
+  if (["mid", "medium", "normal", "moderate", "보통"].includes(key)) return 55;
+  if (["high", "busy", "crowded", "congested", "혼잡", "매우혼잡"].includes(key)) {
+    return 85;
+  }
+  return null;
+}
+
+function normalizeRate(item, current, capacity) {
+  const explicitRate = readNumber(
+    item?.percent,
+    item?.percentage,
+    item?.occupancy,
+    item?.congestionRate,
+    item?.rate
+  );
+  if (explicitRate != null) {
+    return Math.max(0, Math.min(100, explicitRate <= 1 ? explicitRate * 100 : explicitRate));
+  }
+  if (current != null && capacity > 0) {
+    return Math.max(0, Math.min(100, (current / capacity) * 100));
+  }
+  return (
+    getRateFromLevel(
+      item?.congestionStatus ??
+        item?.congestionLevel ??
+        item?.level ??
+        item?.status ??
+        item?.congestion
+    ) ?? 0
+  );
+}
+
+function getCongestionStatus(rate, hasSignal) {
+  if (!hasSignal) return "신호 없음";
+  if (rate > 66) return "혼잡";
+  if (rate > 33) return "보통";
+  return "여유";
+}
+
+function normalizeCongestionZones(data, beaconZones) {
+  const items = getCongestionItems(data);
+  const usedIndexes = new Set();
+
+  return beaconZones.slice(0, 3).map((zone, zoneIndex) => {
+    const zoneKeys = [zone.id, zone.name]
+      .filter(Boolean)
+      .map((value) => String(value).trim().toLowerCase());
+    let itemIndex = items.findIndex(
+      (item, index) =>
+        !usedIndexes.has(index) &&
+        getCongestionItemKeys(item).some((key) => zoneKeys.includes(key))
+    );
+    if (itemIndex < 0 && items[zoneIndex] && !usedIndexes.has(zoneIndex)) {
+      itemIndex = zoneIndex;
+    }
+
+    const item = itemIndex >= 0 ? items[itemIndex] : null;
+    if (itemIndex >= 0) usedIndexes.add(itemIndex);
+    const capacity =
+      readNumber(
+        item?.capacity,
+        item?.maxCapacity,
+        item?.limit,
+        item?.acceptableCapacity,
+        item?.totalCapacity
+      ) ?? zone.capacity;
+    const current = readNumber(
+      item?.currentCount,
+      item?.peopleCount,
+      item?.userCount,
+      item?.current,
+      item?.count,
+      item?.population,
+      item?.memberCount
+    );
+    const rate = Math.round(normalizeRate(item, current, capacity));
+    const hasSignal = item != null;
+
+    return {
+      id: zone.id,
+      name: zone.name,
+      current,
+      capacity: Math.max(1, Math.round(capacity)),
+      rate,
+      status: getCongestionStatus(rate, hasSignal),
+      hasSignal
+    };
+  });
+}
 
 function maskEmail(value) {
   const text = String(value || "").trim();
@@ -254,6 +406,9 @@ function AdminCMS() {
   });
   const [loadingDashboard, setLoadingDashboard] = useState(true);
   const [dashboardMessage, setDashboardMessage] = useState("");
+  const [congestionData, setCongestionData] = useState(null);
+  const [loadingCongestion, setLoadingCongestion] = useState(true);
+  const [congestionMessage, setCongestionMessage] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -263,6 +418,10 @@ function AdminCMS() {
 
   const { totalMembers, checkedInCount, absentCount, attendanceRate } = dashboardSummary;
   const isEditing = editingId != null;
+  const congestionZones = useMemo(
+    () => normalizeCongestionZones(congestionData, beaconZones),
+    [beaconZones, congestionData]
+  );
   const attendanceStatuses = useMemo(() => {
     const statuses = attendanceRecords.map(getRecordStatus).filter(Boolean);
     return [...new Set(statuses)].sort((a, b) => a.localeCompare(b, "ko"));
@@ -289,6 +448,20 @@ function AdminCMS() {
       return searchable.includes(query);
     });
   }, [attendanceFilters, attendanceRecords]);
+
+  const loadCongestion = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoadingCongestion(true);
+    try {
+      const data = await fetchRecentCongestion({ gymName: resolveGymName() });
+      setCongestionData(data);
+      setCongestionMessage("");
+    } catch (err) {
+      console.warn("[admin congestion] fetch failed:", err);
+      setCongestionMessage(getApiErrorMessage(err, "공간별 혼잡도를 불러오지 못했어요."));
+    } finally {
+      setLoadingCongestion(false);
+    }
+  }, []);
 
   function logout() {
     clearAuthToken();
@@ -346,6 +519,18 @@ function AdminCMS() {
       active = false;
     };
   }, [activeSection]);
+
+  useEffect(() => {
+    if (activeSection !== "dashboard") return undefined;
+
+    loadCongestion();
+    const timer = window.setInterval(() => loadCongestion({ silent: true }), 60_000);
+    window.addEventListener("focus", loadCongestion);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", loadCongestion);
+    };
+  }, [activeSection, loadCongestion]);
 
   useEffect(() => {
     let active = true;
@@ -595,15 +780,42 @@ function AdminCMS() {
               </Card>
 
               <Card className="rounded-2xl p-5">
-                <h2 className="text-base font-black">공간별 혼잡도</h2>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-base font-black">공간별 혼잡도</h2>
+                    <p className="mt-1 text-xs font-semibold text-[color:var(--c-muted)]">
+                      비콘 구역 기준 · 1분마다 갱신
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => loadCongestion()}
+                    disabled={loadingCongestion}
+                    className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-3 text-xs font-extrabold text-[color:var(--c-text)] shadow-sm transition hover:bg-[color:var(--c-surface-2)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                    aria-label="공간별 혼잡도 갱신"
+                  >
+                    <RefreshCw
+                      size={15}
+                      className={loadingCongestion ? "animate-spin" : ""}
+                      aria-hidden="true"
+                    />
+                    {loadingCongestion ? "갱신 중" : "갱신"}
+                  </button>
+                </div>
+                {congestionMessage ? (
+                  <p className="mt-3 text-xs font-extrabold text-[color:var(--c-danger)]">
+                    {congestionMessage}
+                  </p>
+                ) : null}
                 <div className="mt-5 space-y-5">
                   {congestionZones.map((zone) => (
-                    <div key={zone.name}>
+                    <div key={zone.id}>
                       <div className="flex items-center justify-between gap-3">
                         <div>
                           <p className="font-black">{zone.name}</p>
                           <p className="mt-1 text-sm font-semibold text-[color:var(--c-muted)]">
-                            {zone.current}명 / {zone.capacity}명
+                            {zone.current == null ? "-" : `${Math.round(zone.current)}명`} /{" "}
+                            {zone.capacity}명
                           </p>
                         </div>
                         <span
@@ -611,7 +823,9 @@ function AdminCMS() {
                             "rounded-full px-3 py-1 text-xs font-extrabold",
                             zone.status === "혼잡"
                               ? "bg-red-500/10 text-[color:var(--c-danger)]"
-                              : "bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)]"
+                              : zone.status === "신호 없음"
+                                ? "bg-[color:var(--c-surface-2)] text-[color:var(--c-muted)]"
+                                : "bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)]"
                           ].join(" ")}
                         >
                           {zone.rate}% · {zone.status}
@@ -623,7 +837,9 @@ function AdminCMS() {
                             "h-full rounded-full",
                             zone.status === "혼잡"
                               ? "bg-[color:var(--c-danger)]"
-                              : "bg-[linear-gradient(135deg,var(--c-primary),var(--c-purple))]"
+                              : zone.status === "신호 없음"
+                                ? "bg-[color:var(--c-muted-2)]"
+                                : "bg-[linear-gradient(135deg,var(--c-primary),var(--c-purple))]"
                           ].join(" ")}
                           style={{ width: `${zone.rate}%` }}
                         />
