@@ -4,7 +4,9 @@
 권장 패턴은 아래 2가지 중 하나입니다.
 
 ## 백엔드 API 주소 연결(공통)
-이 프론트는 `VITE_API_BASE_URL` 환경변수를 `src/api/client.js`에서 읽어서 `axios baseURL`로 사용합니다.
+로컬 개발은 `VITE_API_BASE_URL` 환경변수를 `src/api/client.js`에서 읽어서
+`axios baseURL`로 사용합니다. Vercel 배포/WebView에서는 CORS 문제를 피하기 위해
+동일 출처 `/api/v1/*` 프록시를 사용합니다.
 
 1) `.env.local`(권장) 또는 `.env`에 백엔드 주소 설정
 ```bash

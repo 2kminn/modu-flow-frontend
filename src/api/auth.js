@@ -106,7 +106,7 @@ export function getSocialLoginUrl(provider) {
   }
 
   const path = `/oauth2/authorization/${normalizedProvider}`;
-  const baseUrl = getApiBaseUrl();
+  const baseUrl = getApiBaseUrl() ?? "";
 
   return {
     ok: true,

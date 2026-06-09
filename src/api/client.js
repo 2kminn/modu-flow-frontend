@@ -19,25 +19,28 @@ function canUseBaseUrl(value) {
 }
 
 function resolveBaseUrl() {
-  const envUrl = normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL);
-  if (canUseBaseUrl(envUrl)) return envUrl;
+  // Production always uses the same-origin Vercel rewrite in vercel.json.
+  // This also prevents a stale mobile runtime override from reintroducing CORS failures.
+  if (import.meta.env.PROD) return "";
 
-  if (typeof window === "undefined") return "";
-
-  const fromGlobal = normalizeBaseUrl(
-    window.__MODUFLOW_API_BASE_URL__ ?? window.__MODUFLOW_CONFIG__?.apiBaseUrl
-  );
-  if (canUseBaseUrl(fromGlobal)) return fromGlobal;
-
-  try {
-    const fromStorage = normalizeBaseUrl(
-      window.localStorage.getItem(STORAGE_API_BASE_URL_KEY)
+  if (typeof window !== "undefined") {
+    const fromGlobal = normalizeBaseUrl(
+      window.__MODUFLOW_API_BASE_URL__ ?? window.__MODUFLOW_CONFIG__?.apiBaseUrl
     );
-    if (canUseBaseUrl(fromStorage)) return fromStorage;
-  } catch {
-    // ignore
+    if (canUseBaseUrl(fromGlobal)) return fromGlobal;
+
+    try {
+      const fromStorage = normalizeBaseUrl(
+        window.localStorage.getItem(STORAGE_API_BASE_URL_KEY)
+      );
+      if (canUseBaseUrl(fromStorage)) return fromStorage;
+    } catch {
+      // ignore
+    }
   }
 
+  const envUrl = normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL);
+  if (canUseBaseUrl(envUrl)) return envUrl;
   return DEFAULT_API_BASE_URL;
 }
 
@@ -47,6 +50,16 @@ export function getApiBaseUrl() {
 
 export function setApiBaseUrl(nextBaseUrl) {
   if (typeof window === "undefined") return;
+  if (import.meta.env.PROD) {
+    try {
+      window.localStorage.removeItem(STORAGE_API_BASE_URL_KEY);
+    } catch {
+      // ignore
+    }
+    apiClient.defaults.baseURL = undefined;
+    return;
+  }
+
   const value = normalizeBaseUrl(nextBaseUrl);
   try {
     if (!value || !canUseBaseUrl(value)) {
@@ -57,7 +70,7 @@ export function setApiBaseUrl(nextBaseUrl) {
   } catch {
     // ignore
   }
-  apiClient.defaults.baseURL = canUseBaseUrl(value) ? value : DEFAULT_API_BASE_URL;
+  apiClient.defaults.baseURL = canUseBaseUrl(value) ? value : resolveBaseUrl() || undefined;
 }
 
 export function getApiErrorMessage(error, fallback = "요청에 실패했어요.") {
