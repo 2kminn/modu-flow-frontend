@@ -3,7 +3,12 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import FloatingLabelInput from "@/components/ui/FloatingLabelInput";
-import { DEV_TEST_AUTH_TOKEN, isAdminSession, setAuthToken } from "@/auth/auth";
+import {
+  clearAuthToken,
+  DEV_TEST_AUTH_TOKEN,
+  isAdminSession,
+  setAuthToken
+} from "@/auth/auth";
 import { Eye, EyeOff, Lock, LogIn, Mail, ShieldCheck } from "lucide-react";
 import {
   getSocialLoginUrl,
@@ -59,6 +64,7 @@ export default function Login() {
       // ignore
     }
 
+    clearAuthToken();
     window.location.href = result.url;
   }
 

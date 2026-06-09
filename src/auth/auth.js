@@ -71,7 +71,7 @@ function normalizeAuthProvider(provider) {
   return value || "email";
 }
 
-function decodeJwtPayload(token) {
+export function decodeJwtPayload(token) {
   if (!token || typeof token !== "string") return null;
   const [, payload] = token.split(".");
   if (!payload) return null;

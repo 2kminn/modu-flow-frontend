@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Card from "@/components/ui/Card";
-import { setAuthToken } from "@/auth/auth";
+import { decodeJwtPayload, setAuthToken } from "@/auth/auth";
 import { SOCIAL_LOGIN_PROVIDER_KEY, SOCIAL_LOGIN_RETURN_TO_KEY } from "@/api/auth";
 
 function readParams(location) {
@@ -60,6 +60,15 @@ function pickParam(params, keys) {
   return "";
 }
 
+function pickClaim(payload, keys) {
+  if (!payload || typeof payload !== "object") return "";
+  for (const key of keys) {
+    const value = payload[key];
+    if (String(value || "").trim()) return String(value).trim();
+  }
+  return "";
+}
+
 export default function OAuthCallback() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -84,10 +93,20 @@ export default function OAuthCallback() {
       return;
     }
 
-    const accountHint = pickParam(params, ["email", "userId", "username"]);
-    const profileName = pickParam(params, ["name", "nickname", "userName", "displayName"]);
-    const authProvider = pickParam(params, ["provider", "registrationId", "socialProvider"]) || safeGetSocialProvider();
-    const role = pickParam(params, ["role", "roles", "authority", "authorities"]);
+    const payload = decodeJwtPayload(token);
+    const accountHint =
+      pickParam(params, ["email", "userId", "username"]) ||
+      pickClaim(payload, ["email", "preferred_username", "username", "userId", "sub"]);
+    const profileName =
+      pickParam(params, ["name", "nickname", "userName", "displayName"]) ||
+      pickClaim(payload, ["name", "nickname", "userName", "displayName"]);
+    const authProvider =
+      pickParam(params, ["provider", "registrationId", "socialProvider"]) ||
+      pickClaim(payload, ["provider", "registrationId", "socialProvider"]) ||
+      safeGetSocialProvider();
+    const role =
+      pickParam(params, ["role", "roles", "authority", "authorities"]) ||
+      pickClaim(payload, ["role", "roles", "authority", "authorities"]);
 
     setAuthToken(token, accountHint || profileName, profileName, authProvider, role ? [role] : []);
     const nextPath = safePath(params.get("redirect") || safeGetReturnTo());
