@@ -102,7 +102,14 @@ function getCongestionItemKeys(item) {
     item.name
   ]
     .filter((value) => value != null && value !== "")
-    .map((value) => String(value).trim().toLowerCase());
+    .map(normalizeZoneKey);
+}
+
+function normalizeZoneKey(value) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "");
 }
 
 function getRateFromLevel(value) {
@@ -147,19 +154,14 @@ function getCongestionStatus(rate, hasSignal) {
   return "여유";
 }
 
-function getCongestionUpdatedAt(item, data) {
-  const root = data?.data && typeof data.data === "object" ? data.data : data;
+function getCongestionUpdatedAt(item) {
   const value =
     item?.lastSeenAt ??
     item?.lastDetectedAt ??
     item?.detectedAt ??
     item?.recordedAt ??
     item?.updatedAt ??
-    item?.timestamp ??
-    root?.lastSeenAt ??
-    root?.lastDetectedAt ??
-    root?.updatedAt ??
-    root?.timestamp;
+    item?.timestamp;
   if (!value) return null;
 
   const numericValue = Number(value);
@@ -177,18 +179,15 @@ function normalizeCongestionZones(data, beaconZones) {
   const items = getCongestionItems(data);
   const usedIndexes = new Set();
 
-  return beaconZones.slice(0, 3).map((zone, zoneIndex) => {
+  return beaconZones.slice(0, 3).map((zone) => {
     const zoneKeys = [zone.id, zone.name]
       .filter(Boolean)
-      .map((value) => String(value).trim().toLowerCase());
-    let itemIndex = items.findIndex(
+      .map(normalizeZoneKey);
+    const itemIndex = items.findIndex(
       (item, index) =>
         !usedIndexes.has(index) &&
         getCongestionItemKeys(item).some((key) => zoneKeys.includes(key))
     );
-    if (itemIndex < 0 && items[zoneIndex] && !usedIndexes.has(zoneIndex)) {
-      itemIndex = zoneIndex;
-    }
 
     const item = itemIndex >= 0 ? items[itemIndex] : null;
     if (itemIndex >= 0) usedIndexes.add(itemIndex);
@@ -204,12 +203,9 @@ function normalizeCongestionZones(data, beaconZones) {
       item?.currentCount,
       item?.peopleCount,
       item?.userCount,
-      item?.current,
-      item?.count,
-      item?.population,
       item?.memberCount
     );
-    const updatedAt = getCongestionUpdatedAt(item, data);
+    const updatedAt = getCongestionUpdatedAt(item);
     const hasSignal =
       item != null &&
       updatedAt != null &&
@@ -229,21 +225,8 @@ function normalizeCongestionZones(data, beaconZones) {
   });
 }
 
-function maskEmail(value) {
-  const text = String(value || "").trim();
-  if (!text) return "-";
-  const [local, domain] = text.split("@");
-  if (!domain) return local.length <= 2 ? `${local[0] ?? "*"}**` : `${local.slice(0, 2)}**`;
-  const visible = local.length <= 2 ? local.slice(0, 1) : local.slice(0, 4);
-  return `${visible}**@${domain}`;
-}
-
-function maskName(value) {
-  const text = String(value || "").trim();
-  if (!text) return "-";
-  if (text.length <= 1) return `${text}*`;
-  if (text.length === 2) return `${text[0]}*`;
-  return `${text[0]}*${text[text.length - 1]}`;
+function displayText(value) {
+  return String(value || "").trim() || "-";
 }
 
 function formatDateTime(value) {
@@ -847,7 +830,7 @@ function AdminCMS() {
                             <div>
                               <p className="font-black">{zone.name}</p>
                               <p className="mt-1 text-sm font-semibold text-[color:var(--c-muted)]">
-                                {zone.current == null ? "-" : `${Math.round(zone.current)}건`} /{" "}
+                                {zone.current == null ? "0명" : `${Math.round(zone.current)}명`} /{" "}
                                 {zone.capacity}명
                               </p>
                             </div>
@@ -1078,7 +1061,7 @@ function AdminCMS() {
                     <thead>
                       <tr className="text-xs font-extrabold uppercase tracking-wide text-[color:var(--c-muted-2)]">
                         <th className="border-b border-[color:var(--c-border)] px-3 py-3">
-                          사용자 아이디
+                          이메일
                         </th>
                         <th className="border-b border-[color:var(--c-border)] px-3 py-3">
                           이름
@@ -1098,10 +1081,10 @@ function AdminCMS() {
                           className="text-sm font-bold"
                         >
                           <td className="border-b border-[color:var(--c-border)] px-3 py-4 text-[color:var(--c-primary)]">
-                            {maskEmail(record.email)}
+                            {displayText(record.email)}
                           </td>
                           <td className="border-b border-[color:var(--c-border)] px-3 py-4">
-                            {maskName(record.name)}
+                            {displayText(record.name)}
                           </td>
                           <td className="border-b border-[color:var(--c-border)] px-3 py-4 text-[color:var(--c-muted)]">
                             {formatDateTime(record.checkInAt)}

@@ -50,16 +50,14 @@ function pickRoles(source) {
   return Array.isArray(roles) ? roles : roles ? [roles] : [];
 }
 
-export async function loginWithEmail({ email, password, userId }) {
+export async function loginWithEmail({ email, password }) {
   try {
     const normalizedEmail = String(email || "").trim().toLowerCase();
-    const normalizedUserId = String(userId || "").trim();
     const res = await apiClient.post(
       "/api/v1/auth/login",
       {
         email: normalizedEmail,
-        password,
-        ...(normalizedUserId ? { userId: normalizedUserId } : {})
+        password
       },
       { skipAuth: true }
     );

@@ -16,7 +16,6 @@ import {
   SOCIAL_LOGIN_PROVIDER_KEY,
   SOCIAL_LOGIN_RETURN_TO_KEY
 } from "@/api/auth";
-import { getNativeDeviceId } from "@/native/androidBridge";
 
 function safeRedirectPath(value) {
   if (!value || typeof value !== "string") return "/";
@@ -80,8 +79,7 @@ export default function Login() {
     setLoading(true);
     const result = await loginWithEmail({
       email: nextEmail,
-      password: nextPassword,
-      userId: getNativeDeviceId()
+      password: nextPassword
     });
     setLoading(false);
 

@@ -75,13 +75,36 @@ if (typeof Android !== "undefined") {
 }
 ```
 
-로그인 시 기기 매핑을 위한 브리지 메서드:
+기기 식별이 필요한 비콘/위치 기능용 브리지 메서드:
 ```js
 Android.getDeviceId() // Android ANDROID_ID 문자열 반환
 ```
 
-호환 메서드명으로 `getAndroidId()`와 `getUserId()`도 지원합니다. 프론트는 이메일 로그인
-요청의 `userId` 필드로 이 값을 전달합니다.
+호환 메서드명으로 `getAndroidId()`와 `getUserId()`도 지원합니다.
+
+`ANDROID_ID`는 비콘 위치 업데이트와 혼잡도 집계에만 사용합니다. 이메일 로그인 요청과
+루틴 조회에는 전달하지 않습니다. 로그인 성공 시 프론트는 아래 메서드로 Bearer 토큰을
+Android에 전달합니다.
+
+```js
+Android.setAuthToken(accessToken)
+```
+
+### 자세분석 Activity의 루틴 조회
+
+`PoseAnalysisActivity` 등 네이티브 화면에서 사용자 루틴을 조회할 때는 로그인 토큰을
+사용합니다.
+
+```http
+GET /api/v1/routines
+Authorization: Bearer <accessToken>
+```
+
+- `userId`, `androidId`, `deviceId` 쿼리 파라미터를 붙이지 않습니다.
+- 사용자는 백엔드가 Bearer 토큰의 계정 식별자(`sub` 등)로 결정합니다.
+- 로그아웃 시 프론트가 `Android.setAuthToken("")`을 호출하므로 Android도 저장한 토큰을
+  삭제해야 합니다.
+- 비콘/위치 API의 `userId = ANDROID_ID` 계약은 그대로 유지합니다.
 
 프론트 구현:
 - 홈의 “운동 시작” 버튼: `src/pages/Home.jsx`에서 오늘 루틴의 `exerciseId`를 CSV로 변환해 `startWorkout`에 전달
