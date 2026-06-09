@@ -336,7 +336,9 @@ function getBeaconCount(item) {
 }
 
 function getBeaconCapacity(item, zoneConfig) {
-  if (!item || typeof item !== "object") return zoneConfig?.capacity ?? null;
+  const configuredCapacity = readNumeric(zoneConfig?.capacity);
+  if (configuredCapacity != null && configuredCapacity > 0) return configuredCapacity;
+  if (!item || typeof item !== "object") return null;
   return (
     readNumeric(
       item.capacity ??
@@ -347,10 +349,28 @@ function getBeaconCapacity(item, zoneConfig) {
         item.acceptable_capacity ??
         item.totalCapacity ??
         item.total_capacity
-    ) ??
-    zoneConfig?.capacity ??
-    null
+    ) ?? null
   );
+}
+
+function getBeaconOccupancyRate(item, zoneConfig) {
+  if (!item || typeof item !== "object") return null;
+  const count = getBeaconCount(item);
+  const capacity = getBeaconCapacity(item, zoneConfig);
+  if (count != null && capacity != null && capacity > 0) {
+    return Math.max(0, Math.min(100, (count / capacity) * 100));
+  }
+
+  const explicitRate = readNumeric(
+    item.percent ??
+      item.percentage ??
+      item.occupancy ??
+      item.congestionRate ??
+      item.congestion_rate ??
+      item.rate
+  );
+  if (explicitRate == null) return null;
+  return Math.max(0, Math.min(100, explicitRate <= 1 ? explicitRate * 100 : explicitRate));
 }
 
 function normalizeCongestionByCapacity(count, capacity) {
@@ -484,6 +504,9 @@ function createBeaconCongestionSlots(status = "no-signal", level = null, beaconZ
     ...slot,
     id: beaconZones[index]?.id ?? slot.id,
     title: beaconZones[index]?.name ?? slot.title,
+    current: null,
+    capacity: beaconZones[index]?.capacity ?? null,
+    rate: null,
     level,
     status
   }));
@@ -581,6 +604,9 @@ function normalizeHomeCongestion(data, beaconZones = []) {
       beaconZones[index] ??
       null;
     const level = normalizeZoneCongestion(item, zoneConfig);
+    const current = getBeaconCount(item);
+    const capacity = getBeaconCapacity(item, zoneConfig);
+    const rate = getBeaconOccupancyRate(item, zoneConfig);
     const hasSignal = level != null || (isSingleNearestBeaconLevel && index === 0);
     return {
       id: zoneConfig?.id ?? getBeaconIdentity(item) ?? slot.id,
@@ -588,6 +614,9 @@ function normalizeHomeCongestion(data, beaconZones = []) {
         isSingleNearestBeaconLevel && index === 0
           ? zoneConfig?.name ?? "비콘 ID 없음"
           : getBeaconTitle(item, index, zoneConfig),
+      current,
+      capacity,
+      rate,
       level: level ?? (index === 0 ? fallbackLevel : null),
       status: hasSignal ? "ok" : "no-signal"
     };
@@ -719,19 +748,16 @@ function isNativeAttendanceEvent(detail) {
   return detail.checkedIn !== false;
 }
 
-function CongestionPill({ level, title, loading, status }) {
+function CongestionPill({ level, title, current, rate, loading, status }) {
   const map = {
     low: {
-      label: "여유",
-      bar: "w-1/3 bg-[color:var(--c-level-low)]"
+      label: "여유"
     },
     mid: {
-      label: "보통",
-      bar: "w-2/3 bg-[color:var(--c-level-mid)]"
+      label: "보통"
     },
     high: {
-      label: "혼잡",
-      bar: "w-full bg-[color:var(--c-level-high)]"
+      label: "혼잡"
     }
   };
 
@@ -746,29 +772,43 @@ function CongestionPill({ level, title, loading, status }) {
           : status === "no-signal"
             ? "신호 없음"
             : ui.label;
-  const barClass =
+  const hideBar =
     loading ||
-      status === "error" ||
-      status === "signal-api-error" ||
-      status === "signal-received" ||
-      status === "no-signal"
-      ? "w-0 bg-transparent"
-      : ui.bar;
+    status === "error" ||
+    status === "signal-api-error" ||
+    status === "signal-received" ||
+    status === "no-signal" ||
+    rate == null;
+  const barColor =
+    level === "high"
+      ? "bg-[color:var(--c-level-high)]"
+      : level === "mid"
+        ? "bg-[color:var(--c-level-mid)]"
+        : "bg-[color:var(--c-level-low)]";
+  const countLabel = current == null ? null : `${Math.round(current)}명`;
 
   return (
-    <div className="rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-primary-soft)] px-3 py-2 transition-[background-color,border-color] duration-200">
+    <div className="rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-primary-soft)] px-4 py-3 transition-[background-color,border-color] duration-200">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-xs font-extrabold text-[color:var(--c-muted)]">
+          <p className="truncate text-sm font-extrabold text-[color:var(--c-text)]">
             {title}
           </p>
           <p className="mt-0.5 text-[11px] font-semibold text-[color:var(--c-muted-2)]">
             혼잡도 · {loading ? "확인 중" : statusLabel}
           </p>
         </div>
-        <div className="h-2 w-20 overflow-hidden rounded-full bg-[color:var(--c-surface)]">
-          <div className={`h-full ${barClass}`} />
-        </div>
+        {!loading && status === "ok" && countLabel ? (
+          <span className="shrink-0 text-sm font-extrabold text-[color:var(--c-text)]">
+            {countLabel}
+          </span>
+        ) : null}
+      </div>
+      <div className="mt-3 h-3 w-full overflow-hidden rounded-full bg-[color:var(--c-surface)]">
+        <div
+          className={`h-full rounded-full ${hideBar ? "bg-transparent" : barColor}`}
+          style={{ width: hideBar ? "0%" : `${rate}%` }}
+        />
       </div>
     </div>
   );
@@ -1500,12 +1540,14 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="mt-4 space-y-3">
             {congestion.beacons.map((beacon) => (
               <CongestionPill
                 key={beacon.id}
                 title={beacon.title}
                 level={beacon.level}
+                current={beacon.current}
+                rate={beacon.rate}
                 loading={congestion.loading}
                 status={beacon.status}
               />
