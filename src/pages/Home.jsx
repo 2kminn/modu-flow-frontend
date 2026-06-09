@@ -575,18 +575,52 @@ function getNativeLocationPayload(detail) {
 }
 
 function normalizeNativeEventDetail(value) {
-  if (!value || typeof value !== "string") return value;
-  try {
-    return JSON.parse(value);
-  } catch {
-    return null;
+  let root = value;
+  if (typeof root === "string") {
+    try {
+      root = JSON.parse(root);
+    } catch {
+      return null;
+    }
   }
+  if (!root || typeof root !== "object") return root;
+
+  let nested = root.payload ?? root.detail ?? root.data;
+  if (typeof nested === "string") {
+    try {
+      nested = JSON.parse(nested);
+    } catch {
+      nested = null;
+    }
+  }
+  if (!nested || typeof nested !== "object" || Array.isArray(nested)) return root;
+
+  return {
+    ...root,
+    ...nested,
+    type: root.type ?? nested.type
+  };
 }
 
 function isNativeAttendanceEvent(detail) {
   if (!detail || typeof detail !== "object") return false;
   const type = String(detail.type ?? detail.event ?? "").trim().toLowerCase();
-  if (!["attendance", "check-in", "checkin"].includes(type)) return false;
+  const source = String(detail.source ?? "").trim().toLowerCase();
+  if (
+    ![
+      "attendance",
+      "check-in",
+      "checkin",
+      "beacon",
+      "beacon-detected",
+      "beacon_detected",
+      "location",
+      "proximity"
+    ].includes(type) &&
+    source !== "beacon"
+  ) {
+    return false;
+  }
   return detail.checkedIn !== false;
 }
 
@@ -886,13 +920,12 @@ export default function Home() {
       if (import.meta.env.DEV) {
         console.log("[home native event] detail:", detail);
       }
-      if (detail?.type === "congestion") {
+      if (String(detail?.type ?? "").toLowerCase() === "congestion") {
         setCongestion({
           ...normalizeHomeCongestion(detail, beaconZones),
           loading: false,
           error: null
         });
-        return;
       }
 
       const locationPayload = getNativeLocationPayload(detail);
