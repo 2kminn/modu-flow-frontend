@@ -214,7 +214,6 @@ export function getStoredAuthRoles() {
 }
 
 export function isAdminSession() {
-  if (isDevTestAuthToken()) return true;
   return getStoredAuthRoles().some((role) => {
     const normalized = String(role || "").trim().toUpperCase();
     return normalized === "ADMIN" || normalized === "ROLE_ADMIN";
@@ -232,9 +231,11 @@ function getProfileNameKey(accountHint) {
 }
 
 export function getStoredProfileName(accountHint) {
-  const key = getProfileNameKey(accountHint);
+  const account = normalizeAccount(accountHint);
+  const key = getProfileNameKey(account);
   const accountName = key ? safeGet(localStorage, key) : "";
-  return String(accountName || safeGet(localStorage, CURRENT_PROFILE_NAME_KEY) || "").trim();
+  const fallbackName = account ? "" : safeGet(localStorage, CURRENT_PROFILE_NAME_KEY);
+  return String(accountName || fallbackName || "").trim();
 }
 
 export function setStoredProfileName(name, accountHint) {
@@ -280,6 +281,7 @@ export function setAuthToken(token, accountHint, profileName, authProvider = "em
   safeRemove(sessionStorage, ACCOUNT_KEY);
   safeRemove(sessionStorage, EXPIRES_AT_KEY);
   safeRemove(sessionStorage, AUTH_PROVIDER_KEY);
+  safeRemove(sessionStorage, AUTH_ROLES_KEY);
 }
 
 export function syncStoredAuthTokenToNative() {
