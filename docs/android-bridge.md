@@ -75,6 +75,14 @@ if (typeof Android !== "undefined") {
 }
 ```
 
+로그인 시 기기 매핑을 위한 브리지 메서드:
+```js
+Android.getDeviceId() // Android ANDROID_ID 문자열 반환
+```
+
+호환 메서드명으로 `getAndroidId()`와 `getUserId()`도 지원합니다. 프론트는 이메일 로그인
+요청의 `userId` 필드로 이 값을 전달합니다.
+
 프론트 구현:
 - 홈의 “운동 시작” 버튼: `src/pages/Home.jsx`에서 오늘 루틴의 `exerciseId`를 CSV로 변환해 `startWorkout`에 전달
 - Android WebView 브리지가 없거나 `startWorkout` 메서드가 없으면 웹 `/workout/run` 화면으로 이동

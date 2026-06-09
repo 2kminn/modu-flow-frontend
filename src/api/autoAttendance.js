@@ -1,3 +1,6 @@
+import { apiClient } from "@/api/client";
+import { isDevTestAuthToken } from "@/auth/auth";
+
 export const AUTO_ATTENDANCE_STORAGE_KEY = "moduflow:auto-attendance-enabled:v1";
 export const AUTO_ATTENDANCE_EVENT = "moduflow:auto-attendance";
 
@@ -21,4 +24,21 @@ export function saveAutoAttendanceEnabled(enabled) {
     // ignore
   }
   return next;
+}
+
+export async function fetchAutoAttendanceEnabled() {
+  if (isDevTestAuthToken()) return isAutoAttendanceEnabled();
+  const res = await apiClient.get("/api/v1/settings");
+  const data = res?.data?.data ?? res?.data;
+  return data?.autoAttendanceEnabled !== false;
+}
+
+export async function updateAutoAttendanceEnabled(enabled) {
+  const next = Boolean(enabled);
+  if (!isDevTestAuthToken()) {
+    await apiClient.put("/api/v1/settings", {
+      autoAttendanceEnabled: next
+    });
+  }
+  return saveAutoAttendanceEnabled(next);
 }

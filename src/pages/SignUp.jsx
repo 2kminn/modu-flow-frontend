@@ -160,7 +160,11 @@ export default function SignUp() {
           </pre>
         ) : null}
 
-        <Button type="submit" disabled={loading}>
+        <Button
+          type="submit"
+          disabled={loading}
+          className="bg-[linear-gradient(135deg,var(--c-primary),var(--c-purple))]"
+        >
           {loading ? "가입 중..." : "회원가입"}
         </Button>
 

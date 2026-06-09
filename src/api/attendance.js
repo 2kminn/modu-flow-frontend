@@ -82,6 +82,7 @@ export function normalizeAttendanceRecord(item) {
   const status = item.status ?? item.attendanceStatus ?? item.state;
   const checkInAt =
     item.checkInAt ??
+    item.checkInTime ??
     item.checkedInAt ??
     item.enteredAt ??
     item.createdAt ??
@@ -108,7 +109,8 @@ export function normalizeAttendanceRecord(item) {
     status: status == null ? "" : String(status),
     checkInAt: checkInAt == null ? "" : String(checkInAt),
     checkOutAt: checkOutAt == null ? "" : String(checkOutAt),
-    zoneName: zoneName == null ? "" : String(zoneName)
+    zoneName: zoneName == null ? "" : String(zoneName),
+    gymName: item.gymName == null ? "" : String(item.gymName)
   };
 }
 
@@ -138,8 +140,22 @@ export async function checkOutAttendance(id) {
 export async function updateCurrentLocation(payload = {}) {
   if (isDevTestAuthToken()) return { ok: true };
 
-  const userId = payload.userId ?? payload.androidId ?? payload.deviceId;
-  const zoneId = payload.zoneId ?? payload.beaconId ?? payload.minor;
+  const userId =
+    payload.userId ??
+    payload.user_id ??
+    payload.androidId ??
+    payload.android_id ??
+    payload.deviceId ??
+    payload.device_id;
+  const zoneId =
+    payload.zoneId ??
+    payload.zone_id ??
+    payload.beaconId ??
+    payload.beacon_id ??
+    payload.minor ??
+    payload.beaconMinor ??
+    payload.zoneCode ??
+    payload.zone_code;
   const body = {
     ...payload,
     ...(userId == null ? {} : { userId }),

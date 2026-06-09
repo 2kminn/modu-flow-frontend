@@ -15,13 +15,17 @@ import { useNavigate } from "react-router-dom";
 import { getApiErrorMessage } from "@/api/client";
 import {
   checkInAttendance,
+  fetchAttendance,
   fetchRecentCongestion,
+  normalizeAttendanceRecords,
   updateCurrentLocation
 } from "@/api/attendance";
 import {
   AUTO_ATTENDANCE_EVENT,
+  fetchAutoAttendanceEnabled,
   isAutoAttendanceEnabled,
-  saveAutoAttendanceEnabled
+  saveAutoAttendanceEnabled,
+  updateAutoAttendanceEnabled
 } from "@/api/autoAttendance";
 import {
   BEACON_ZONES_EVENT,
@@ -155,6 +159,13 @@ function markBeaconAttendanceDate(date, gymName = resolveGymName()) {
   } catch {
     // ignore
   }
+}
+
+async function hasAttendanceForDate(date, gymName) {
+  const data = await fetchAttendance({ gymName });
+  return normalizeAttendanceRecords(data).some(
+    (record) => formatDate(record.checkInAt) === date
+  );
 }
 
 function readStoredGymName() {
@@ -562,8 +573,22 @@ function formatCongestionUpdatedAt(value) {
 
 function getNativeLocationPayload(detail) {
   if (!detail || typeof detail !== "object") return null;
-  const userId = detail.userId ?? detail.androidId ?? detail.deviceId;
-  const zoneId = detail.zoneId ?? detail.beaconId ?? detail.minor;
+  const userId =
+    detail.userId ??
+    detail.user_id ??
+    detail.androidId ??
+    detail.android_id ??
+    detail.deviceId ??
+    detail.device_id;
+  const zoneId =
+    detail.zoneId ??
+    detail.zone_id ??
+    detail.beaconId ??
+    detail.beacon_id ??
+    detail.minor ??
+    detail.beaconMinor ??
+    detail.zoneCode ??
+    detail.zone_code;
   if (userId == null || zoneId == null) return null;
 
   return {
@@ -576,7 +601,15 @@ function getNativeLocationPayload(detail) {
 
 function hasNativeBeaconSignal(detail) {
   if (!detail || typeof detail !== "object") return false;
-  const zoneId = detail.zoneId ?? detail.beaconId ?? detail.minor;
+  const zoneId =
+    detail.zoneId ??
+    detail.zone_id ??
+    detail.beaconId ??
+    detail.beacon_id ??
+    detail.minor ??
+    detail.beaconMinor ??
+    detail.zoneCode ??
+    detail.zone_code;
   if (zoneId != null && zoneId !== "") return true;
 
   const beacons = detail.beacons ?? detail.beaconCongestion ?? detail.zones;
@@ -865,14 +898,27 @@ export default function Home() {
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
+    let active = true;
+
+    async function syncServerAutoAttendance() {
+      try {
+        const enabled = await fetchAutoAttendanceEnabled();
+        if (active) setAutoAttendanceEnabled(saveAutoAttendanceEnabled(enabled));
+      } catch (e) {
+        console.warn("[home auto attendance] fetch failed:", e);
+      }
+    }
+
     function syncAutoAttendance(event) {
       setAutoAttendanceEnabled(
         typeof event?.detail === "boolean" ? event.detail : isAutoAttendanceEnabled()
       );
     }
+    syncServerAutoAttendance();
     window.addEventListener("storage", syncAutoAttendance);
     window.addEventListener(AUTO_ATTENDANCE_EVENT, syncAutoAttendance);
     return () => {
+      active = false;
       window.removeEventListener("storage", syncAutoAttendance);
       window.removeEventListener(AUTO_ATTENDANCE_EVENT, syncAutoAttendance);
     };
@@ -960,6 +1006,17 @@ export default function Home() {
       try {
         const attendanceDate = formatDate(new Date());
         const gymName = resolveGymName(locationPayload ?? detail);
+        let locationUpdated = false;
+
+        if (locationPayload) {
+          try {
+            await updateCurrentLocation(locationPayload);
+            locationUpdated = true;
+          } catch (locationError) {
+            console.warn("[home native location] update failed:", locationError);
+          }
+        }
+
         if (
           autoAttendanceEnabled &&
           readBeaconAttendanceDate(gymName) !== attendanceDate &&
@@ -968,7 +1025,20 @@ export default function Home() {
           attendanceRequestDateRef.current = attendanceDate;
           setCheckingInAttendance(true);
           try {
-            await checkInAttendance({ gymName });
+            let attendanceExists =
+              locationUpdated &&
+              (await hasAttendanceForDate(attendanceDate, gymName));
+
+            if (!attendanceExists) {
+              try {
+                await checkInAttendance({ gymName });
+                attendanceExists = true;
+              } catch (attendanceError) {
+                attendanceExists = await hasAttendanceForDate(attendanceDate, gymName);
+                if (!attendanceExists) throw attendanceError;
+              }
+            }
+
             markBeaconAttendanceDate(attendanceDate, gymName);
             if (active) {
               setBeaconAttendanceDate(attendanceDate);
@@ -994,7 +1064,6 @@ export default function Home() {
 
         if (!locationPayload) return;
 
-        await updateCurrentLocation(locationPayload);
         const data = await fetchRecentCongestion({
           gymName: resolveGymName(locationPayload)
         });
@@ -1051,8 +1120,17 @@ export default function Home() {
     navigate("/workout");
   }
 
-  function toggleAutoAttendance() {
-    setAutoAttendanceEnabled((enabled) => saveAutoAttendanceEnabled(!enabled));
+  async function toggleAutoAttendance() {
+    const previous = autoAttendanceEnabled;
+    const next = saveAutoAttendanceEnabled(!previous);
+    setAutoAttendanceEnabled(next);
+    try {
+      await updateAutoAttendanceEnabled(next);
+    } catch (e) {
+      saveAutoAttendanceEnabled(previous);
+      setAutoAttendanceEnabled(previous);
+      setStartNotice(getApiErrorMessage(e, "자동출석 설정 저장에 실패했어요."));
+    }
   }
 
   async function completeTodayWorkout() {

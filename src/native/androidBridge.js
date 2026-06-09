@@ -56,6 +56,46 @@ export function setNativeAuthToken(token) {
   return false;
 }
 
+export function getNativeDeviceId() {
+  if (typeof window === "undefined") return "";
+
+  const globalValue = String(
+    window.__MODUFLOW_DEVICE_ID__ ??
+    window.__MODUFLOW_CONFIG__?.deviceId ??
+    ""
+  ).trim();
+  if (globalValue) return globalValue;
+
+  try {
+    const params = new URLSearchParams(window.location.search);
+    for (const key of ["deviceId", "androidId", "userId"]) {
+      const value = String(params.get(key) ?? "").trim();
+      if (value) return value;
+    }
+  } catch {
+    // ignore
+  }
+
+  const bridge = getBridgeObject();
+  if (!bridge) return "";
+
+  for (const methodName of ["getDeviceId", "getAndroidId", "getAndroidID", "getUserId"]) {
+    if (typeof bridge[methodName] !== "function") continue;
+    try {
+      const value = String(bridge[methodName]() ?? "").trim();
+      if (value) return value;
+    } catch {
+      // try the next compatible method
+    }
+  }
+
+  for (const propertyName of ["deviceId", "androidId", "userId"]) {
+    const value = String(bridge[propertyName] ?? "").trim();
+    if (value) return value;
+  }
+  return "";
+}
+
 export function openNativeCamera(payload = {}) {
   const bridge = getBridgeObject();
   if (!bridge) return false;
