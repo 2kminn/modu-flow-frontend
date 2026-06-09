@@ -574,6 +574,22 @@ function getNativeLocationPayload(detail) {
   };
 }
 
+function normalizeNativeEventDetail(value) {
+  if (!value || typeof value !== "string") return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
+function isNativeAttendanceEvent(detail) {
+  if (!detail || typeof detail !== "object") return false;
+  const type = String(detail.type ?? detail.event ?? "").trim().toLowerCase();
+  if (!["attendance", "check-in", "checkin"].includes(type)) return false;
+  return detail.checkedIn !== false;
+}
+
 function CongestionPill({ level, title, loading, status }) {
   const map = {
     low: {
@@ -866,7 +882,7 @@ export default function Home() {
     let active = true;
 
     async function handleNativeEvent(event) {
-      const detail = event?.detail;
+      const detail = normalizeNativeEventDetail(event?.detail);
       if (import.meta.env.DEV) {
         console.log("[home native event] detail:", detail);
       }
@@ -880,24 +896,27 @@ export default function Home() {
       }
 
       const locationPayload = getNativeLocationPayload(detail);
-      if (!locationPayload) return;
+      const shouldCheckIn = isNativeAttendanceEvent(detail) || Boolean(locationPayload);
+      if (!shouldCheckIn) return;
 
-      setCongestion((prev) => ({
-        ...prev,
-        beacons: createNativeBeaconSignalSlots(
-          locationPayload,
-          "signal-received",
-          beaconZones
-        ),
-        hasZoneBreakdown: true,
-        status: "ok",
-        loading: false,
-        error: null
-      }));
+      if (locationPayload) {
+        setCongestion((prev) => ({
+          ...prev,
+          beacons: createNativeBeaconSignalSlots(
+            locationPayload,
+            "signal-received",
+            beaconZones
+          ),
+          hasZoneBreakdown: true,
+          status: "ok",
+          loading: false,
+          error: null
+        }));
+      }
 
       try {
         const attendanceDate = formatDate(new Date());
-        const gymName = resolveGymName(locationPayload);
+        const gymName = resolveGymName(locationPayload ?? detail);
         if (
           autoAttendanceEnabled &&
           readBeaconAttendanceDate(gymName) !== attendanceDate &&
@@ -929,6 +948,8 @@ export default function Home() {
             }
           }
         }
+
+        if (!locationPayload) return;
 
         await updateCurrentLocation(locationPayload);
         const data = await fetchRecentCongestion({

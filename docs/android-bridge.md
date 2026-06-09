@@ -114,6 +114,9 @@ Android(WebView) 측 구현 개념(요약):
 }
 ```
 
+`attendance` 이벤트는 `userId`/`zoneId` 없이도 프론트가 로그인 사용자의 출석 API를 호출합니다.
+현재 위치와 혼잡도까지 갱신하려면 같은 이벤트에 `userId`와 `zoneId`도 포함합니다.
+
 ### Android(WebView)에서 JS 실행(개념)
 Android 측에서 이벤트를 보낼 때는 WebView에서 JS를 평가(evaluateJavascript)해서 위 CustomEvent를 dispatch하면 됩니다.
 
