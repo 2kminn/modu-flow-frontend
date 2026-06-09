@@ -410,6 +410,7 @@ function AdminCMS() {
   const [loadingCongestion, setLoadingCongestion] = useState(true);
   const [congestionMessage, setCongestionMessage] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [loadingZones, setLoadingZones] = useState(true);
@@ -463,7 +464,7 @@ function AdminCMS() {
     }
   }, []);
 
-  function logout() {
+  function confirmLogout() {
     clearAuthToken();
     navigate("/login", { replace: true });
   }
@@ -684,7 +685,7 @@ function AdminCMS() {
                 <button
                   type="button"
                   className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-3 text-xs font-extrabold text-[color:var(--c-muted)] shadow-sm transition hover:bg-[color:var(--c-surface-2)] hover:text-[color:var(--c-text)] active:scale-[0.98]"
-                  onClick={logout}
+                  onClick={() => setLogoutModalOpen(true)}
                   aria-label="관리자 로그아웃"
                 >
                   <LogOut size={15} aria-hidden="true" />
@@ -1113,6 +1114,54 @@ function AdminCMS() {
           </div>
         </main>
       </div>
+
+      {logoutModalOpen ? (
+        <div
+          className="fixed inset-0 z-[90] grid place-items-center bg-slate-950/40 px-4 py-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="logout-dialog-title"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 h-full w-full cursor-default"
+            onClick={() => setLogoutModalOpen(false)}
+            aria-label="로그아웃 팝업 닫기"
+          />
+          <div className="relative w-full max-w-sm rounded-3xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] p-5 shadow-2xl">
+            <div className="flex items-start gap-3">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-red-500/10 text-[color:var(--c-danger)]">
+                <LogOut size={20} aria-hidden="true" />
+              </span>
+              <div>
+                <h2 id="logout-dialog-title" className="text-lg font-black">
+                  로그아웃하시겠어요?
+                </h2>
+                <p className="mt-1 text-sm font-semibold text-[color:var(--c-muted)]">
+                  관리자 페이지를 종료하고 로그인 화면으로 이동합니다.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                className="h-12 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-sm font-extrabold text-[color:var(--c-text)] transition hover:bg-[color:var(--c-surface-2)]"
+                onClick={() => setLogoutModalOpen(false)}
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                className="h-12 rounded-2xl bg-[color:var(--c-danger)] text-sm font-extrabold text-white shadow-sm transition hover:brightness-105 active:scale-[0.98]"
+                onClick={confirmLogout}
+              >
+                로그아웃
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {modalOpen ? (
         <div className="fixed inset-0 z-[80] grid place-items-end bg-slate-950/40 px-4 py-4 backdrop-blur-sm sm:place-items-center">
