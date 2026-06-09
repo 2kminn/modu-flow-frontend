@@ -635,6 +635,7 @@ export default function Home() {
   const todayDayKey = useMemo(() => dayKeyFromDate(new Date()), []);
   const todayDate = useMemo(() => formatDate(new Date()), []);
   const [startNotice, setStartNotice] = useState(null);
+  const [attendanceToast, setAttendanceToast] = useState(null);
   const [savingWorkout, setSavingWorkout] = useState(false);
   const [checkingInAttendance, setCheckingInAttendance] = useState(false);
   const attendanceRequestDateRef = useRef(null);
@@ -909,7 +910,10 @@ export default function Home() {
             markBeaconAttendanceDate(attendanceDate, gymName);
             if (active) {
               setBeaconAttendanceDate(attendanceDate);
-              setStartNotice("비콘 신호로 출석 완료되었습니다.");
+              setAttendanceToast({
+                title: "출석 완료",
+                message: "비콘 신호가 확인되어 오늘 출석이 처리되었습니다."
+              });
             }
           } catch (attendanceError) {
             console.warn("[home beacon attendance] check-in failed:", attendanceError);
@@ -967,6 +971,12 @@ export default function Home() {
     return () => window.clearTimeout(t);
   }, [startNotice]);
 
+  useEffect(() => {
+    if (!attendanceToast) return;
+    const t = window.setTimeout(() => setAttendanceToast(null), 3200);
+    return () => window.clearTimeout(t);
+  }, [attendanceToast]);
+
   function goToManualRoutineAdd() {
     setShowRoutineOptions(false);
     navigate("/mypage/routines");
@@ -1012,6 +1022,28 @@ export default function Home() {
 
   return (
     <>
+      {attendanceToast ? (
+        <div
+          className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top)+1rem)] z-[80] px-4"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="mx-auto flex w-full max-w-md items-center gap-3 rounded-2xl border border-emerald-500/25 bg-[color:var(--c-surface)] px-4 py-3 shadow-lg">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-300">
+              <CheckCircle size={21} aria-hidden="true" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-black text-[color:var(--c-text)]">
+                {attendanceToast.title}
+              </span>
+              <span className="mt-0.5 block text-xs font-semibold text-[color:var(--c-muted)]">
+                {attendanceToast.message}
+              </span>
+            </span>
+          </div>
+        </div>
+      ) : null}
+
       <section className="space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div>
