@@ -50,6 +50,23 @@ function pickRoles(source) {
   return Array.isArray(roles) ? roles : roles ? [roles] : [];
 }
 
+function pickUserId(source) {
+  if (!source || typeof source !== "object") return "";
+  return String(
+    source.userId ??
+      source.user_id ??
+      source.memberId ??
+      source.member_id ??
+      source.id ??
+      source.user?.userId ??
+      source.user?.user_id ??
+      source.user?.memberId ??
+      source.user?.member_id ??
+      source.user?.id ??
+      ""
+  ).trim();
+}
+
 export async function loginWithEmail({ email, password }) {
   try {
     const normalizedEmail = String(email || "").trim().toLowerCase();
@@ -79,6 +96,7 @@ export async function loginWithEmail({ email, password }) {
       tokenType: data?.tokenType,
       expiresInSeconds: data?.expiresInSeconds,
       email: data?.email ?? data?.user?.email,
+      userId: pickUserId(data),
       name: pickDisplayName(data),
       roles: pickRoles(data),
       debug: { response: response ?? null }
@@ -155,6 +173,7 @@ export async function signupWithEmail({ email, password, name }) {
       tokenType: data?.tokenType,
       expiresInSeconds: data?.expiresInSeconds,
       email: data?.email ?? data?.user?.email,
+      userId: pickUserId(data),
       name: pickDisplayName(data) || normalizedName,
       roles: pickRoles(data),
       debug: { response: response ?? null }

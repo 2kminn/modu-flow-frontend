@@ -56,7 +56,14 @@ export default function SignUp() {
       return;
     }
 
-    setAuthToken(signupResult.accessToken, signupResult.email || email, signupResult.name || name);
+    setAuthToken(
+      signupResult.accessToken,
+      signupResult.email || email,
+      signupResult.name || name,
+      "email",
+      signupResult.roles,
+      signupResult.userId
+    );
     setLoading(false);
     navigate("/", { replace: true });
   }

@@ -1,6 +1,11 @@
 import { apiClient } from "@/api/client";
 import { validateWorkoutItemDraft } from "@/api/validation";
-import { getAuthToken, getStoredAuthIdentity, isDevTestAuthToken } from "@/auth/auth";
+import {
+  getAuthToken,
+  getStoredAuthIdentity,
+  getStoredAuthUserId,
+  isDevTestAuthToken
+} from "@/auth/auth";
 
 const ROUTINE_STORAGE_KEY = "moduflow:routines-by-day:v1";
 const ROUTINE_STORAGE_KEY_PREFIX = "moduflow:routines-by-day:v1:";
@@ -98,7 +103,9 @@ export function getRoutineStorageKey() {
   const token = getAuthToken();
   if (!token) return GUEST_ROUTINE_STORAGE_KEY;
 
-  const identity = String(getStoredAuthIdentity() || getJwtIdentity(token) || "").trim();
+  const identity = String(
+    getStoredAuthUserId() || getStoredAuthIdentity() || getJwtIdentity(token) || ""
+  ).trim();
   if (identity) {
     return `${ROUTINE_STORAGE_KEY_PREFIX}user:${encodeURIComponent(identity)}`;
   }
@@ -185,7 +192,10 @@ export async function fetchRoutines() {
     };
   }
 
-  const res = await apiClient.get("/api/v1/routines");
+  const userId = getStoredAuthUserId();
+  const res = await apiClient.get("/api/v1/routines", {
+    params: userId ? { userId } : undefined
+  });
   const data = res?.data;
   if (data && typeof data === "object") {
     const restDays = hasRestDays(data)
@@ -243,7 +253,10 @@ export async function saveRoutines(routinesByDay, restDays) {
     return payload;
   }
 
-  const res = await apiClient.put("/api/v1/routines", payload);
+  const userId = getStoredAuthUserId();
+  const res = await apiClient.put("/api/v1/routines", payload, {
+    params: userId ? { userId } : undefined
+  });
   cacheRoutinesToLocalStorage(routinesByDay);
   cacheRoutineRestDaysToLocalStorage(payload.restDays);
   return res?.data;

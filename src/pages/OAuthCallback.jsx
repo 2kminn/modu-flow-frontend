@@ -97,6 +97,9 @@ export default function OAuthCallback() {
     const accountHint =
       pickParam(params, ["email", "userId", "username"]) ||
       pickClaim(payload, ["email", "preferred_username", "username", "userId", "sub"]);
+    const userId =
+      pickParam(params, ["userId", "user_id", "memberId", "member_id", "id"]) ||
+      pickClaim(payload, ["userId", "user_id", "memberId", "member_id", "id", "sub"]);
     const profileName =
       pickParam(params, ["name", "nickname", "userName", "displayName"]) ||
       pickClaim(payload, ["name", "nickname", "userName", "displayName"]);
@@ -108,7 +111,7 @@ export default function OAuthCallback() {
       pickParam(params, ["role", "roles", "authority", "authorities"]) ||
       pickClaim(payload, ["role", "roles", "authority", "authorities"]);
 
-    setAuthToken(token, accountHint, "", authProvider, role ? [role] : []);
+    setAuthToken(token, accountHint, "", authProvider, role ? [role] : [], userId);
     const nextPath = safePath(params.get("redirect") || safeGetReturnTo());
     safeClearReturnTo();
     navigate(nextPath, { replace: true });

@@ -56,6 +56,37 @@ export function setNativeAuthToken(token) {
   return false;
 }
 
+export function setNativeUserId(userId) {
+  const bridge = getBridgeObject();
+  if (!bridge || typeof bridge.setUserId !== "function") return false;
+
+  try {
+    bridge.setUserId(String(userId ?? ""));
+    return true;
+  } catch {
+    // ignore
+  }
+  return false;
+}
+
+export function clearNativeSession() {
+  const bridge = getBridgeObject();
+  if (!bridge) return false;
+
+  if (typeof bridge.clearSession === "function") {
+    try {
+      bridge.clearSession();
+      return true;
+    } catch {
+      // Fall back to clearing individual values.
+    }
+  }
+
+  const tokenCleared = setNativeAuthToken("");
+  const userIdCleared = setNativeUserId("");
+  return tokenCleared || userIdCleared;
+}
+
 export function getNativeDeviceId() {
   if (typeof window === "undefined") return "";
 

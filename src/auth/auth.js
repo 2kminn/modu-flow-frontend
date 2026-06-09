@@ -1,7 +1,12 @@
-import { setNativeAuthToken } from "@/native/androidBridge";
+import {
+  clearNativeSession,
+  setNativeAuthToken,
+  setNativeUserId
+} from "@/native/androidBridge";
 
 const TOKEN_KEY = "auth_token";
 const ACCOUNT_KEY = "auth_account";
+const USER_ID_KEY = "auth_user_id";
 const EXPIRES_AT_KEY = "auth_expires_at";
 const AUTH_PROVIDER_KEY = "auth_provider";
 const AUTH_ROLES_KEY = "auth_roles";
@@ -49,11 +54,13 @@ function getNextAuthExpiresAt() {
 function clearStoredAuth() {
   safeRemove(sessionStorage);
   safeRemove(sessionStorage, ACCOUNT_KEY);
+  safeRemove(sessionStorage, USER_ID_KEY);
   safeRemove(sessionStorage, EXPIRES_AT_KEY);
   safeRemove(sessionStorage, AUTH_PROVIDER_KEY);
   safeRemove(sessionStorage, AUTH_ROLES_KEY);
   safeRemove(localStorage);
   safeRemove(localStorage, ACCOUNT_KEY);
+  safeRemove(localStorage, USER_ID_KEY);
   safeRemove(localStorage, EXPIRES_AT_KEY);
   safeRemove(localStorage, AUTH_PROVIDER_KEY);
   safeRemove(localStorage, AUTH_ROLES_KEY);
@@ -84,6 +91,23 @@ export function decodeJwtPayload(token) {
   } catch {
     return null;
   }
+}
+
+function normalizeUserId(value) {
+  return String(value ?? "").trim();
+}
+
+function getJwtUserId(token) {
+  const payload = decodeJwtPayload(token);
+  if (!payload) return "";
+  return normalizeUserId(
+    payload.userId ??
+      payload.user_id ??
+      payload.memberId ??
+      payload.member_id ??
+      payload.id ??
+      payload.sub
+  );
 }
 
 function normalizeRoles(...sources) {
@@ -125,7 +149,7 @@ function getJwtRoles(token = getAuthToken()) {
   );
 }
 
-function persistLocalAuth(token, accountHint, authProvider = "email", roles = []) {
+function persistLocalAuth(token, accountHint, authProvider = "email", roles = [], userId) {
   safeSet(localStorage, TOKEN_KEY, token);
   safeSet(localStorage, EXPIRES_AT_KEY, String(getNextAuthExpiresAt()));
   safeSet(localStorage, AUTH_PROVIDER_KEY, normalizeAuthProvider(authProvider));
@@ -133,6 +157,11 @@ function persistLocalAuth(token, accountHint, authProvider = "email", roles = []
   const identity = String(accountHint || "").trim().toLowerCase();
   if (identity) safeSet(localStorage, ACCOUNT_KEY, identity);
   else safeRemove(localStorage, ACCOUNT_KEY);
+
+  const normalizedUserId =
+    normalizeUserId(userId) || getJwtUserId(token) || normalizeUserId(accountHint);
+  if (normalizedUserId) safeSet(localStorage, USER_ID_KEY, normalizedUserId);
+  else safeRemove(localStorage, USER_ID_KEY);
 
   const normalizedRoles = normalizeRoles(roles, getJwtRoles(token));
   if (normalizedRoles.length) safeSet(localStorage, AUTH_ROLES_KEY, JSON.stringify(normalizedRoles));
@@ -142,7 +171,7 @@ function persistLocalAuth(token, accountHint, authProvider = "email", roles = []
 export function getAuthToken() {
   if (isLocalAuthExpired()) {
     clearStoredAuth();
-    setNativeAuthToken("");
+    clearNativeSession();
     return null;
   }
 
@@ -156,10 +185,12 @@ export function getAuthToken() {
     legacySessionToken,
     safeGet(sessionStorage, ACCOUNT_KEY),
     safeGet(sessionStorage, AUTH_PROVIDER_KEY),
-    safeGet(sessionStorage, AUTH_ROLES_KEY)
+    safeGet(sessionStorage, AUTH_ROLES_KEY),
+    safeGet(sessionStorage, USER_ID_KEY)
   );
   safeRemove(sessionStorage);
   safeRemove(sessionStorage, ACCOUNT_KEY);
+  safeRemove(sessionStorage, USER_ID_KEY);
   safeRemove(sessionStorage, EXPIRES_AT_KEY);
   safeRemove(sessionStorage, AUTH_PROVIDER_KEY);
   safeRemove(sessionStorage, AUTH_ROLES_KEY);
@@ -173,16 +204,33 @@ export function isDevTestAuthToken(token = getAuthToken()) {
 export function getStoredAuthIdentity() {
   if (isLocalAuthExpired()) {
     clearStoredAuth();
-    setNativeAuthToken("");
+    clearNativeSession();
     return null;
   }
   return safeGet(localStorage, ACCOUNT_KEY) || safeGet(sessionStorage, ACCOUNT_KEY) || null;
 }
 
+export function getStoredAuthUserId() {
+  if (isLocalAuthExpired()) {
+    clearStoredAuth();
+    clearNativeSession();
+    return null;
+  }
+
+  const storedUserId =
+    safeGet(localStorage, USER_ID_KEY) || safeGet(sessionStorage, USER_ID_KEY);
+  if (storedUserId) return storedUserId;
+
+  const token = getAuthToken();
+  const derivedUserId = getJwtUserId(token) || normalizeUserId(getStoredAuthIdentity());
+  if (derivedUserId) safeSet(localStorage, USER_ID_KEY, derivedUserId);
+  return derivedUserId || null;
+}
+
 export function getStoredAuthProvider() {
   if (isLocalAuthExpired()) {
     clearStoredAuth();
-    setNativeAuthToken("");
+    clearNativeSession();
     return "email";
   }
   return normalizeAuthProvider(
@@ -197,7 +245,7 @@ export function isSocialAuthSession() {
 export function getStoredAuthRoles() {
   if (isLocalAuthExpired()) {
     clearStoredAuth();
-    setNativeAuthToken("");
+    clearNativeSession();
     return [];
   }
 
@@ -293,9 +341,17 @@ export function getAuthProfileName() {
   return isSocialAuthSession() ? "사용자" : getAuthDisplayIdentity();
 }
 
-export function setAuthToken(token, accountHint, profileName, authProvider = "email", roles = []) {
-  persistLocalAuth(token, accountHint, authProvider, roles);
+export function setAuthToken(
+  token,
+  accountHint,
+  profileName,
+  authProvider = "email",
+  roles = [],
+  userId
+) {
+  persistLocalAuth(token, accountHint, authProvider, roles, userId);
   setNativeAuthToken(token);
+  setNativeUserId(getStoredAuthUserId() || "");
   const identity = String(accountHint || "").trim().toLowerCase();
   if (String(profileName || "").trim()) {
     setStoredProfileName(profileName, identity);
@@ -308,6 +364,7 @@ export function setAuthToken(token, accountHint, profileName, authProvider = "em
   }
   safeRemove(sessionStorage);
   safeRemove(sessionStorage, ACCOUNT_KEY);
+  safeRemove(sessionStorage, USER_ID_KEY);
   safeRemove(sessionStorage, EXPIRES_AT_KEY);
   safeRemove(sessionStorage, AUTH_PROVIDER_KEY);
   safeRemove(sessionStorage, AUTH_ROLES_KEY);
@@ -315,10 +372,13 @@ export function setAuthToken(token, accountHint, profileName, authProvider = "em
 
 export function syncStoredAuthTokenToNative() {
   const token = getAuthToken();
-  if (token) setNativeAuthToken(token);
+  if (token) {
+    setNativeAuthToken(token);
+    setNativeUserId(getStoredAuthUserId() || "");
+  }
 }
 
 export function clearAuthToken() {
   clearStoredAuth();
-  setNativeAuthToken("");
+  clearNativeSession();
 }

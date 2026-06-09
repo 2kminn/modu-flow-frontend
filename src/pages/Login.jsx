@@ -98,7 +98,14 @@ export default function Login() {
       return;
     }
 
-    setAuthToken(result.accessToken, requestedEmail, result.name, "email", result.roles);
+    setAuthToken(
+      result.accessToken,
+      requestedEmail,
+      result.name,
+      "email",
+      result.roles,
+      result.userId
+    );
     navigate(isAdminSession() ? "/admin" : fromPath, { replace: true });
   }
 
