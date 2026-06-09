@@ -7,6 +7,7 @@ const AUTH_PROVIDER_KEY = "auth_provider";
 const AUTH_ROLES_KEY = "auth_roles";
 const AUTH_SESSION_SECONDS = 60 * 60;
 const PROFILE_NAME_KEY_PREFIX = "moduflow:profile-name:v1:";
+const PROFILE_NAME_EDITED_KEY_PREFIX = "moduflow:profile-name-edited:v1:";
 const CURRENT_PROFILE_NAME_KEY = "moduflow:profile-name:current:v1";
 export const PROFILE_NAME_CHANGED_EVENT = "moduflow:profile-name-changed";
 export const DEV_TEST_AUTH_TOKEN = "dev-test-token";
@@ -230,6 +231,17 @@ function getProfileNameKey(accountHint) {
   return `${PROFILE_NAME_KEY_PREFIX}${encodeURIComponent(account)}`;
 }
 
+function getProfileNameEditedKey(accountHint) {
+  const account = normalizeAccount(accountHint);
+  if (!account) return null;
+  return `${PROFILE_NAME_EDITED_KEY_PREFIX}${encodeURIComponent(account)}`;
+}
+
+export function hasUserEditedProfileName(accountHint) {
+  const key = getProfileNameEditedKey(accountHint);
+  return Boolean(key && safeGet(localStorage, key) === "1");
+}
+
 export function getStoredProfileName(accountHint) {
   const account = normalizeAccount(accountHint);
   const key = getProfileNameKey(account);
@@ -260,12 +272,25 @@ export function setStoredProfileName(name, accountHint) {
   return normalizedName;
 }
 
+export function setUserEditedProfileName(name, accountHint) {
+  const normalizedName = setStoredProfileName(name, accountHint);
+  const key = getProfileNameEditedKey(accountHint);
+  if (key && normalizedName) safeSet(localStorage, key, "1");
+  else if (key) safeRemove(localStorage, key);
+  return normalizedName;
+}
+
 export function getAuthDisplayIdentity() {
-  return getStoredAuthIdentity() || "사용자";
+  const identity = getStoredAuthIdentity();
+  if (!identity) return "사용자";
+  if (isSocialAuthSession() && !identity.includes("@")) return "사용자";
+  return identity;
 }
 
 export function getAuthProfileName() {
-  return getStoredProfileName() || getAuthDisplayIdentity();
+  const storedName = getStoredProfileName();
+  if (storedName) return storedName;
+  return isSocialAuthSession() ? "사용자" : getAuthDisplayIdentity();
 }
 
 export function setAuthToken(token, accountHint, profileName, authProvider = "email", roles = []) {
@@ -276,6 +301,10 @@ export function setAuthToken(token, accountHint, profileName, authProvider = "em
     setStoredProfileName(profileName, identity);
   } else {
     safeRemove(localStorage, CURRENT_PROFILE_NAME_KEY);
+    if (normalizeAuthProvider(authProvider) !== "email" && !hasUserEditedProfileName(identity)) {
+      const profileKey = getProfileNameKey(identity);
+      if (profileKey) safeRemove(localStorage, profileKey);
+    }
   }
   safeRemove(sessionStorage);
   safeRemove(sessionStorage, ACCOUNT_KEY);

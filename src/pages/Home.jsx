@@ -48,6 +48,8 @@ import {
   PROFILE_NAME_CHANGED_EVENT,
   getAuthProfileName,
   getStoredAuthIdentity,
+  hasUserEditedProfileName,
+  isSocialAuthSession,
   setStoredProfileName
 } from "@/auth/auth";
 import { startNativeWorkout } from "@/native/androidBridge";
@@ -792,7 +794,12 @@ export default function Home() {
     async function syncProfileName() {
       try {
         const profile = await fetchMyProfile();
-        if (!active || !profile?.name || !isCurrentAccountProfile(profile)) return;
+        if (
+          !active ||
+          !profile?.name ||
+          !isCurrentAccountProfile(profile) ||
+          (isSocialAuthSession() && !hasUserEditedProfileName())
+        ) return;
         setStoredProfileName(profile.name);
         setUserName(profile.name);
       } catch (e) {

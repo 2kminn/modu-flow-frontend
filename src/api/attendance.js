@@ -176,7 +176,12 @@ export async function fetchCongestion({ gymName } = {}) {
 }
 
 export async function fetchRecentCongestion({ gymName } = {}) {
-  if (isDevTestAuthToken()) return getDevCongestion();
+  if (isDevTestAuthToken()) {
+    return {
+      zones: [],
+      updatedAt: null
+    };
+  }
 
   const res = await apiClient.get("/api/v1/attendance/congestion/recent", {
     params: gymName ? { gymName } : undefined

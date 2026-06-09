@@ -43,6 +43,7 @@ const menuItems = [
 const emptyForm = { id: "", name: "", capacity: "" };
 const DEFAULT_GYM_NAME = "ModuFlow";
 const GYM_NAME_STORAGE_KEY = "moduflow:gym-name:v1";
+const CONGESTION_SIGNAL_STALE_MS = 2 * 60 * 1000;
 
 function readNumber(...values) {
   for (const value of values) {
@@ -146,6 +147,32 @@ function getCongestionStatus(rate, hasSignal) {
   return "여유";
 }
 
+function getCongestionUpdatedAt(item, data) {
+  const root = data?.data && typeof data.data === "object" ? data.data : data;
+  const value =
+    item?.lastSeenAt ??
+    item?.lastDetectedAt ??
+    item?.detectedAt ??
+    item?.recordedAt ??
+    item?.updatedAt ??
+    item?.timestamp ??
+    root?.lastSeenAt ??
+    root?.lastDetectedAt ??
+    root?.updatedAt ??
+    root?.timestamp;
+  if (!value) return null;
+
+  const numericValue = Number(value);
+  const date = new Date(
+    Number.isFinite(numericValue)
+      ? numericValue < 1_000_000_000_000
+        ? numericValue * 1000
+        : numericValue
+      : value
+  );
+  return Number.isNaN(date.getTime()) ? null : date.getTime();
+}
+
 function normalizeCongestionZones(data, beaconZones) {
   const items = getCongestionItems(data);
   const usedIndexes = new Set();
@@ -182,17 +209,21 @@ function normalizeCongestionZones(data, beaconZones) {
       item?.population,
       item?.memberCount
     );
-    const rate = Math.round(normalizeRate(item, current, capacity));
-    const hasSignal = item != null;
+    const updatedAt = getCongestionUpdatedAt(item, data);
+    const hasSignal =
+      item != null &&
+      (updatedAt == null || Date.now() - updatedAt <= CONGESTION_SIGNAL_STALE_MS);
+    const rate = hasSignal ? Math.round(normalizeRate(item, current, capacity)) : 0;
 
     return {
       id: zone.id,
       name: zone.name,
-      current,
+      current: hasSignal ? current : null,
       capacity: Math.max(1, Math.round(capacity)),
       rate,
       status: getCongestionStatus(rate, hasSignal),
-      hasSignal
+      hasSignal,
+      updatedAt
     };
   });
 }
@@ -783,9 +814,9 @@ function AdminCMS() {
                   <Card className="rounded-2xl p-5">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <h2 className="text-base font-black">최근 구역 출석 현황</h2>
+                        <h2 className="text-base font-black">구역별 혼잡도 현황</h2>
                         <p className="mt-1 text-xs font-semibold text-[color:var(--c-muted)]">
-                          최근 1시간 출석 기록 기준 · 1분마다 갱신
+                          실시간 구역 혼잡도 기준 · 1분마다 갱신
                         </p>
                       </div>
                       <button

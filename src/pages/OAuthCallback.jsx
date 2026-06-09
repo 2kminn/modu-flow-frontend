@@ -108,7 +108,7 @@ export default function OAuthCallback() {
       pickParam(params, ["role", "roles", "authority", "authorities"]) ||
       pickClaim(payload, ["role", "roles", "authority", "authorities"]);
 
-    setAuthToken(token, accountHint || profileName, profileName, authProvider, role ? [role] : []);
+    setAuthToken(token, accountHint, "", authProvider, role ? [role] : []);
     const nextPath = safePath(params.get("redirect") || safeGetReturnTo());
     safeClearReturnTo();
     navigate(nextPath, { replace: true });

@@ -11,8 +11,10 @@ import {
   clearAuthToken,
   getAuthDisplayIdentity,
   getAuthProfileName,
+  hasUserEditedProfileName,
   isSocialAuthSession,
-  setStoredProfileName
+  setStoredProfileName,
+  setUserEditedProfileName
 } from "@/auth/auth";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -203,7 +205,7 @@ export default function MyPage() {
         const profile = await fetchMyProfile();
         if (!active || !profile || !isCurrentAccountProfile(profile)) return;
         if (profile.email) setAccountEmail(profile.email);
-        if (profile.name) {
+        if (profile.name && (!isSocialAccount || hasUserEditedProfileName())) {
           setStoredProfileName(profile.name);
           setProfileName(profile.name);
         }
@@ -223,7 +225,7 @@ export default function MyPage() {
     setSavingProfile(true);
     try {
       const profile = await updateMyProfileName(nextName);
-      const savedName = setStoredProfileName(profile?.name || nextName);
+      const savedName = setUserEditedProfileName(profile?.name || nextName);
       setProfileName(savedName || accountEmail);
       setIsProfileDialogOpen(false);
     } finally {
