@@ -1,5 +1,6 @@
 import axios from "axios";
 import { getAuthToken, clearAuthToken } from "@/auth/auth";
+import { replaceAuthorizationHeader } from "@/auth/authHeaders";
 
 const STORAGE_API_BASE_URL_KEY = "moduflow:api-base-url:v1";
 export const DEFAULT_API_BASE_URL = "https://3-39-194-42.sslip.io";
@@ -124,17 +125,8 @@ apiClient.interceptors.request.use((config) => {
   }
 
   config.headers = config.headers ?? {};
-
-  if (config.skipAuth) {
-    delete config.headers.Authorization;
-    delete config.headers.authorization;
-    return config;
-  }
-
   const token = getAuthToken();
-  if (!token) return config;
-
-  config.headers.Authorization = `Bearer ${token}`;
+  replaceAuthorizationHeader(config.headers, token, config.skipAuth);
   return config;
 });
 

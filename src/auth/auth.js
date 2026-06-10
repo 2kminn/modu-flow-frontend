@@ -3,6 +3,7 @@ import {
   setNativeAuthToken,
   setNativeUserId
 } from "@/native/androidBridge";
+import { clearUserStorage } from "@/auth/userStorage";
 
 const TOKEN_KEY = "auth_token";
 const ACCOUNT_KEY = "auth_account";
@@ -15,6 +16,7 @@ const PROFILE_NAME_KEY_PREFIX = "moduflow:profile-name:v1:";
 const PROFILE_NAME_EDITED_KEY_PREFIX = "moduflow:profile-name-edited:v1:";
 const CURRENT_PROFILE_NAME_KEY = "moduflow:profile-name:current:v1";
 export const PROFILE_NAME_CHANGED_EVENT = "moduflow:profile-name-changed";
+export const AUTH_SESSION_CHANGED_EVENT = "moduflow:auth-session-changed";
 export const DEV_TEST_AUTH_TOKEN = "dev-test-token";
 
 function safeGet(storage, key = TOKEN_KEY) {
@@ -65,6 +67,30 @@ function clearStoredAuth() {
   safeRemove(localStorage, AUTH_PROVIDER_KEY);
   safeRemove(localStorage, AUTH_ROLES_KEY);
   safeRemove(localStorage, CURRENT_PROFILE_NAME_KEY);
+}
+
+function emitAuthSessionChanged(type) {
+  try {
+    window.dispatchEvent(
+      new CustomEvent(AUTH_SESSION_CHANGED_EVENT, {
+        detail: {
+          type,
+          identity: getStoredAuthIdentity(),
+          userId: getStoredAuthUserId()
+        }
+      })
+    );
+  } catch {
+    // ignore
+  }
+}
+
+function clearStoredUserData(userId, accountIdentity) {
+  try {
+    clearUserStorage(localStorage, { userId, accountIdentity });
+  } catch {
+    // ignore
+  }
 }
 
 function isLocalAuthExpired() {
@@ -262,6 +288,16 @@ export function getStoredAuthRoles() {
   return normalizeRoles(storedRoles, getJwtRoles());
 }
 
+export function getAuthSessionKey() {
+  const token = getAuthToken();
+  if (!token) return "anonymous";
+  return [
+    getStoredAuthUserId() || "",
+    getStoredAuthIdentity() || "",
+    token
+  ].join(":");
+}
+
 export function isAdminSession() {
   return getStoredAuthRoles().some((role) => {
     const normalized = String(role || "").trim().toUpperCase();
@@ -349,6 +385,18 @@ export function setAuthToken(
   roles = [],
   userId
 ) {
+  const previousIdentity = getStoredAuthIdentity();
+  const previousUserId = getStoredAuthUserId();
+  const nextIdentity = String(accountHint || "").trim().toLowerCase();
+  const nextUserId = normalizeUserId(userId) || getJwtUserId(token) || nextIdentity;
+
+  if (
+    previousIdentity &&
+    (previousIdentity !== nextIdentity || normalizeUserId(previousUserId) !== nextUserId)
+  ) {
+    clearStoredUserData(previousUserId, previousIdentity);
+  }
+  clearStoredUserData(nextUserId, nextIdentity);
   persistLocalAuth(token, accountHint, authProvider, roles, userId);
   setNativeAuthToken(token);
   setNativeUserId(getStoredAuthUserId() || "");
@@ -368,6 +416,7 @@ export function setAuthToken(
   safeRemove(sessionStorage, EXPIRES_AT_KEY);
   safeRemove(sessionStorage, AUTH_PROVIDER_KEY);
   safeRemove(sessionStorage, AUTH_ROLES_KEY);
+  emitAuthSessionChanged("login");
 }
 
 export function syncStoredAuthTokenToNative() {
@@ -379,6 +428,10 @@ export function syncStoredAuthTokenToNative() {
 }
 
 export function clearAuthToken() {
+  const identity = getStoredAuthIdentity();
+  const userId = getStoredAuthUserId();
+  clearStoredUserData(userId, identity);
   clearStoredAuth();
   clearNativeSession();
+  emitAuthSessionChanged("logout");
 }

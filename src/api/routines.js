@@ -211,12 +211,9 @@ export async function fetchRoutines() {
     };
   }
 
-  const userId = getStoredAuthUserId();
   const routineStorageKey = getRoutineStorageKey();
   const restDaysStorageKey = getRoutineRestDaysStorageKey();
-  const res = await apiClient.get("/api/v1/routines", {
-    params: userId ? { userId } : undefined
-  });
+  const res = await apiClient.get("/api/v1/routines");
   const data = res?.data;
   if (data && typeof data === "object") {
     const restDays = hasRestDays(data)
@@ -278,12 +275,9 @@ export async function saveRoutines(routinesByDay, restDays) {
     return payload;
   }
 
-  const userId = getStoredAuthUserId();
   const routineStorageKey = getRoutineStorageKey();
   const restDaysStorageKey = getRoutineRestDaysStorageKey();
-  const res = await apiClient.put("/api/v1/routines", payload, {
-    params: userId ? { userId } : undefined
-  });
+  const res = await apiClient.put("/api/v1/routines", payload);
   cacheRoutinesToStorageKey(routineStorageKey, routinesByDay);
   cacheRoutineRestDaysToStorageKey(
     restDaysStorageKey,

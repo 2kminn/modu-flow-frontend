@@ -1,13 +1,27 @@
 import { apiClient } from "@/api/client";
-import { isDevTestAuthToken } from "@/auth/auth";
+import {
+  getStoredAuthIdentity,
+  getStoredAuthUserId,
+  isDevTestAuthToken
+} from "@/auth/auth";
+import { getUserStorageKey } from "@/auth/userStorage";
 
 export const AUTO_ATTENDANCE_STORAGE_KEY = "moduflow:auto-attendance-enabled:v1";
+const AUTO_ATTENDANCE_STORAGE_KEY_PREFIX = `${AUTO_ATTENDANCE_STORAGE_KEY}:`;
 export const AUTO_ATTENDANCE_EVENT = "moduflow:auto-attendance";
+
+function getAutoAttendanceStorageKey() {
+  return getUserStorageKey(
+    AUTO_ATTENDANCE_STORAGE_KEY_PREFIX,
+    getStoredAuthUserId(),
+    getStoredAuthIdentity()
+  );
+}
 
 export function isAutoAttendanceEnabled() {
   if (typeof window === "undefined") return true;
   try {
-    const value = window.localStorage.getItem(AUTO_ATTENDANCE_STORAGE_KEY);
+    const value = window.localStorage.getItem(getAutoAttendanceStorageKey());
     return value == null ? true : value === "true";
   } catch {
     return true;
@@ -18,7 +32,7 @@ export function saveAutoAttendanceEnabled(enabled) {
   const next = Boolean(enabled);
   if (typeof window === "undefined") return next;
   try {
-    window.localStorage.setItem(AUTO_ATTENDANCE_STORAGE_KEY, String(next));
+    window.localStorage.setItem(getAutoAttendanceStorageKey(), String(next));
     window.dispatchEvent(new CustomEvent(AUTO_ATTENDANCE_EVENT, { detail: next }));
   } catch {
     // ignore

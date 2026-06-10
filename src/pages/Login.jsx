@@ -8,6 +8,7 @@ import {
   isAdminSession,
   setAuthToken
 } from "@/auth/auth";
+import { fetchMyProfile } from "@/api/profile";
 import { Eye, EyeOff, Lock, LogIn, Mail } from "lucide-react";
 import {
   getSocialLoginUrl,
@@ -77,9 +78,9 @@ export default function Login() {
       email: nextEmail,
       password: nextPassword
     });
-    setLoading(false);
 
     if (!result.ok) {
+      setLoading(false);
       setError(result.message || "로그인에 실패했어요.");
       return;
     }
@@ -87,6 +88,7 @@ export default function Login() {
     const requestedEmail = String(nextEmail || "").trim().toLowerCase();
     const responseEmail = String(result.email || "").trim().toLowerCase();
     if (responseEmail && responseEmail !== requestedEmail) {
+      setLoading(false);
       setError("계정 정보를 확인하지 못했어요. 다시 로그인해 주세요.");
       return;
     }
@@ -99,6 +101,12 @@ export default function Login() {
       result.roles,
       result.userId
     );
+    try {
+      await fetchMyProfile();
+    } catch {
+      // The login token is authoritative. Some accounts cannot access /me.
+    }
+    setLoading(false);
     navigate(isAdminSession() ? "/admin" : fromPath, { replace: true });
   }
 

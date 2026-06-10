@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import Card from "@/components/ui/Card";
 import { decodeJwtPayload, setAuthToken } from "@/auth/auth";
 import { SOCIAL_LOGIN_PROVIDER_KEY, SOCIAL_LOGIN_RETURN_TO_KEY } from "@/api/auth";
+import { fetchMyProfile } from "@/api/profile";
 
 function readParams(location) {
   const params = new URLSearchParams(location.search);
@@ -111,10 +112,25 @@ export default function OAuthCallback() {
       pickParam(params, ["role", "roles", "authority", "authorities"]) ||
       pickClaim(payload, ["role", "roles", "authority", "authorities"]);
 
-    setAuthToken(token, accountHint, "", authProvider, role ? [role] : [], userId);
-    const nextPath = safePath(params.get("redirect") || safeGetReturnTo());
-    safeClearReturnTo();
-    navigate(nextPath, { replace: true });
+    let cancelled = false;
+    async function completeLogin() {
+      setAuthToken(token, accountHint, "", authProvider, role ? [role] : [], userId);
+      try {
+        await fetchMyProfile();
+      } catch {
+        // The OAuth token is authoritative. Some accounts cannot access /me.
+      }
+
+      if (cancelled) return;
+      const nextPath = safePath(params.get("redirect") || safeGetReturnTo());
+      safeClearReturnTo();
+      navigate(nextPath, { replace: true });
+    }
+
+    completeLogin();
+    return () => {
+      cancelled = true;
+    };
   }, [navigate, params]);
 
   return (

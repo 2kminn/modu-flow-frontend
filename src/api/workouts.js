@@ -1,5 +1,10 @@
 import { apiClient } from "@/api/client";
-import { getAuthToken, getStoredAuthIdentity, isDevTestAuthToken } from "@/auth/auth";
+import {
+  getAuthToken,
+  getStoredAuthIdentity,
+  getStoredAuthUserId,
+  isDevTestAuthToken
+} from "@/auth/auth";
 import {
   validateDateRange,
   validateWorkoutCountDelta,
@@ -93,7 +98,9 @@ export function getWorkoutHistoryStorageKey() {
   const token = getAuthToken();
   if (!token) return GUEST_WORKOUT_HISTORY_STORAGE_KEY;
 
-  const identity = String(getStoredAuthIdentity() || getJwtIdentity(token) || "").trim();
+  const identity = String(
+    getStoredAuthUserId() || getStoredAuthIdentity() || getJwtIdentity(token) || ""
+  ).trim();
   if (identity) {
     return `${WORKOUT_HISTORY_STORAGE_KEY_PREFIX}user:${encodeURIComponent(identity)}`;
   }
@@ -104,6 +111,11 @@ export function getWorkoutHistoryStorageKey() {
 export function loadWorkoutHistoryFromLocalStorage() {
   if (typeof window === "undefined") return {};
   const storageKey = getWorkoutHistoryStorageKey();
+  return loadWorkoutHistoryFromStorageKey(storageKey);
+}
+
+function loadWorkoutHistoryFromStorageKey(storageKey) {
+  if (typeof window === "undefined") return {};
   const raw = window.localStorage.getItem(storageKey);
   const parsed = parseWorkoutHistory(raw);
   if (Object.keys(parsed).length) {
@@ -129,9 +141,8 @@ export function loadWorkoutHistoryFromLocalStorage() {
   return cleanedLegacy.history;
 }
 
-function writeWorkoutHistoryToLocalStorage(history) {
+function writeWorkoutHistoryToStorageKey(storageKey, history) {
   if (typeof window === "undefined") return;
-  const storageKey = getWorkoutHistoryStorageKey();
   window.localStorage.setItem(storageKey, JSON.stringify(history || {}));
   window.dispatchEvent(
     new CustomEvent(WORKOUT_HISTORY_EVENT, { detail: { history, storageKey } })
@@ -152,64 +163,70 @@ function isNetworkError(error) {
   return Boolean(error && !error.response);
 }
 
-function getLocalWorkoutsInRange(from, to) {
-  const history = loadWorkoutHistoryFromLocalStorage();
+function getLocalWorkoutsInRange(from, to, storageKey = getWorkoutHistoryStorageKey()) {
+  const history = loadWorkoutHistoryFromStorageKey(storageKey);
   return Object.entries(history)
     .filter(([date]) => date >= from && date <= to)
     .map(([date, items]) => ({ date, items: normalizeWorkoutItems(items) }));
 }
 
-function cacheWorkoutDay(date, items) {
+function cacheWorkoutDay(date, items, storageKey = getWorkoutHistoryStorageKey()) {
   if (typeof window === "undefined") return;
-  const history = loadWorkoutHistoryFromLocalStorage();
+  const history = loadWorkoutHistoryFromStorageKey(storageKey);
   const safeItems = normalizeWorkoutItems(items);
   if (safeItems.length) history[date] = safeItems;
   else delete history[date];
-  writeWorkoutHistoryToLocalStorage(history);
+  writeWorkoutHistoryToStorageKey(storageKey, history);
 }
 
-function cacheWorkoutList(workouts) {
+function cacheWorkoutList(workouts, storageKey = getWorkoutHistoryStorageKey()) {
   if (typeof window === "undefined" || !Array.isArray(workouts)) return;
-  const history = loadWorkoutHistoryFromLocalStorage();
+  const history = loadWorkoutHistoryFromStorageKey(storageKey);
   for (const workout of workouts) {
     const date = String(workout?.date || "");
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
     history[date] = normalizeWorkoutItems(workout?.items);
   }
-  writeWorkoutHistoryToLocalStorage(history);
+  writeWorkoutHistoryToStorageKey(storageKey, history);
 }
 
-function cacheWorkoutItemPatch(date, itemId, patch) {
+function cacheWorkoutItemPatch(
+  date,
+  itemId,
+  patch,
+  storageKey = getWorkoutHistoryStorageKey()
+) {
   if (typeof window === "undefined") return;
-  const history = loadWorkoutHistoryFromLocalStorage();
+  const history = loadWorkoutHistoryFromStorageKey(storageKey);
   const list = Array.isArray(history[date]) ? history[date] : [];
   history[date] = list.map((it) => (it?.id === itemId ? { ...it, ...patch } : it));
-  writeWorkoutHistoryToLocalStorage(history);
+  writeWorkoutHistoryToStorageKey(storageKey, history);
 }
 
-function cacheWorkoutItemDelete(date, itemId) {
+function cacheWorkoutItemDelete(date, itemId, storageKey = getWorkoutHistoryStorageKey()) {
   if (typeof window === "undefined") return;
-  const history = loadWorkoutHistoryFromLocalStorage();
+  const history = loadWorkoutHistoryFromStorageKey(storageKey);
   const list = Array.isArray(history[date]) ? history[date] : [];
   const filtered = list.filter((it) => it?.id !== itemId);
   if (filtered.length) history[date] = filtered;
   else delete history[date];
-  writeWorkoutHistoryToLocalStorage(history);
+  writeWorkoutHistoryToStorageKey(storageKey, history);
 }
 
 export async function fetchWorkouts({ from, to }) {
   const range = validateDateRange(from, to);
   if (!range.ok) throw validationError(range.message);
+  const storageKey = getWorkoutHistoryStorageKey();
   if (isDevTestAuthToken()) {
-    return getLocalWorkoutsInRange(from, to);
+    return getLocalWorkoutsInRange(from, to, storageKey);
   }
   try {
     const res = await apiClient.get("/api/v1/workouts", { params: { from, to } });
     const workouts = res?.data?.workouts ?? [];
-    cacheWorkoutList(workouts);
+    cacheWorkoutList(workouts, storageKey);
     return workouts;
   } catch (e) {
-    if (isNetworkError(e)) return getLocalWorkoutsInRange(from, to);
+    if (isNetworkError(e)) return getLocalWorkoutsInRange(from, to, storageKey);
     throw e;
   }
 }
@@ -223,17 +240,18 @@ export async function fetchWorkoutCounts({ from, to }) {
 
 export async function replaceWorkoutDay(date, items) {
   const safeItems = normalizeWorkoutItems(items);
+  const storageKey = getWorkoutHistoryStorageKey();
   if (isDevTestAuthToken()) {
-    cacheWorkoutDay(date, safeItems);
+    cacheWorkoutDay(date, safeItems, storageKey);
     return { ok: true, date, items: safeItems };
   }
   try {
     const res = await apiClient.put(`/api/v1/workouts/${date}`, { items: safeItems });
-    cacheWorkoutDay(date, safeItems);
+    cacheWorkoutDay(date, safeItems, storageKey);
     return res?.data;
   } catch (e) {
     if (!isNetworkError(e)) throw e;
-    cacheWorkoutDay(date, safeItems);
+    cacheWorkoutDay(date, safeItems, storageKey);
     return { ok: true, date, items: safeItems, localOnly: true };
   }
 }
@@ -241,13 +259,14 @@ export async function replaceWorkoutDay(date, items) {
 export async function updateWorkoutItem({ date, itemId, patch }) {
   const result = validateWorkoutItemDraft({ name: "patch", ...patch });
   if (!result.ok) throw validationError(result.message);
+  const storageKey = getWorkoutHistoryStorageKey();
   if (isDevTestAuthToken()) {
     cacheWorkoutItemPatch(date, itemId, {
       sets: result.item.sets,
       reps: result.item.reps,
       weight: result.item.weight,
       note: result.item.note
-    });
+    }, storageKey);
     return { ok: true };
   }
   try {
@@ -262,7 +281,7 @@ export async function updateWorkoutItem({ date, itemId, patch }) {
       reps: result.item.reps,
       weight: result.item.weight,
       note: result.item.note
-    });
+    }, storageKey);
     return res?.data;
   } catch (e) {
     if (!isNetworkError(e)) throw e;
@@ -271,23 +290,24 @@ export async function updateWorkoutItem({ date, itemId, patch }) {
       reps: result.item.reps,
       weight: result.item.weight,
       note: result.item.note
-    });
+    }, storageKey);
     return { ok: true, localOnly: true };
   }
 }
 
 export async function deleteWorkoutItem({ date, itemId }) {
+  const storageKey = getWorkoutHistoryStorageKey();
   if (isDevTestAuthToken()) {
-    cacheWorkoutItemDelete(date, itemId);
+    cacheWorkoutItemDelete(date, itemId, storageKey);
     return { ok: true };
   }
   try {
     const res = await apiClient.delete(`/api/v1/workouts/${date}/items/${itemId}`);
-    cacheWorkoutItemDelete(date, itemId);
+    cacheWorkoutItemDelete(date, itemId, storageKey);
     return res?.data;
   } catch (e) {
     if (!isNetworkError(e)) throw e;
-    cacheWorkoutItemDelete(date, itemId);
+    cacheWorkoutItemDelete(date, itemId, storageKey);
     return { ok: true, localOnly: true };
   }
 }

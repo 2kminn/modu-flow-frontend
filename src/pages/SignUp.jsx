@@ -4,6 +4,7 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import FloatingLabelInput from "@/components/ui/FloatingLabelInput";
 import { setAuthToken } from "@/auth/auth";
+import { fetchMyProfile } from "@/api/profile";
 import { Eye, EyeOff, Lock, Mail, User } from "lucide-react";
 import { signupWithEmail } from "@/api/auth";
 
@@ -60,6 +61,11 @@ export default function SignUp() {
       signupResult.roles,
       signupResult.userId
     );
+    try {
+      await fetchMyProfile();
+    } catch {
+      // The signup token is authoritative. Profile loading can retry in the app.
+    }
     setLoading(false);
     navigate("/", { replace: true });
   }
