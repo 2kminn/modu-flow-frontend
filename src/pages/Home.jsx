@@ -163,8 +163,10 @@ function markBeaconAttendanceDate(date, gymName = resolveGymName()) {
   }
 }
 
-async function hasAttendanceForDate(date, gymName) {
-  const data = await fetchAttendance({ gymName });
+const BACKGROUND_API_CONFIG = { suppressErrorToast: true };
+
+async function hasAttendanceForDate(date, gymName, config) {
+  const data = await fetchAttendance({ gymName }, config);
   return normalizeAttendanceRecords(data).some(
     (record) => {
       const checkInAt = new Date(record.checkInAt);
@@ -1093,7 +1095,7 @@ export default function Home() {
 
         if (locationPayload) {
           try {
-            await updateCurrentLocation(locationPayload);
+            await updateCurrentLocation(locationPayload, BACKGROUND_API_CONFIG);
             locationUpdated = true;
           } catch (locationError) {
           }
@@ -1109,14 +1111,22 @@ export default function Home() {
           try {
             let attendanceExists =
               locationUpdated &&
-              (await hasAttendanceForDate(attendanceDate, gymName));
+              (await hasAttendanceForDate(
+                attendanceDate,
+                gymName,
+                BACKGROUND_API_CONFIG
+              ));
 
             if (!attendanceExists) {
               try {
-                await checkInAttendance({ gymName });
+                await checkInAttendance({ gymName }, BACKGROUND_API_CONFIG);
                 attendanceExists = true;
               } catch (attendanceError) {
-                attendanceExists = await hasAttendanceForDate(attendanceDate, gymName);
+                attendanceExists = await hasAttendanceForDate(
+                  attendanceDate,
+                  gymName,
+                  BACKGROUND_API_CONFIG
+                );
                 if (!attendanceExists) throw attendanceError;
               }
             }
@@ -1129,12 +1139,9 @@ export default function Home() {
                 message: "비콘 신호가 확인되어 오늘 출석이 처리되었습니다."
               });
             }
-          } catch (attendanceError) {
-            if (active) {
-              setStartNotice(
-                getApiErrorMessage(attendanceError, "비콘 출석 처리에 실패했어요.")
-              );
-            }
+          } catch {
+            // Native beacon events are background signals, not user-submitted forms.
+            // Keep waiting for the next valid signal instead of showing validation errors.
           } finally {
             if (active) setCheckingInAttendance(false);
             if (attendanceRequestDateRef.current === attendanceDate) {

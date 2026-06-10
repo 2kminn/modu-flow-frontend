@@ -147,10 +147,14 @@ apiClient.interceptors.response.use(
       redirectToLogin();
     } else if (status === 403) {
       error.userMessage = message || "접근 권한이 없어요.";
-      emitApiError(error.userMessage);
+      if (!error?.config?.suppressErrorToast) {
+        emitApiError(error.userMessage);
+      }
     } else if (status === 422) {
       error.userMessage = message || "입력값을 확인해 주세요.";
-      emitApiError(error.userMessage);
+      if (!error?.config?.suppressErrorToast) {
+        emitApiError(error.userMessage);
+      }
     }
     return Promise.reject(error);
   }

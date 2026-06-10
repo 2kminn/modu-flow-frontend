@@ -134,15 +134,16 @@ export function normalizeAttendanceRecords(value) {
   return pickList(value).map(normalizeAttendanceRecord).filter(Boolean);
 }
 
-export async function checkInAttendance({ gymName }) {
-  const res = await apiClient.post("/api/v1/attendance", { gymName });
+export async function checkInAttendance({ gymName }, config) {
+  const res = await apiClient.post("/api/v1/attendance", { gymName }, config);
   return res?.data;
 }
 
-export async function fetchAttendance({ gymName } = {}) {
+export async function fetchAttendance({ gymName } = {}, config) {
   if (isDevTestAuthToken()) return { attendances: DEV_ATTENDANCE_RECORDS };
 
   const res = await apiClient.get("/api/v1/attendance", {
+    ...config,
     params: gymName ? { gymName } : undefined
   });
   return res?.data;
@@ -153,7 +154,7 @@ export async function checkOutAttendance(id) {
   return res?.data;
 }
 
-export async function updateCurrentLocation(payload = {}) {
+export async function updateCurrentLocation(payload = {}, config) {
   if (isDevTestAuthToken()) return { ok: true };
 
   const userId =
@@ -178,7 +179,7 @@ export async function updateCurrentLocation(payload = {}) {
     ...(zoneId == null ? {} : { zoneId })
   };
 
-  const res = await apiClient.post("/api/v1/update-location", body);
+  const res = await apiClient.post("/api/v1/update-location", body, config);
   return res?.data;
 }
 
