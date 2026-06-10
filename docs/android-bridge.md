@@ -90,6 +90,21 @@ Android에 전달합니다.
 Android.setAuthToken(accessToken)
 ```
 
+자동출석을 사용하려면 로그인 사용자와 Android 기기를 먼저 연결해야 합니다. 프론트는
+브리지에서 `ANDROID_ID`를 읽은 뒤 아래 API를 호출합니다.
+
+```http
+POST /api/v1/me/device
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{ "androidId": "<ANDROID_ID>" }
+```
+
+이후 `POST /api/v1/update-location` 응답의 `attendance.status`가 `CREATED` 또는
+`ALREADY_CHECKED_IN`이면 자동출석이 완료된 상태입니다. `DEVICE_NOT_REGISTERED`이면
+기기 등록 후 위치 업데이트를 다시 호출해야 합니다.
+
 ### 자세분석 Activity의 루틴 조회
 
 `PoseAnalysisActivity` 등 네이티브 화면에서 사용자 루틴을 조회할 때는 로그인 토큰을

@@ -77,3 +77,15 @@ export async function updateMyProfileName(name) {
     name: normalizedName
   };
 }
+
+export async function registerMyDevice(androidId, config) {
+  const normalizedAndroidId = String(androidId || "").trim();
+  if (!normalizedAndroidId || isDevTestAuthToken()) return null;
+
+  const res = await apiClient.post(
+    "/api/v1/me/device",
+    { androidId: normalizedAndroidId },
+    config
+  );
+  return res?.data;
+}

@@ -43,16 +43,24 @@ import {
   loadWorkoutHistoryFromLocalStorage,
   replaceWorkoutDay
 } from "@/api/workouts";
-import { fetchMyProfile, isCurrentAccountProfile } from "@/api/profile";
+import {
+  fetchMyProfile,
+  isCurrentAccountProfile,
+  registerMyDevice
+} from "@/api/profile";
 import {
   PROFILE_NAME_CHANGED_EVENT,
   getAuthProfileName,
   getStoredAuthIdentity,
+  getStoredAuthUserId,
   hasUserEditedProfileName,
   isSocialAuthSession,
   setStoredProfileName
 } from "@/auth/auth";
-import { startNativeWorkout } from "@/native/androidBridge";
+import {
+  getNativeDeviceId,
+  startNativeWorkout
+} from "@/native/androidBridge";
 
 const GYM_NAME_STORAGE_KEY = "moduflow:gym-name:v1";
 const BEACON_ATTENDANCE_STORAGE_PREFIX = "moduflow:beacon-attendance:v1";
@@ -82,6 +90,10 @@ const BEACON_CONGESTION_SLOTS = [
   { id: "beacon-slot-2", title: "비콘 ID 없음" },
   { id: "beacon-slot-3", title: "비콘 ID 없음" }
 ];
+const AUTO_ATTENDANCE_SUCCESS_STATUSES = new Set([
+  "CREATED",
+  "ALREADY_CHECKED_IN"
+]);
 
 function dayKeyFromDate(date) {
   const map = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
@@ -648,25 +660,26 @@ function formatCongestionUpdatedAt(value) {
   }).format(date);
 }
 
-function getNativeLocationPayload(detail) {
+function getNativeLocationPayload(detail, fallbackUserId = "") {
   if (!detail || typeof detail !== "object") return null;
-  const userId =
-    detail.userId ??
-    detail.user_id ??
+  const userId = [
     detail.androidId ??
-    detail.android_id ??
-    detail.deviceId ??
-    detail.device_id;
-  const zoneId =
+      detail.android_id,
+    detail.deviceId ?? detail.device_id,
+    fallbackUserId,
+    detail.userId ?? detail.user_id
+  ].find((value) => String(value ?? "").trim() !== "");
+  const zoneId = [
     detail.zoneId ??
-    detail.zone_id ??
-    detail.beaconId ??
-    detail.beacon_id ??
-    detail.minor ??
-    detail.beaconMinor ??
-    detail.zoneCode ??
-    detail.zone_code;
-  if (userId == null || zoneId == null) return null;
+      detail.zone_id,
+    detail.beaconId ?? detail.beacon_id,
+    detail.minor,
+    detail.beaconMinor,
+    detail.zoneCode ?? detail.zone_code
+  ].find((value) => String(value ?? "").trim() !== "");
+  if (String(userId ?? "").trim() === "" || String(zoneId ?? "").trim() === "") {
+    return null;
+  }
 
   return {
     ...detail,
@@ -674,6 +687,14 @@ function getNativeLocationPayload(detail) {
     zoneId,
     gymName: resolveGymName(detail)
   };
+}
+
+function getAutoAttendanceStatus(locationResult) {
+  const root =
+    locationResult?.data && typeof locationResult.data === "object"
+      ? locationResult.data
+      : locationResult;
+  return String(root?.attendance?.status ?? "").trim().toUpperCase();
 }
 
 function hasNativeBeaconSignal(detail) {
@@ -843,6 +864,14 @@ export default function Home() {
     normalizeRoutinesByDay(loadRoutinesFromLocalStorage())
   );
   const [restDays, setRestDays] = useState(() => loadRoutineRestDaysFromLocalStorage());
+  const registerNativeAttendanceDevice = useCallback(async () => {
+    const androidId = getNativeDeviceId();
+    if (!androidId || androidId === String(getStoredAuthUserId() || "").trim()) {
+      return "";
+    }
+    await registerMyDevice(androidId, BACKGROUND_API_CONFIG);
+    return androidId;
+  }, []);
   const isAttendanceCompletedToday = beaconAttendanceDate === todayDate;
   const attendance = {
     status: isAttendanceCompletedToday
@@ -987,6 +1016,11 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (!autoAttendanceEnabled) return;
+    registerNativeAttendanceDevice().catch(() => {});
+  }, [autoAttendanceEnabled, registerNativeAttendanceDevice]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return undefined;
     let active = true;
 
@@ -1068,7 +1102,13 @@ export default function Home() {
         });
       }
 
-      const locationPayload = getNativeLocationPayload(detail);
+      const bridgeDeviceId = getNativeDeviceId();
+      const nativeDeviceId =
+        bridgeDeviceId &&
+        bridgeDeviceId !== String(getStoredAuthUserId() || "").trim()
+          ? bridgeDeviceId
+          : "";
+      const locationPayload = getNativeLocationPayload(detail, nativeDeviceId);
       const shouldCheckIn =
         isNativeAttendanceEvent(detail) || hasNativeBeaconSignal(detail);
       if (!shouldCheckIn) return;
@@ -1091,33 +1131,50 @@ export default function Home() {
       try {
         const attendanceDate = formatDate(new Date());
         const gymName = resolveGymName(locationPayload ?? detail);
-        let locationUpdated = false;
-
-        if (locationPayload) {
-          try {
-            await updateCurrentLocation(locationPayload, BACKGROUND_API_CONFIG);
-            locationUpdated = true;
-          } catch (locationError) {
-          }
-        }
-
-        if (
+        const shouldAttemptAttendance =
           autoAttendanceEnabled &&
           readBeaconAttendanceDate(gymName) !== attendanceDate &&
-          attendanceRequestDateRef.current !== attendanceDate
-        ) {
+          attendanceRequestDateRef.current !== attendanceDate;
+        let locationResult = null;
+
+        if (shouldAttemptAttendance) {
           attendanceRequestDateRef.current = attendanceDate;
           setCheckingInAttendance(true);
-          try {
-            let attendanceExists =
-              locationUpdated &&
-              (await hasAttendanceForDate(
+        }
+
+        try {
+          if (locationPayload) {
+            locationResult = await updateCurrentLocation(
+              locationPayload,
+              BACKGROUND_API_CONFIG
+            );
+
+            if (
+              getAutoAttendanceStatus(locationResult) === "DEVICE_NOT_REGISTERED" &&
+              nativeDeviceId
+            ) {
+              await registerNativeAttendanceDevice();
+              locationResult = await updateCurrentLocation(
+                locationPayload,
+                BACKGROUND_API_CONFIG
+              );
+            }
+          }
+
+          if (shouldAttemptAttendance) {
+            let attendanceExists = AUTO_ATTENDANCE_SUCCESS_STATUSES.has(
+              getAutoAttendanceStatus(locationResult)
+            );
+
+            if (!attendanceExists && locationPayload) {
+              attendanceExists = await hasAttendanceForDate(
                 attendanceDate,
                 gymName,
                 BACKGROUND_API_CONFIG
-              ));
+              );
+            }
 
-            if (!attendanceExists) {
+            if (!attendanceExists && !locationPayload) {
               try {
                 await checkInAttendance({ gymName }, BACKGROUND_API_CONFIG);
                 attendanceExists = true;
@@ -1131,22 +1188,26 @@ export default function Home() {
               }
             }
 
-            markBeaconAttendanceDate(attendanceDate, gymName);
-            if (active) {
-              setBeaconAttendanceDate(attendanceDate);
-              setAttendanceToast({
-                title: "출석 완료",
-                message: "비콘 신호가 확인되어 오늘 출석이 처리되었습니다."
-              });
+            if (attendanceExists) {
+              markBeaconAttendanceDate(attendanceDate, gymName);
+              if (active) {
+                setBeaconAttendanceDate(attendanceDate);
+                setAttendanceToast({
+                  title: "출석 완료",
+                  message: "비콘 신호가 확인되어 오늘 출석이 처리되었습니다."
+                });
+              }
             }
-          } catch {
-            // Native beacon events are background signals, not user-submitted forms.
-            // Keep waiting for the next valid signal instead of showing validation errors.
-          } finally {
-            if (active) setCheckingInAttendance(false);
-            if (attendanceRequestDateRef.current === attendanceDate) {
-              attendanceRequestDateRef.current = null;
-            }
+          }
+        } catch {
+          // Background beacon failures keep waiting for the next signal.
+        } finally {
+          if (shouldAttemptAttendance && active) setCheckingInAttendance(false);
+          if (
+            shouldAttemptAttendance &&
+            attendanceRequestDateRef.current === attendanceDate
+          ) {
+            attendanceRequestDateRef.current = null;
           }
         }
 
@@ -1183,7 +1244,11 @@ export default function Home() {
       active = false;
       window.removeEventListener("moduflow:native-event", handleNativeEvent);
     };
-  }, [autoAttendanceEnabled, beaconZones]);
+  }, [
+    autoAttendanceEnabled,
+    beaconZones,
+    registerNativeAttendanceDevice
+  ]);
 
   useEffect(() => {
     if (!startNotice) return;
