@@ -298,19 +298,6 @@ function formatDateTime(value) {
   }).format(date);
 }
 
-function formatDate(value) {
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function dateKeyFromRecord(record) {
-  return formatDate(record?.checkInAt || record?.createdAt || record?.date);
-}
-
 function getRecordStatus(record) {
   const status = String(record?.status || (record?.checkOutAt ? "퇴실" : "출석"))
     .trim()
@@ -336,36 +323,10 @@ function getRecordStatusTone(record) {
   return "bg-emerald-500/10 text-[color:var(--c-success)]";
 }
 
-function isWithinPreset(dateKey, preset) {
-  if (!dateKey || preset === "all") return true;
-
-  const today = new Date();
-  const target = new Date(`${dateKey}T00:00:00`);
-  if (Number.isNaN(target.getTime())) return false;
-
-  if (preset === "today") return dateKey === formatDate(today);
-
-  if (preset === "week") {
-    const start = new Date(today);
-    start.setHours(0, 0, 0, 0);
-    start.setDate(today.getDate() - today.getDay());
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6);
-    end.setHours(23, 59, 59, 999);
-    return target >= start && target <= end;
-  }
-
-  if (preset === "month") {
-    return target.getFullYear() === today.getFullYear() && target.getMonth() === today.getMonth();
-  }
-
-  return true;
-}
-
-const attendanceDatePresets = [
-  { id: "today", label: "오늘" },
-  { id: "week", label: "이번 주" },
-  { id: "month", label: "이번 달" }
+const attendanceStatusFilters = [
+  { id: "all", label: "전체" },
+  { id: "출석", label: "출석" },
+  { id: "미출석", label: "미출석" }
 ];
 
 function Sidebar({ open, activeSection, onSelect, onClose }) {
@@ -465,7 +426,6 @@ function AdminCMS() {
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [attendanceFilters, setAttendanceFilters] = useState({
     query: "",
-    datePreset: "today",
     status: "all"
   });
   const [loadingAttendance, setLoadingAttendance] = useState(false);
@@ -500,11 +460,10 @@ function AdminCMS() {
   const filteredAttendanceRecords = useMemo(() => {
     const query = attendanceFilters.query.trim().toLowerCase();
     return attendanceRecords.filter((record) => {
-      const dateKey = dateKeyFromRecord(record);
-      if (!isWithinPreset(dateKey, attendanceFilters.datePreset)) return false;
-
       const status = getRecordStatus(record);
-      if (attendanceFilters.status !== "all" && status !== attendanceFilters.status) return false;
+      if (attendanceFilters.status !== "all" && status !== attendanceFilters.status) {
+        return false;
+      }
 
       if (!query) return true;
       const searchable = [
@@ -1063,55 +1022,24 @@ function AdminCMS() {
                   </label>
 
                   <div className="flex flex-wrap gap-2">
-                    {attendanceDatePresets.map((preset) => (
+                    {attendanceStatusFilters.map((filter) => (
                       <button
                         type="button"
-                        key={preset.id}
+                        key={filter.id}
                         className={[
                           "h-12 rounded-2xl border px-4 text-sm font-extrabold transition",
-                          attendanceFilters.datePreset === preset.id
+                          attendanceFilters.status === filter.id
                             ? "border-transparent bg-[color:var(--c-primary)] text-white shadow-sm"
                             : "border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-[color:var(--c-muted)] hover:bg-[color:var(--c-surface-2)] hover:text-[color:var(--c-text)]"
                         ].join(" ")}
                         onClick={() =>
-                          setAttendanceFilters((prev) => ({ ...prev, datePreset: preset.id }))
+                          setAttendanceFilters((prev) => ({ ...prev, status: filter.id }))
                         }
                       >
-                        {preset.label}
+                        {filter.label}
                       </button>
                     ))}
                   </div>
-                </div>
-
-                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                  <label className="min-w-0 flex-1">
-                    <span className="sr-only">출결 상태 필터</span>
-                    <select
-                      className="h-12 w-full rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-sm font-extrabold text-[color:var(--c-text)] outline-none transition focus:border-[color:var(--c-primary)] focus:ring-2 focus:ring-[color:var(--c-focus-ring)]"
-                      value={attendanceFilters.status}
-                      onChange={(e) =>
-                        setAttendanceFilters((prev) => ({ ...prev, status: e.target.value }))
-                      }
-                    >
-                      <option value="all">전체</option>
-                      <option value="출석">출석</option>
-                      <option value="미출석">미출석</option>
-                    </select>
-                  </label>
-
-                  <button
-                    type="button"
-                    className="h-12 rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] px-4 text-sm font-extrabold text-[color:var(--c-muted)] transition hover:bg-[color:var(--c-surface-2)] hover:text-[color:var(--c-text)]"
-                    onClick={() =>
-                      setAttendanceFilters({
-                        query: "",
-                        datePreset: "today",
-                        status: "all"
-                      })
-                    }
-                  >
-                    초기화
-                  </button>
                 </div>
 
                 <div className="mt-5 overflow-x-auto">
