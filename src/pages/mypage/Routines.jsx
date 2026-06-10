@@ -1,4 +1,5 @@
 import Button from "@/components/ui/Button";
+import ActionDialog from "@/components/ui/ActionDialog";
 import Card from "@/components/ui/Card";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BedDouble, Check, Dumbbell, Pencil, Plus, Trash2, X } from "lucide-react";
@@ -124,47 +125,6 @@ function IconButton({ label, onClick, children, tone = "default" }) {
   );
 }
 
-function ResetRoutineConfirmDialog({ dayLabel, onCancel, onConfirm }) {
-  return (
-    <div
-      className="fixed -top-24 bottom-[calc(72px+env(safe-area-inset-bottom))] inset-x-0 z-50 flex items-center justify-center bg-black/45 px-4 pt-24"
-      role="presentation"
-      onClick={onCancel}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="reset-routine-dialog-title"
-        aria-describedby="reset-routine-dialog-description"
-        className="w-full max-w-sm rounded-3xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] p-5 shadow-xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <h2
-          id="reset-routine-dialog-title"
-          className="text-lg font-extrabold text-[color:var(--c-text)]"
-        >
-          {dayLabel}요일 루틴을 초기화할까요?
-        </h2>
-        <p
-          id="reset-routine-dialog-description"
-          className="mt-2 text-sm font-semibold leading-6 text-[color:var(--c-muted)]"
-        >
-          선택한 요일의 루틴이 모두 삭제됩니다.
-        </p>
-
-        <div className="mt-5 grid grid-cols-2 gap-2">
-          <Button type="button" variant="secondary" onClick={onCancel}>
-            취소
-          </Button>
-          <Button type="button" onClick={onConfirm}>
-            초기화
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function Routines() {
   const todayKey = useMemo(() => dayKeyFromDate(new Date()), []);
   const [selectedDay, setSelectedDay] = useState(todayKey);
@@ -177,6 +137,7 @@ export default function Routines() {
   const [draft, setDraft] = useState(null);
   const [draftError, setDraftError] = useState("");
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
   const [restDays, setRestDays] = useState(() => loadRoutineRestDaysFromLocalStorage());
   const didHydrateFromServerRef = useRef(false);
   const skipNextAutosaveRef = useRef(false);
@@ -300,10 +261,6 @@ export default function Routines() {
   }
 
   function deleteItem(id) {
-    if (typeof window !== "undefined") {
-      const ok = window.confirm("정말 삭제할까요?");
-      if (!ok) return;
-    }
     setRoutinesByDay((prev) => {
       const next = { ...(prev || {}) };
       const list = Array.isArray(next[selectedDay]) ? next[selectedDay] : [];
@@ -340,13 +297,15 @@ export default function Routines() {
       return;
     }
 
-    if (routineForSelectedDay.length && typeof window !== "undefined") {
-      const ok = window.confirm(
-        `${selectedDayLabel}요일을 쉬는 날로 설정하면 기존 루틴이 비워집니다. 계속할까요?`
-      );
-      if (!ok) return;
+    if (routineForSelectedDay.length) {
+      setPendingAction({ type: "rest-day" });
+      return;
     }
 
+    applyRestDay();
+  }
+
+  function applyRestDay() {
     setRestDays((prev) => [...new Set([...(prev || []), selectedDay])]);
     setRoutinesByDay((prev) => {
       const next = { ...(prev || {}) };
@@ -354,6 +313,7 @@ export default function Routines() {
       return next;
     });
     finishEdit();
+    setPendingAction(null);
   }
 
   function resetSelectedDay() {
@@ -585,7 +545,7 @@ export default function Routines() {
                           <IconButton
                             label="삭제"
                             tone="danger"
-                            onClick={() => deleteItem(it.id)}
+                            onClick={() => setPendingAction({ type: "delete", id: it.id })}
                           >
                             <Trash2 size={18} aria-hidden="true" />
                           </IconButton>
@@ -624,13 +584,36 @@ export default function Routines() {
         </div>
       </Card>
 
-      {isResetDialogOpen ? (
-        <ResetRoutineConfirmDialog
-          dayLabel={selectedDayLabel}
-          onCancel={() => setIsResetDialogOpen(false)}
-          onConfirm={resetSelectedDay}
-        />
-      ) : null}
+      <ActionDialog
+        open={isResetDialogOpen}
+        tone="danger"
+        title={`${selectedDayLabel}요일 루틴을 초기화할까요?`}
+        description="선택한 요일의 루틴이 모두 삭제됩니다."
+        confirmLabel="초기화"
+        onCancel={() => setIsResetDialogOpen(false)}
+        onConfirm={resetSelectedDay}
+      />
+
+      <ActionDialog
+        open={Boolean(pendingAction)}
+        tone="danger"
+        title={pendingAction?.type === "delete" ? "루틴을 삭제할까요?" : "쉬는 날로 설정할까요?"}
+        description={
+          pendingAction?.type === "delete"
+            ? "선택한 운동이 루틴에서 삭제됩니다."
+            : `${selectedDayLabel}요일의 기존 루틴이 모두 삭제됩니다.`
+        }
+        confirmLabel={pendingAction?.type === "delete" ? "삭제" : "설정"}
+        onCancel={() => setPendingAction(null)}
+        onConfirm={() => {
+          if (pendingAction?.type === "delete") {
+            deleteItem(pendingAction.id);
+            setPendingAction(null);
+          } else {
+            applyRestDay();
+          }
+        }}
+      />
     </section>
   );
 }

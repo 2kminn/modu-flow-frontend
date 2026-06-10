@@ -1,4 +1,5 @@
 import Button from "@/components/ui/Button";
+import ActionDialog from "@/components/ui/ActionDialog";
 import Card from "@/components/ui/Card";
 import { useEffect, useMemo, useState } from "react";
 import { CalendarCheck, ChevronLeft, ChevronRight, Dumbbell, ListChecks } from "lucide-react";
@@ -245,6 +246,7 @@ function WorkoutListModal({
     weight: ""
   });
   const [addError, setAddError] = useState("");
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
   useEffect(() => {
     if (!open) return;
@@ -254,6 +256,7 @@ function WorkoutListModal({
     setAddMode("choice");
     setAddDraft({ name: "", sets: "", reps: "", weight: "" });
     setAddError("");
+    setPendingDeleteId(null);
   }, [open]);
 
   useEffect(() => {
@@ -424,14 +427,7 @@ function WorkoutListModal({
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
-                            const ok =
-                              typeof window === "undefined"
-                                ? true
-                                : window.confirm("정말 삭제할까요?");
-                            if (!ok) return;
-                            onDeleteItem?.(it.id);
-                          }}
+                          onClick={() => setPendingDeleteId(it.id)}
                           className="h-10 rounded-2xl border border-red-500/25 bg-red-500/10 px-3 text-xs font-extrabold text-red-600 transition hover:bg-red-500/15 active:scale-[0.98] dark:text-red-300"
                         >
                           삭제
@@ -585,6 +581,19 @@ function WorkoutListModal({
           </Button>
         </div>
       </div>
+
+      <ActionDialog
+        open={Boolean(pendingDeleteId)}
+        tone="danger"
+        title="운동 기록을 삭제할까요?"
+        description="선택한 운동 기록은 삭제 후 복구할 수 없습니다."
+        confirmLabel="삭제"
+        onCancel={() => setPendingDeleteId(null)}
+        onConfirm={() => {
+          onDeleteItem?.(pendingDeleteId);
+          setPendingDeleteId(null);
+        }}
+      />
     </div>
   );
 }
@@ -605,6 +614,7 @@ export default function Stats() {
   const [activeTab, setActiveTab] = useState("attendance");
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [attendanceError, setAttendanceError] = useState("");
+  const [dialogMessage, setDialogMessage] = useState("");
 
   const [recordsByDate, setRecordsByDate] = useState(() => {
     return normalizeRecordsByDate(loadWorkoutHistoryFromLocalStorage());
@@ -859,7 +869,7 @@ export default function Stats() {
       });
     } catch (e) {
       console.warn("[stats workout item] update failed:", e);
-      window.alert(getApiErrorMessage(e, "운동 기록 수정에 실패했어요."));
+      setDialogMessage(getApiErrorMessage(e, "운동 기록 수정에 실패했어요."));
     }
   }
 
@@ -877,7 +887,7 @@ export default function Stats() {
       });
     } catch (e) {
       console.warn("[stats workout item] delete failed:", e);
-      window.alert(getApiErrorMessage(e, "운동 기록 삭제에 실패했어요."));
+      setDialogMessage(getApiErrorMessage(e, "운동 기록 삭제에 실패했어요."));
     }
   }
 
@@ -897,7 +907,7 @@ export default function Stats() {
       }));
     } catch (e) {
       console.warn("[stats workout item] add failed:", e);
-      window.alert(getApiErrorMessage(e, "운동 기록 추가에 실패했어요."));
+      setDialogMessage(getApiErrorMessage(e, "운동 기록 추가에 실패했어요."));
     } finally {
       setSavingAdd(false);
     }
@@ -1189,6 +1199,14 @@ export default function Stats() {
         onAddItems={handleAddItems}
         onUpdateItem={handleUpdateItem}
         onDeleteItem={handleDeleteItem}
+      />
+
+      <ActionDialog
+        open={Boolean(dialogMessage)}
+        title="요청을 처리하지 못했어요"
+        description={dialogMessage}
+        confirmLabel="확인"
+        onConfirm={() => setDialogMessage("")}
       />
     </>
   );

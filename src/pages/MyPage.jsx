@@ -1,4 +1,5 @@
 import Button from "@/components/ui/Button";
+import ActionDialog from "@/components/ui/ActionDialog";
 import Card from "@/components/ui/Card";
 import FloatingLabelInput from "@/components/ui/FloatingLabelInput";
 import { getApiErrorMessage } from "@/api/client";
@@ -52,47 +53,6 @@ function MenuRow({ label, description, onClick, icon: Icon }) {
         <ChevronRight size={20} aria-hidden="true" />
       </span>
     </button>
-  );
-}
-
-function LogoutConfirmDialog({ onCancel, onConfirm }) {
-  return (
-    <div
-      className="fixed -top-24 bottom-[calc(72px+env(safe-area-inset-bottom))] inset-x-0 z-50 flex items-center justify-center bg-black/45 px-4 pt-24"
-      role="presentation"
-      onClick={onCancel}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="logout-dialog-title"
-        aria-describedby="logout-dialog-description"
-        className="w-full max-w-sm rounded-3xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] p-5 shadow-xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <h2
-          id="logout-dialog-title"
-          className="text-lg font-extrabold text-[color:var(--c-text)]"
-        >
-          로그아웃하시겠어요?
-        </h2>
-        <p
-          id="logout-dialog-description"
-          className="mt-2 text-sm font-semibold leading-6 text-[color:var(--c-muted)]"
-        >
-          현재 계정에서 로그아웃하고 로그인 화면으로 이동합니다.
-        </p>
-
-        <div className="mt-5 grid grid-cols-2 gap-2">
-          <Button type="button" variant="secondary" onClick={onCancel}>
-            취소
-          </Button>
-          <Button type="button" onClick={onConfirm}>
-            로그아웃
-          </Button>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -313,12 +273,15 @@ export default function MyPage() {
         </div>
       </Card>
 
-      {isLogoutDialogOpen ? (
-        <LogoutConfirmDialog
-          onCancel={() => setIsLogoutDialogOpen(false)}
-          onConfirm={handleLogout}
-        />
-      ) : null}
+      <ActionDialog
+        open={isLogoutDialogOpen}
+        tone="logout"
+        title="로그아웃하시겠어요?"
+        description="현재 계정에서 로그아웃하고 로그인 화면으로 이동합니다."
+        confirmLabel="로그아웃"
+        onCancel={() => setIsLogoutDialogOpen(false)}
+        onConfirm={handleLogout}
+      />
 
       {isProfileDialogOpen ? (
         <ProfileNameDialog
