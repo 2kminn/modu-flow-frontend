@@ -698,17 +698,22 @@ function AdminCMS() {
   async function deleteBeaconZone(zoneId) {
     if (deletingZone) return;
     setDeletingZone(true);
+    setDeleteZoneId(null);
+    setBeaconZones((zones) => {
+      const next = zones.filter((zone) => zone.id !== zoneId);
+      saveBeaconZonesToLocalStorage(next);
+      return next;
+    });
     try {
       await deleteBeaconZoneById(zoneId);
-      setBeaconZones((zones) => {
-        const next = zones.filter((zone) => zone.id !== zoneId);
-        saveBeaconZonesToLocalStorage(next);
-        return next;
-      });
-      setDeleteZoneId(null);
       setZoneMessage("비콘 구역이 삭제되었습니다.");
     } catch (err) {
-      setZoneMessage(getApiErrorMessage(err, "비콘 구역 API 삭제에 실패했어요."));
+      const status = err?.response?.status;
+      setZoneMessage(
+        status === 404
+          ? "로컬에만 저장된 비콘 구역을 삭제했습니다."
+          : `${getApiErrorMessage(err, "비콘 구역 API 삭제에 실패했어요.")} 화면에서는 삭제했습니다.`
+      );
     } finally {
       setDeletingZone(false);
     }
