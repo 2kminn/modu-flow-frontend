@@ -5,11 +5,10 @@ import Button from "@/components/ui/Button";
 import FloatingLabelInput from "@/components/ui/FloatingLabelInput";
 import {
   clearAuthToken,
-  DEV_TEST_AUTH_TOKEN,
   isAdminSession,
   setAuthToken
 } from "@/auth/auth";
-import { Eye, EyeOff, Lock, LogIn, Mail, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, Lock, LogIn, Mail } from "lucide-react";
 import {
   getSocialLoginUrl,
   loginWithEmail,
@@ -44,11 +43,9 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [debugInfo, setDebugInfo] = useState(null);
 
   function onSocialLogin(provider) {
     setError(null);
-    setDebugInfo(null);
     const result = getSocialLoginUrl(provider);
 
     if (!result.ok) {
@@ -69,7 +66,6 @@ export default function Login() {
 
   async function runLogin(nextEmail, nextPassword) {
     setError(null);
-    setDebugInfo(null);
 
     if (!String(nextEmail || "").trim() || !nextPassword) {
       setError("이메일과 비밀번호를 입력해 주세요.");
@@ -84,17 +80,14 @@ export default function Login() {
     setLoading(false);
 
     if (!result.ok) {
-      const suffix = result.httpStatus ? ` (HTTP ${result.httpStatus})` : "";
-      setError(`${result.message || "로그인에 실패했어요."}${suffix}`);
-      setDebugInfo(result.debug || null);
+      setError(result.message || "로그인에 실패했어요.");
       return;
     }
 
     const requestedEmail = String(nextEmail || "").trim().toLowerCase();
     const responseEmail = String(result.email || "").trim().toLowerCase();
     if (responseEmail && responseEmail !== requestedEmail) {
-      setError("로그인 응답의 계정 정보가 일치하지 않아요. 다시 로그인해 주세요.");
-      setDebugInfo(result.debug || null);
+      setError("계정 정보를 확인하지 못했어요. 다시 로그인해 주세요.");
       return;
     }
 
@@ -168,12 +161,6 @@ export default function Login() {
           </p>
         ) : null}
 
-        {import.meta.env.DEV && debugInfo?.response ? (
-          <pre className="max-h-48 overflow-auto rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] p-3 text-[11px] font-semibold text-[color:var(--c-muted-2)]">
-            {JSON.stringify(debugInfo.response, null, 2)}
-          </pre>
-        ) : null}
-
         <div className="text-center text-sm">
           <Link className="font-semibold text-[color:var(--c-primary)] underline decoration-[color:var(--c-border-strong)] underline-offset-4 hover:text-[color:var(--c-purple)]" to="/forgot-password">
             비밀번호 찾기
@@ -184,37 +171,6 @@ export default function Login() {
           <LogIn size={18} aria-hidden="true" />
           {loading ? "로그인 중..." : "로그인"}
         </Button>
-
-        {import.meta.env.DEV ? (
-          <>
-            <Button
-              type="button"
-              variant="secondary"
-              className="gap-2"
-              onClick={() => {
-                setAuthToken(DEV_TEST_AUTH_TOKEN, "cms-test", "", "email", ["ROLE_ADMIN"]);
-                navigate("/admin", { replace: true });
-              }}
-            >
-              <ShieldCheck size={18} aria-hidden="true" />
-              CMS 테스트 로그인
-            </Button>
-
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={loading}
-              onClick={() => {
-                // DEV convenience: bypass backend auth and just set a dummy token.
-                // This is only for local/testing flows.
-                setAuthToken(DEV_TEST_AUTH_TOKEN, "dev-test");
-                navigate(fromPath, { replace: true });
-              }}
-            >
-              테스트 로그인
-            </Button>
-          </>
-        ) : null}
 
         <div className="pt-2">
           <div className="flex items-center gap-3">

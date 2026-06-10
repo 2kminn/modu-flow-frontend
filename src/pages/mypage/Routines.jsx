@@ -161,7 +161,6 @@ export default function Routines() {
         didHydrateFromServerRef.current = true;
       } catch (e) {
         // Fallback to localStorage only; no UI changes.
-        console.warn("[routines] fetch failed:", e);
         didHydrateFromServerRef.current = true;
       }
     }
@@ -182,7 +181,6 @@ export default function Routines() {
       try {
         await saveRoutines(sanitizeRoutinesByDay(routinesByDay), restDays);
       } catch (e) {
-        console.warn("[routines] save failed:", e);
       }
     }, 900);
     return () => window.clearTimeout(t);

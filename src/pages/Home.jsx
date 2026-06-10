@@ -531,12 +531,8 @@ function createNativeBeaconSignalSlots(payload, status = "signal-api-error", bea
   return slots;
 }
 
-function getDetailedApiErrorMessage(error, fallback = "API 응답 실패") {
-  const status = error?.response?.status;
-  const message = getApiErrorMessage(error, fallback);
-  if (status) return `API 실패 ${status}: ${message}`;
-  if (error?.code) return `API 실패 ${error.code}`;
-  return message || fallback;
+function getDetailedApiErrorMessage(error, fallback = "정보를 불러오지 못했어요.") {
+  return getApiErrorMessage(error, fallback);
 }
 
 function getCongestionEntries(value) {
@@ -585,9 +581,6 @@ function normalizeHomeCongestion(data, beaconZones = []) {
     const nested = root.data ?? root.result ?? root.payload;
     if (!nested || typeof nested !== "object") break;
     root = nested;
-  }
-  if (import.meta.env.DEV) {
-    console.log("[home congestion] raw response:", data);
   }
   const cardio = findZoneCongestion(root, ["cardio", "aerobic", "유산소"]);
   const weight = findZoneCongestion(root, ["weight", "weights", "free-weight", "웨이트", "근력"]);
@@ -764,9 +757,9 @@ function CongestionPill({ level, title, current, rate, loading, status }) {
   const ui = map[level] ?? map.low;
   const statusLabel =
     status === "error"
-      ? "API 응답 실패"
+      ? "확인할 수 없음"
       : status === "signal-api-error"
-        ? "신호 수신/API 실패"
+        ? "연결 확인 필요"
         : status === "signal-received"
           ? "신호 수신"
           : status === "no-signal"
@@ -894,7 +887,6 @@ export default function Home() {
         setStoredProfileName(profile.name);
         setUserName(profile.name);
       } catch (e) {
-        console.warn("[home profile] fetch failed:", e);
         if (active) setUserName(getAuthProfileName());
       }
     }
@@ -925,7 +917,6 @@ export default function Home() {
           setRestDays(serverData.restDays);
         }
       } catch (e) {
-        console.warn("[home routines] fetch failed:", e);
       }
     }
     function syncRestDays() {
@@ -970,7 +961,6 @@ export default function Home() {
         if (!active) return;
         if (zones.length) setBeaconZones(zones);
       } catch (e) {
-        console.warn("[home beacon zones] fetch failed:", e);
         if (active) setBeaconZones(loadBeaconZonesFromLocalStorage());
       }
     }
@@ -1003,7 +993,6 @@ export default function Home() {
         const enabled = await fetchAutoAttendanceEnabled();
         if (active) setAutoAttendanceEnabled(saveAutoAttendanceEnabled(enabled));
       } catch (e) {
-        console.warn("[home auto attendance] fetch failed:", e);
       }
     }
 
@@ -1034,7 +1023,6 @@ export default function Home() {
         error: null
       });
     } catch (e) {
-      console.warn("[home congestion] fetch failed:", e);
       setCongestion((prev) => ({
         ...prev,
         beacons: createBeaconCongestionSlots("error", null, beaconZones),
@@ -1070,9 +1058,6 @@ export default function Home() {
 
     async function handleNativeEvent(event) {
       const detail = normalizeNativeEventDetail(event?.detail);
-      if (import.meta.env.DEV) {
-        console.log("[home native event] detail:", detail);
-      }
       if (String(detail?.type ?? "").toLowerCase() === "congestion") {
         setCongestion({
           ...normalizeHomeCongestion(detail, beaconZones),
@@ -1111,7 +1096,6 @@ export default function Home() {
             await updateCurrentLocation(locationPayload);
             locationUpdated = true;
           } catch (locationError) {
-            console.warn("[home native location] update failed:", locationError);
           }
         }
 
@@ -1146,7 +1130,6 @@ export default function Home() {
               });
             }
           } catch (attendanceError) {
-            console.warn("[home beacon attendance] check-in failed:", attendanceError);
             if (active) {
               setStartNotice(
                 getApiErrorMessage(attendanceError, "비콘 출석 처리에 실패했어요.")
@@ -1172,7 +1155,6 @@ export default function Home() {
           error: null
         });
       } catch (e) {
-        console.warn("[home native location] update failed:", e);
         if (!active) return;
         setCongestion((prev) => ({
           ...prev,
@@ -1253,7 +1235,6 @@ export default function Home() {
       setStartNotice("오늘 운동이 기록되었습니다.");
       navigate("/stats");
     } catch (e) {
-      console.warn("[home workout complete] save failed:", e);
       setStartNotice(getApiErrorMessage(e, "운동 기록 저장에 실패했어요."));
     } finally {
       setSavingWorkout(false);

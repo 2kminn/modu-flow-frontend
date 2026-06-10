@@ -74,25 +74,18 @@ export function setApiBaseUrl(nextBaseUrl) {
 }
 
 export function getApiErrorMessage(error, fallback = "요청에 실패했어요.") {
-  const serverMessage =
-    error?.response?.data?.message ??
-    error?.response?.data?.error ??
-    error?.response?.data?.code;
-
-  if (serverMessage != null) {
-    if (typeof serverMessage === "string") return serverMessage;
-    if (typeof serverMessage === "number" || typeof serverMessage === "boolean") {
-      return String(serverMessage);
-    }
-    try {
-      return JSON.stringify(serverMessage);
-    } catch {
-      return fallback;
-    }
-  }
-
   if (error?.userMessage) return String(error.userMessage);
-  if (error?.message) return String(error.message);
+
+  const status = error?.response?.status;
+  if (status === 400) return "입력한 내용을 다시 확인해 주세요.";
+  if (status === 401) return "로그인이 필요해요. 다시 로그인해 주세요.";
+  if (status === 403) return "이 작업을 진행할 권한이 없어요.";
+  if (status === 404) return "요청한 정보를 찾을 수 없어요.";
+  if (status === 409) return "이미 등록된 정보예요. 입력 내용을 확인해 주세요.";
+  if (status === 422) return "입력한 내용을 확인해 주세요.";
+  if (status === 429) return "요청이 많아요. 잠시 후 다시 시도해 주세요.";
+  if (status >= 500) return "서비스 연결이 원활하지 않아요. 잠시 후 다시 시도해 주세요.";
+  if (!error?.response) return "네트워크 연결을 확인한 뒤 다시 시도해 주세요.";
   return fallback;
 }
 
@@ -114,20 +107,6 @@ function emitApiError(message) {
 }
 
 const baseURL = resolveBaseUrl();
-
-if (import.meta.env.DEV && baseURL.startsWith("http")) {
-  try {
-    const { hostname } = new URL(baseURL);
-    if (hostname.endsWith(".ngrok")) {
-      console.warn(
-        `[api] VITE_API_BASE_URL host looks incomplete: ${hostname}. ` +
-          "ngrok URLs usually end with .ngrok.io / .ngrok.app / .ngrok-free.app."
-      );
-    }
-  } catch {
-    // ignore
-  }
-}
 
 export const apiClient = axios.create({
   baseURL: baseURL || undefined

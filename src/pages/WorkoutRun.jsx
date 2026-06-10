@@ -225,7 +225,6 @@ export default function WorkoutRun() {
     try {
       await replaceWorkoutDay(formatDate(new Date()), routineList);
     } catch (e) {
-      console.warn("[workout run] save failed:", e);
       setSaveError(getApiErrorMessage(e, "운동 기록 저장에 실패했어요."));
       setSavingWorkout(false);
       return;

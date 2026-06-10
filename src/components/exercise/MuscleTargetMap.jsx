@@ -129,10 +129,6 @@ export default function MuscleTargetMap({ exerciseName, targetMuscles = [] }) {
         ))}
       </div>
 
-      <div className="mt-3 rounded-2xl bg-[color:var(--c-surface-2)] px-3 py-2 text-[11px] font-semibold text-[color:var(--c-muted-2)]">
-        debug: {exerciseName || "-"} / targetMuscles:{" "}
-        {targetMuscles.length > 0 ? targetMuscles.join(", ") : "-"}
-      </div>
     </div>
   );
 }

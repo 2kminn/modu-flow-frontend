@@ -4,6 +4,7 @@ import MuscleTargetMap from "@/components/exercise/MuscleTargetMap";
 import { ChevronRight, Dumbbell, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { validateWorkoutItemDraft } from "@/api/validation";
+import { getApiErrorMessage } from "@/api/client";
 import {
   cacheRoutinesToLocalStorage,
   fetchRoutines,
@@ -519,7 +520,7 @@ export default function Workout() {
       setModalExerciseId(null);
     } catch (e) {
       if (latestRoutines) cacheRoutinesToLocalStorage(latestRoutines);
-      setToast(e?.userMessage || e?.message || "루틴 추가에 실패했어요.");
+      setToast(getApiErrorMessage(e, "루틴 추가에 실패했어요."));
     } finally {
       setSavingRoutine(false);
     }

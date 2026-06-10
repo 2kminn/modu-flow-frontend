@@ -84,9 +84,7 @@ export async function loginWithEmail({ email, password }) {
     if (!accessToken) {
       return {
         ok: false,
-        message: "로그인 응답에 accessToken이 없어요.",
-        httpStatus: res?.status ?? null,
-        debug: { response: response ?? null }
+        message: "로그인을 완료하지 못했어요. 잠시 후 다시 시도해 주세요."
       };
     }
     return {
@@ -98,26 +96,19 @@ export async function loginWithEmail({ email, password }) {
       email: data?.email ?? data?.user?.email,
       userId: pickUserId(data),
       name: pickDisplayName(data),
-      roles: pickRoles(data),
-      debug: { response: response ?? null }
+      roles: pickRoles(data)
     };
   } catch (e) {
     const httpStatus = e?.response?.status ?? null;
-    const baseUrl = getApiBaseUrl();
-    if (httpStatus === 404 && !baseUrl) {
+    if (httpStatus === 400 || httpStatus === 401) {
       return {
         ok: false,
-        message:
-          "API 주소(VITE_API_BASE_URL)가 설정되지 않았어요. 배포/폰 환경에서는 빌드 환경변수 또는 런타임 설정이 필요해요.",
-        httpStatus,
-        debug: { response: e?.response?.data ?? null }
+        message: "이메일 또는 비밀번호가 올바르지 않아요."
       };
     }
     return {
       ok: false,
-      message: getApiErrorMessage(e),
-      httpStatus,
-      debug: { response: e?.response?.data ?? null }
+      message: getApiErrorMessage(e, "로그인에 실패했어요.")
     };
   }
 }
@@ -127,7 +118,7 @@ export function getSocialLoginUrl(provider) {
   if (!SOCIAL_PROVIDERS.has(normalizedProvider)) {
     return {
       ok: false,
-      message: "지원하지 않는 소셜 로그인 provider예요."
+      message: "지원하지 않는 로그인 방식이에요."
     };
   }
 
@@ -161,9 +152,7 @@ export async function signupWithEmail({ email, password, name }) {
     if (!accessToken) {
       return {
         ok: false,
-        message: "회원가입 응답에 accessToken이 없어요.",
-        httpStatus: res?.status ?? null,
-        debug: { response: response ?? null }
+        message: "회원가입을 완료하지 못했어요. 잠시 후 다시 시도해 주세요."
       };
     }
     return {
@@ -175,36 +164,37 @@ export async function signupWithEmail({ email, password, name }) {
       email: data?.email ?? data?.user?.email,
       userId: pickUserId(data),
       name: pickDisplayName(data) || normalizedName,
-      roles: pickRoles(data),
-      debug: { response: response ?? null }
+      roles: pickRoles(data)
     };
   } catch (e) {
+    const httpStatus = e?.response?.status ?? null;
+    if (httpStatus === 409) {
+      return {
+        ok: false,
+        message: "이미 가입된 이메일이에요. 로그인하거나 다른 이메일을 사용해 주세요."
+      };
+    }
     return {
       ok: false,
-      message: getApiErrorMessage(e),
-      httpStatus: e?.response?.status ?? null,
-      debug: { response: e?.response?.data ?? null }
+      message: getApiErrorMessage(e, "회원가입에 실패했어요.")
     };
   }
 }
 
 export async function changePassword({ currentPassword, newPassword, confirmPassword }) {
   try {
-    const res = await apiClient.patch("/api/v1/auth/password", {
+    await apiClient.patch("/api/v1/auth/password", {
       currentPassword,
       newPassword,
       newPasswordConfirm: confirmPassword
     });
     return {
-      ok: true,
-      debug: { response: res?.data ?? null }
+      ok: true
     };
   } catch (e) {
     return {
       ok: false,
-      message: getApiErrorMessage(e),
-      httpStatus: e?.response?.status ?? null,
-      debug: { response: e?.response?.data ?? null }
+      message: getApiErrorMessage(e, "비밀번호 변경에 실패했어요.")
     };
   }
 }

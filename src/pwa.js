@@ -38,7 +38,5 @@ function clearDevServiceWorker() {
     }
   }
 
-  clear().catch((error) => {
-    console.warn("[pwa] failed to clear dev service worker:", error);
-  });
+  clear().catch(() => {});
 }

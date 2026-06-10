@@ -170,7 +170,6 @@ export default function MyPage() {
           setProfileName(profile.name);
         }
       } catch (err) {
-        console.warn("[profile] fetch failed:", err);
       }
     }
 

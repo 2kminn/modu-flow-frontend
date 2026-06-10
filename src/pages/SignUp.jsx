@@ -18,12 +18,10 @@ export default function SignUp() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [debugInfo, setDebugInfo] = useState(null);
 
   async function onSubmit(e) {
     e.preventDefault();
     setError(null);
-    setDebugInfo(null);
 
     const trimmedName = name.trim();
 
@@ -50,9 +48,7 @@ export default function SignUp() {
 
     if (!signupResult.ok) {
       setLoading(false);
-      const suffix = signupResult.httpStatus ? ` (HTTP ${signupResult.httpStatus})` : "";
-      setError(`${signupResult.message || "회원가입에 실패했어요."}${suffix}`);
-      setDebugInfo(signupResult.debug || null);
+      setError(signupResult.message || "회원가입에 실패했어요.");
       return;
     }
 
@@ -159,12 +155,6 @@ export default function SignUp() {
           <p className="rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface-2)] px-4 py-3 text-sm font-semibold text-[color:var(--c-text)]">
             {error}
           </p>
-        ) : null}
-
-        {import.meta.env.DEV && debugInfo?.response ? (
-          <pre className="max-h-48 overflow-auto rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] p-3 text-[11px] font-semibold text-[color:var(--c-muted-2)]">
-            {JSON.stringify(debugInfo.response, null, 2)}
-          </pre>
         ) : null}
 
         <Button

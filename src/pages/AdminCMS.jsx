@@ -526,7 +526,6 @@ function AdminCMS() {
       setCongestionData(data);
       setCongestionMessage("");
     } catch (err) {
-      console.warn("[admin congestion] fetch failed:", err);
       setCongestionMessage(getApiErrorMessage(err, "공간별 혼잡도를 불러오지 못했어요."));
     } finally {
       setLoadingCongestion(false);
@@ -549,7 +548,6 @@ function AdminCMS() {
         setBeaconZones(zones.length ? zones : DEFAULT_BEACON_ZONES);
         setZoneMessage("");
       } catch (e) {
-        console.warn("[admin beacon zones] fetch failed:", e);
         if (!active) return;
         setBeaconZones(loadBeaconZonesFromLocalStorage());
         setZoneMessage("비콘 구역 API를 불러오지 못해 저장된 설정을 표시 중입니다.");
@@ -576,7 +574,6 @@ function AdminCMS() {
         setDashboardSummary(summary);
         setDashboardMessage("");
       } catch (err) {
-        console.warn("[admin dashboard] fetch failed:", err);
         if (!active) return;
         setDashboardMessage(getApiErrorMessage(err, "대시보드 요약을 불러오지 못했어요."));
       } finally {
@@ -614,7 +611,6 @@ function AdminCMS() {
         setAttendanceRecords(records);
         setAttendanceMessage("");
       } catch (err) {
-        console.warn("[admin attendance] fetch failed:", err);
         if (!active) return;
         setAttendanceRecords([]);
         setAttendanceMessage(getApiErrorMessage(err, "출결 현황을 불러오지 못했어요."));
@@ -679,7 +675,6 @@ function AdminCMS() {
       setZoneMessage("비콘 구역 설정이 저장되었습니다.");
       closeModal();
     } catch (err) {
-      console.warn("[admin beacon zones] save failed:", err);
       setBeaconZones((zones) => {
         const next = isEditing
           ? zones.map((zone) => (zone.id === editingId ? nextZone : zone))
@@ -705,7 +700,6 @@ function AdminCMS() {
       await deleteBeaconZoneById(zoneId);
       setZoneMessage("비콘 구역이 삭제되었습니다.");
     } catch (err) {
-      console.warn("[admin beacon zones] delete failed:", err);
       setZoneMessage(
         `${getApiErrorMessage(err, "비콘 구역 API 삭제에 실패했어요.")} 로컬 설정에는 반영했습니다.`
       );

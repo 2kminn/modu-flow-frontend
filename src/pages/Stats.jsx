@@ -655,7 +655,6 @@ export default function Stats() {
           setRoutinesByDay(data);
         }
       } catch (e) {
-        console.warn("[stats routines] fetch failed:", e);
       }
     }
     function syncRestDays() {
@@ -708,7 +707,6 @@ export default function Stats() {
           return normalizeRecordsByDate(next);
         });
       } catch (e) {
-        console.warn("[stats workouts] fetch failed:", e);
       }
     }
     syncWorkouts();
@@ -726,7 +724,6 @@ export default function Stats() {
         setAttendanceRecords(normalizeAttendanceRecords(data));
         setAttendanceError("");
       } catch (e) {
-        console.warn("[stats attendance] fetch failed:", e);
         if (!cancelled) {
           setAttendanceError(getApiErrorMessage(e, "출석 기록을 불러오지 못했어요."));
         }
@@ -868,7 +865,6 @@ export default function Stats() {
         return next;
       });
     } catch (e) {
-      console.warn("[stats workout item] update failed:", e);
       setDialogMessage(getApiErrorMessage(e, "운동 기록 수정에 실패했어요."));
     }
   }
@@ -886,7 +882,6 @@ export default function Stats() {
         return next;
       });
     } catch (e) {
-      console.warn("[stats workout item] delete failed:", e);
       setDialogMessage(getApiErrorMessage(e, "운동 기록 삭제에 실패했어요."));
     }
   }
@@ -906,7 +901,6 @@ export default function Stats() {
         [selectedDate]: nextItems
       }));
     } catch (e) {
-      console.warn("[stats workout item] add failed:", e);
       setDialogMessage(getApiErrorMessage(e, "운동 기록 추가에 실패했어요."));
     } finally {
       setSavingAdd(false);

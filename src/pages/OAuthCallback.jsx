@@ -78,7 +78,7 @@ export default function OAuthCallback() {
   useEffect(() => {
     const providerError = params.get("error") || params.get("message");
     if (providerError) {
-      setError(providerError);
+      setError("소셜 로그인을 완료하지 못했어요. 잠시 후 다시 시도해 주세요.");
       safeClearReturnTo();
       return;
     }
@@ -88,7 +88,7 @@ export default function OAuthCallback() {
     );
 
     if (!token) {
-      setError("로그인 응답에 accessToken이 없어요.");
+      setError("소셜 로그인을 완료하지 못했어요. 다시 시도해 주세요.");
       safeClearReturnTo();
       return;
     }
