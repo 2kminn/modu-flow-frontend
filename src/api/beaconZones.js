@@ -62,9 +62,8 @@ export function loadBeaconZonesFromLocalStorage() {
   if (typeof window === "undefined") return DEFAULT_BEACON_ZONES;
   try {
     const raw = window.localStorage.getItem(BEACON_ZONES_STORAGE_KEY);
-    const parsed = raw ? JSON.parse(raw) : null;
-    const zones = normalizeBeaconZones(parsed);
-    return zones.length ? zones : DEFAULT_BEACON_ZONES;
+    if (raw == null) return DEFAULT_BEACON_ZONES;
+    return normalizeBeaconZones(JSON.parse(raw));
   } catch {
     return DEFAULT_BEACON_ZONES;
   }
@@ -88,7 +87,7 @@ export async function fetchBeaconZones() {
     skipAuthRedirect: true
   });
   const zones = normalizeBeaconZones(res?.data);
-  if (zones.length) saveBeaconZonesToLocalStorage(zones);
+  saveBeaconZonesToLocalStorage(zones);
   return zones;
 }
 

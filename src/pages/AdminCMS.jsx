@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  DEFAULT_BEACON_ZONES,
   createBeaconZone,
   deleteBeaconZoneById,
   fetchBeaconZones,
@@ -318,6 +317,7 @@ function getRecordStatus(record) {
     .toUpperCase();
   const labels = {
     ABSENT: "미출석",
+    ATTENDED: "출석",
     PRESENT: "출석",
     CHECKED_IN: "출석",
     CHECKED_OUT: "퇴실"
@@ -484,6 +484,7 @@ function AdminCMS() {
   const [modalOpen, setModalOpen] = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const [deleteZoneId, setDeleteZoneId] = useState(null);
+  const [deletingZone, setDeletingZone] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [loadingZones, setLoadingZones] = useState(true);
@@ -548,7 +549,7 @@ function AdminCMS() {
       try {
         const zones = await fetchBeaconZones();
         if (!active) return;
-        setBeaconZones(zones.length ? zones : DEFAULT_BEACON_ZONES);
+        setBeaconZones(zones);
         setZoneMessage("");
       } catch (e) {
         if (!active) return;
@@ -695,17 +696,21 @@ function AdminCMS() {
   }
 
   async function deleteBeaconZone(zoneId) {
-    const next = beaconZones.filter((zone) => zone.id !== zoneId);
-    setDeleteZoneId(null);
-    setBeaconZones(next);
-    saveBeaconZonesToLocalStorage(next);
+    if (deletingZone) return;
+    setDeletingZone(true);
     try {
       await deleteBeaconZoneById(zoneId);
+      setBeaconZones((zones) => {
+        const next = zones.filter((zone) => zone.id !== zoneId);
+        saveBeaconZonesToLocalStorage(next);
+        return next;
+      });
+      setDeleteZoneId(null);
       setZoneMessage("비콘 구역이 삭제되었습니다.");
     } catch (err) {
-      setZoneMessage(
-        `${getApiErrorMessage(err, "비콘 구역 API 삭제에 실패했어요.")} 로컬 설정에는 반영했습니다.`
-      );
+      setZoneMessage(getApiErrorMessage(err, "비콘 구역 API 삭제에 실패했어요."));
+    } finally {
+      setDeletingZone(false);
     }
   }
 
@@ -1196,6 +1201,7 @@ function AdminCMS() {
         confirmLabel="삭제"
         onCancel={() => setDeleteZoneId(null)}
         onConfirm={() => deleteBeaconZone(deleteZoneId)}
+        busy={deletingZone}
       />
 
       {modalOpen ? (
