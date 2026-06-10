@@ -37,6 +37,7 @@ const EXERCISES = [
     name: "푸쉬업",
     category: "chest",
     difficulty: "초급",
+    poseImage: "/exercises/poses/pushup.png",
     description: "가슴과 삼두를 함께 강화하는 대표적인 맨몸 운동이에요.",
     targetMuscle: "가슴 · 삼두 · 코어",
     targetMuscles: ["chest", "triceps", "shoulder"]
@@ -46,6 +47,7 @@ const EXERCISES = [
     name: "벤치프레스",
     category: "chest",
     difficulty: "중급",
+    poseImage: "/exercises/poses/bench-press.png",
     description: "가슴 근육을 집중적으로 자극하는 대표적인 웨이트 운동이에요.",
     targetMuscle: "가슴 · 삼두 · 전면 어깨",
     targetMuscles: ["chest", "triceps", "shoulder"]
@@ -55,6 +57,7 @@ const EXERCISES = [
     name: "풀업",
     category: "back",
     difficulty: "고급",
+    poseImage: "/exercises/poses/pullup.png",
     description: "상체 당기는 힘을 키우는 고전적인 운동이에요.",
     targetMuscle: "광배 · 이두 · 코어",
     targetMuscles: ["back", "biceps"]
@@ -64,6 +67,7 @@ const EXERCISES = [
     name: "시티드 로우",
     category: "back",
     difficulty: "초급",
+    poseImage: "/exercises/poses/seated-row.png",
     description: "등 중앙을 안정적으로 강화할 수 있어요.",
     targetMuscle: "등(중부) · 이두",
     targetMuscles: ["back", "biceps"]
@@ -83,6 +87,7 @@ const EXERCISES = [
     name: "런지",
     category: "legs",
     difficulty: "초급",
+    poseImage: "/exercises/poses/lunge.png",
     description: "균형과 하체 근력을 함께 잡을 수 있어요.",
     targetMuscle: "둔근 · 햄스트링 · 대퇴사두",
     targetMuscles: ["quad", "glute", "hamstring"]
@@ -92,6 +97,7 @@ const EXERCISES = [
     name: "오버헤드 프레스",
     category: "shoulders",
     difficulty: "중급",
+    poseImage: "/exercises/poses/overhead-press.png",
     description: "어깨 전반을 키우는 기본 프레스 동작이에요.",
     targetMuscle: "어깨 · 삼두",
     targetMuscles: ["shoulder", "triceps"]
@@ -101,6 +107,7 @@ const EXERCISES = [
     name: "사이드 레터럴 레이즈",
     category: "shoulders",
     difficulty: "초급",
+    poseImage: "/exercises/poses/lateral-raise.png",
     description: "측면 어깨(삼각근 측면)를 집중적으로 자극해요.",
     targetMuscle: "측면 어깨",
     targetMuscles: ["shoulder"]
@@ -110,6 +117,7 @@ const EXERCISES = [
     name: "바이셉 컬",
     category: "arms",
     difficulty: "초급",
+    poseImage: "/exercises/poses/biceps-curl.png",
     description: "이두근을 단순하고 확실하게 자극할 수 있어요.",
     targetMuscle: "이두",
     targetMuscles: ["biceps"]
@@ -119,6 +127,7 @@ const EXERCISES = [
     name: "트라이셉스 푸시다운",
     category: "arms",
     difficulty: "초급",
+    poseImage: "/exercises/poses/triceps-pushdown.png",
     description: "삼두를 안전하게 자극하기 좋은 케이블 운동이에요.",
     targetMuscle: "삼두",
     targetMuscles: ["triceps"]
@@ -128,6 +137,7 @@ const EXERCISES = [
     name: "플랭크",
     category: "abs",
     difficulty: "초급",
+    poseImage: "/exercises/poses/plank.png",
     description: "코어 안정성을 길러주는 정적 운동이에요.",
     targetMuscle: "코어",
     targetMuscles: ["abs", "shoulder"]
@@ -137,6 +147,7 @@ const EXERCISES = [
     name: "크런치",
     category: "abs",
     difficulty: "초급",
+    poseImage: "/exercises/poses/crunch.png",
     description: "복근(상복부)을 집중적으로 수축해요.",
     targetMuscle: "복근",
     targetMuscles: ["abs"]
@@ -183,6 +194,8 @@ function getExerciseIconClass(exercise) {
 }
 
 function ExerciseModal({ open, exercise, onClose, onRequestAdd, addDisabled }) {
+  const [poseImageFailed, setPoseImageFailed] = useState(false);
+
   useEffect(() => {
     if (!open) return;
     function onKeyDown(e) {
@@ -191,6 +204,10 @@ function ExerciseModal({ open, exercise, onClose, onRequestAdd, addDisabled }) {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
+
+  useEffect(() => {
+    setPoseImageFailed(false);
+  }, [exercise?.id, open]);
 
   if (!open || !exercise) return null;
 
@@ -225,13 +242,14 @@ function ExerciseModal({ open, exercise, onClose, onRequestAdd, addDisabled }) {
         </div>
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
-          {exercise.poseImage ? (
+          {exercise.poseImage && !poseImageFailed ? (
             <div className="overflow-hidden rounded-3xl border border-[color:var(--c-border)] bg-[color:var(--c-surface-2)]">
               <div className="aspect-[4/3] w-full">
                 <img
                   src={exercise.poseImage}
                   alt={`${exercise.name} 자세`}
                   className="h-full w-full object-contain"
+                  onError={() => setPoseImageFailed(true)}
                 />
               </div>
             </div>
