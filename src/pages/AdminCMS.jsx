@@ -497,10 +497,6 @@ function AdminCMS() {
     () => normalizeCongestionZones(congestionData, beaconZones),
     [beaconZones, congestionData]
   );
-  const attendanceStatuses = useMemo(() => {
-    const statuses = attendanceRecords.map(getRecordStatus).filter(Boolean);
-    return [...new Set(statuses)].sort((a, b) => a.localeCompare(b, "ko"));
-  }, [attendanceRecords]);
   const filteredAttendanceRecords = useMemo(() => {
     const query = attendanceFilters.query.trim().toLowerCase();
     return attendanceRecords.filter((record) => {
@@ -1091,12 +1087,9 @@ function AdminCMS() {
                         setAttendanceFilters((prev) => ({ ...prev, status: e.target.value }))
                       }
                     >
-                      <option value="all">전체 상태</option>
-                      {attendanceStatuses.map((status) => (
-                        <option key={status} value={status}>
-                          {status}
-                        </option>
-                      ))}
+                      <option value="all">전체</option>
+                      <option value="출석">출석</option>
+                      <option value="미출석">미출석</option>
                     </select>
                   </label>
 
