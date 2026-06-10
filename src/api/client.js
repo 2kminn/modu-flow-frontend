@@ -20,9 +20,15 @@ function canUseBaseUrl(value) {
 }
 
 function resolveBaseUrl() {
-  // Production always uses the same-origin Vercel rewrite in vercel.json.
-  // This also prevents a stale mobile runtime override from reintroducing CORS failures.
-  if (import.meta.env.PROD) return "";
+  const envUrl = normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL);
+
+  // In production, call the deployed backend directly instead of relying on
+  // the same-origin Vercel rewrite. If the env var is missing, fall back to
+  // the default deployed backend URL.
+  if (import.meta.env.PROD) {
+    if (canUseBaseUrl(envUrl)) return envUrl;
+    return DEFAULT_API_BASE_URL;
+  }
 
   if (typeof window !== "undefined") {
     const fromGlobal = normalizeBaseUrl(
@@ -40,7 +46,6 @@ function resolveBaseUrl() {
     }
   }
 
-  const envUrl = normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL);
   if (canUseBaseUrl(envUrl)) return envUrl;
   return DEFAULT_API_BASE_URL;
 }
@@ -57,7 +62,7 @@ export function setApiBaseUrl(nextBaseUrl) {
     } catch {
       // ignore
     }
-    apiClient.defaults.baseURL = undefined;
+    apiClient.defaults.baseURL = resolveBaseUrl() || undefined;
     return;
   }
 
