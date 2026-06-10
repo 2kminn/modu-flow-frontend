@@ -60,6 +60,16 @@ async function readRawBody(req) {
   });
 }
 
+export function hasRequestBody(req) {
+  const contentLength = Number(req?.headers?.["content-length"]);
+  if (Number.isFinite(contentLength) && contentLength > 0) return true;
+  if (req?.headers?.["transfer-encoding"]) return true;
+
+  if (typeof req?.body === "string") return req.body.length > 0;
+  if (Buffer.isBuffer(req?.body)) return req.body.length > 0;
+  return req?.body != null;
+}
+
 function parseAllowedOrigins() {
   const raw = String(process.env.CORS_ALLOW_ORIGINS || "").trim();
   if (!raw) return [];
@@ -133,7 +143,7 @@ export async function proxyToBackend(req, res, backendPath) {
   delete headers.referer;
 
   const method = (req.method || "GET").toUpperCase();
-  const hasBody = !["GET", "HEAD"].includes(method);
+  const hasBody = !["GET", "HEAD"].includes(method) && hasRequestBody(req);
   const body = hasBody ? await readRawBody(req) : undefined;
 
   try {

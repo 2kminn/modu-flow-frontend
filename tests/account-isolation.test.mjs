@@ -10,7 +10,7 @@ import {
   clearUserStorage,
   getUserStorageKey
 } from "../src/auth/userStorage.js";
-import { shouldForwardUpstreamHeader } from "../api/_proxy.js";
+import { hasRequestBody, shouldForwardUpstreamHeader } from "../api/_proxy.js";
 
 class MemoryStorage {
   constructor(entries = {}) {
@@ -149,4 +149,16 @@ test("deployment proxy recalculates transformed response length", () => {
   assert.equal(shouldForwardUpstreamHeader("content-encoding"), false);
   assert.equal(shouldForwardUpstreamHeader("content-length"), false);
   assert.equal(shouldForwardUpstreamHeader("transfer-encoding"), false);
+});
+
+test("deployment proxy does not add a body to an empty DELETE request", () => {
+  assert.equal(hasRequestBody({ headers: {}, body: undefined }), false);
+  assert.equal(hasRequestBody({ headers: { "content-length": "0" }, body: "" }), false);
+  assert.equal(
+    hasRequestBody({
+      headers: { "content-length": "17" },
+      body: JSON.stringify({ beaconId: "B001" })
+    }),
+    true
+  );
 });
