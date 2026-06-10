@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import {
+  addStoredAuthRoles,
   getAuthToken,
   isAdminSession,
   isDevTestAuthToken
@@ -40,6 +41,7 @@ export default function RequireAdmin({ children }) {
     setPermissionStatus(null);
     fetchAdminDashboardSummary()
       .then(() => {
+        addStoredAuthRoles("ADMIN");
         if (active) setServerPermission("allowed");
       })
       .catch((error) => {
@@ -83,17 +85,11 @@ export default function RequireAdmin({ children }) {
                 ? "관리자 로그인이 만료되었거나 토큰이 유효하지 않습니다."
                 : "관리자 권한을 확인하지 못했습니다. 다시 로그인해 주세요."}
           </p>
-          <div className="mt-5 flex gap-2">
-            <Link
-              to="/"
-              className="inline-flex h-12 flex-1 items-center justify-center rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-sm font-extrabold text-[color:var(--c-text)] transition hover:bg-[color:var(--c-surface-2)]"
-            >
-              홈으로
-            </Link>
+          <div className="mt-5">
             <Link
               to="/login"
               state={{ from: location }}
-              className="inline-flex h-12 flex-1 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,var(--c-primary),var(--c-purple))] text-sm font-extrabold text-white shadow-sm transition hover:brightness-105"
+              className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-[linear-gradient(135deg,var(--c-primary),var(--c-purple))] text-sm font-extrabold text-white shadow-sm transition hover:brightness-105"
             >
               로그인
             </Link>

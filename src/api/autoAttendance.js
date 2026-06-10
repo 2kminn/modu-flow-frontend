@@ -28,11 +28,14 @@ export function isAutoAttendanceEnabled() {
   }
 }
 
-export function saveAutoAttendanceEnabled(enabled) {
+export function saveAutoAttendanceEnabled(
+  enabled,
+  storageKey = getAutoAttendanceStorageKey()
+) {
   const next = Boolean(enabled);
   if (typeof window === "undefined") return next;
   try {
-    window.localStorage.setItem(getAutoAttendanceStorageKey(), String(next));
+    window.localStorage.setItem(storageKey, String(next));
     window.dispatchEvent(new CustomEvent(AUTO_ATTENDANCE_EVENT, { detail: next }));
   } catch {
     // ignore
@@ -49,10 +52,11 @@ export async function fetchAutoAttendanceEnabled() {
 
 export async function updateAutoAttendanceEnabled(enabled) {
   const next = Boolean(enabled);
+  const storageKey = getAutoAttendanceStorageKey();
   if (!isDevTestAuthToken()) {
     await apiClient.put("/api/v1/settings", {
       autoAttendanceEnabled: next
     });
   }
-  return saveAutoAttendanceEnabled(next);
+  return saveAutoAttendanceEnabled(next, storageKey);
 }

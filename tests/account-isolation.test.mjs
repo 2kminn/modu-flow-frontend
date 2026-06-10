@@ -10,6 +10,7 @@ import {
   clearUserStorage,
   getUserStorageKey
 } from "../src/auth/userStorage.js";
+import { shouldForwardUpstreamHeader } from "../api/_proxy.js";
 
 class MemoryStorage {
   constructor(entries = {}) {
@@ -133,4 +134,19 @@ test("restores persisted ADMIN role after refresh", () => {
 
   assert.deepEqual(normalizeRoles(storedRoles), ["ADMIN"]);
   assert.equal(hasAdminRole(storedRoles), true);
+});
+
+test("recognizes an ADMIN role learned from a successful admin API check", () => {
+  const loginRoles = [];
+  const rolesAfterAdminCheck = normalizeRoles(loginRoles, "ADMIN");
+
+  assert.deepEqual(rolesAfterAdminCheck, ["ADMIN"]);
+  assert.equal(hasAdminRole(rolesAfterAdminCheck), true);
+});
+
+test("deployment proxy recalculates transformed response length", () => {
+  assert.equal(shouldForwardUpstreamHeader("content-type"), true);
+  assert.equal(shouldForwardUpstreamHeader("content-encoding"), false);
+  assert.equal(shouldForwardUpstreamHeader("content-length"), false);
+  assert.equal(shouldForwardUpstreamHeader("transfer-encoding"), false);
 });

@@ -698,6 +698,9 @@ export default function Stats() {
         if (cancelled) return;
         setRecordsByDate((prev) => {
           const next = { ...(prev || {}) };
+          for (const date of Object.keys(next)) {
+            if (date.startsWith(monthLabel)) delete next[date];
+          }
           for (const workout of workouts) {
             const date = String(workout?.date || "");
             if (!date.startsWith(monthLabel)) continue;

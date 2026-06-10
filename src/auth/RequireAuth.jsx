@@ -3,7 +3,8 @@ import { Navigate, useLocation } from "react-router-dom";
 import {
   AUTH_SESSION_CHANGED_EVENT,
   getAuthSessionKey,
-  getAuthToken
+  getAuthToken,
+  isAdminSession
 } from "@/auth/auth";
 
 export default function RequireAuth({ children }) {
@@ -26,6 +27,10 @@ export default function RequireAuth({ children }) {
 
   if (!token) {
     return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  if (isAdminSession()) {
+    return <Navigate to="/admin" replace />;
   }
 
   return <Fragment key={sessionKey}>{children}</Fragment>;

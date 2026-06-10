@@ -93,6 +93,15 @@ function setCors(req, res) {
   return true;
 }
 
+export function shouldForwardUpstreamHeader(key) {
+  const normalizedKey = String(key || "").toLowerCase();
+  return ![
+    "content-encoding",
+    "content-length",
+    "transfer-encoding"
+  ].includes(normalizedKey);
+}
+
 export async function proxyToBackend(req, res, backendPath) {
   const corsAllowed = setCors(req, res);
 
@@ -136,9 +145,11 @@ export async function proxyToBackend(req, res, backendPath) {
 
     res.statusCode = upstream.status;
     upstream.headers.forEach((value, key) => {
-      if (key.toLowerCase() === "content-encoding") return;
+      if (!shouldForwardUpstreamHeader(key)) return;
       res.setHeader(key, value);
     });
+    res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("Vary", "Authorization");
 
     const arrayBuf = await upstream.arrayBuffer();
     res.end(Buffer.from(arrayBuf));

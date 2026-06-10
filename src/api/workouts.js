@@ -179,9 +179,18 @@ function cacheWorkoutDay(date, items, storageKey = getWorkoutHistoryStorageKey()
   writeWorkoutHistoryToStorageKey(storageKey, history);
 }
 
-function cacheWorkoutList(workouts, storageKey = getWorkoutHistoryStorageKey()) {
+function cacheWorkoutList(
+  workouts,
+  storageKey = getWorkoutHistoryStorageKey(),
+  { from, to } = {}
+) {
   if (typeof window === "undefined" || !Array.isArray(workouts)) return;
   const history = loadWorkoutHistoryFromStorageKey(storageKey);
+  if (from && to) {
+    for (const date of Object.keys(history)) {
+      if (date >= from && date <= to) delete history[date];
+    }
+  }
   for (const workout of workouts) {
     const date = String(workout?.date || "");
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
@@ -223,7 +232,7 @@ export async function fetchWorkouts({ from, to }) {
   try {
     const res = await apiClient.get("/api/v1/workouts", { params: { from, to } });
     const workouts = res?.data?.workouts ?? [];
-    cacheWorkoutList(workouts, storageKey);
+    cacheWorkoutList(workouts, storageKey, { from, to });
     return workouts;
   } catch (e) {
     if (isNetworkError(e)) return getLocalWorkoutsInRange(from, to, storageKey);

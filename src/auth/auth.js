@@ -265,6 +265,14 @@ export function getStoredAuthRoles() {
   return normalizeRoles(storedRoles, getJwtRoles());
 }
 
+export function addStoredAuthRoles(...roles) {
+  const normalizedRoles = normalizeRoles(getStoredAuthRoles(), ...roles);
+  if (normalizedRoles.length) {
+    safeSet(localStorage, AUTH_ROLES_KEY, JSON.stringify(normalizedRoles));
+  }
+  return normalizedRoles;
+}
+
 export function getAuthSessionKey() {
   const token = getAuthToken();
   if (!token) return "anonymous";

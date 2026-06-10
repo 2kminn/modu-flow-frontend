@@ -4,10 +4,12 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import FloatingLabelInput from "@/components/ui/FloatingLabelInput";
 import {
+  addStoredAuthRoles,
   clearAuthToken,
   isAdminSession,
   setAuthToken
 } from "@/auth/auth";
+import { fetchAdminDashboardSummary } from "@/api/admin";
 import { fetchMyProfile } from "@/api/profile";
 import { Eye, EyeOff, Lock, LogIn, Mail } from "lucide-react";
 import {
@@ -105,6 +107,14 @@ export default function Login() {
       await fetchMyProfile();
     } catch {
       // The login token is authoritative. Some accounts cannot access /me.
+    }
+    if (!isAdminSession()) {
+      try {
+        await fetchAdminDashboardSummary();
+        addStoredAuthRoles("ADMIN");
+      } catch {
+        // A regular user is expected to fail the admin capability check.
+      }
     }
     setLoading(false);
     navigate(isAdminSession() ? "/admin" : fromPath, { replace: true });
