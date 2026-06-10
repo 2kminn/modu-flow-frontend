@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
-import { Link, Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import {
   addStoredAuthRoles,
+  clearAuthToken,
   getAuthToken,
   isAdminSession,
   isDevTestAuthToken
 } from "@/auth/auth";
 import { fetchAdminDashboardSummary } from "@/api/admin";
 import Card from "@/components/ui/Card";
+import { clearBrowserAppCache } from "@/pwa";
 
 export default function RequireAdmin({ children }) {
   const location = useLocation();
@@ -17,6 +19,15 @@ export default function RequireAdmin({ children }) {
     hasStoredAdminRole ? "allowed" : "checking"
   );
   const [permissionStatus, setPermissionStatus] = useState(null);
+
+  async function resetSession() {
+    clearAuthToken();
+    try {
+      await clearBrowserAppCache();
+    } finally {
+      window.location.replace("/login");
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -86,13 +97,13 @@ export default function RequireAdmin({ children }) {
                 : "관리자 권한을 확인하지 못했습니다. 다시 로그인해 주세요."}
           </p>
           <div className="mt-5">
-            <Link
-              to="/login"
-              state={{ from: location }}
+            <button
+              type="button"
+              onClick={resetSession}
               className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-[linear-gradient(135deg,var(--c-primary),var(--c-purple))] text-sm font-extrabold text-white shadow-sm transition hover:brightness-105"
             >
-              로그인
-            </Link>
+              세션 초기화 후 다시 로그인
+            </button>
           </div>
         </Card>
       </div>
