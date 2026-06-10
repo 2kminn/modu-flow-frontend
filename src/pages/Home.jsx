@@ -500,7 +500,7 @@ function normalizeFallbackCongestion(root) {
 
 function getBeaconTitle(item, index, zoneConfig = null) {
   if (zoneConfig?.name) return zoneConfig.name;
-  if (!item || typeof item !== "object") return BEACON_CONGESTION_SLOTS[index].title;
+  if (!item || typeof item !== "object") return "비콘 ID 없음";
   const label =
     item.name ??
     item.beaconName ??
@@ -509,12 +509,24 @@ function getBeaconTitle(item, index, zoneConfig = null) {
     item.zoneId ??
     item.minor ??
     item.id;
-  if (label == null || label === "") return BEACON_CONGESTION_SLOTS[index].title;
+  if (label == null || label === "") return "비콘 ID 없음";
   return String(label);
 }
 
+function createBeaconSlotDefinitions(beaconZones = [], itemCount = 0) {
+  const slotCount = Math.max(
+    BEACON_CONGESTION_SLOTS.length,
+    beaconZones.length,
+    itemCount
+  );
+  return Array.from({ length: slotCount }, (_, index) => ({
+    id: beaconZones[index]?.id ?? `beacon-slot-${index + 1}`,
+    title: beaconZones[index]?.name ?? "비콘 ID 없음"
+  }));
+}
+
 function createBeaconCongestionSlots(status = "no-signal", level = null, beaconZones = []) {
-  return BEACON_CONGESTION_SLOTS.map((slot, index) => ({
+  return createBeaconSlotDefinitions(beaconZones).map((slot, index) => ({
     ...slot,
     id: beaconZones[index]?.id ?? slot.id,
     title: beaconZones[index]?.name ?? slot.title,
@@ -529,6 +541,10 @@ function createBeaconCongestionSlots(status = "no-signal", level = null, beaconZ
 function createNativeBeaconSignalSlots(payload, status = "signal-api-error", beaconZones = []) {
   const slots = createBeaconCongestionSlots("no-signal", null, beaconZones);
   const zoneConfig = findBeaconZoneConfig(payload, createBeaconZoneLookup(beaconZones));
+  const matchedIndex = zoneConfig
+    ? beaconZones.findIndex((zone) => zone.id === zoneConfig.id)
+    : -1;
+  const slotIndex = matchedIndex >= 0 ? matchedIndex : 0;
   const beaconLabel =
     zoneConfig?.name ??
     payload?.beaconId ??
@@ -537,8 +553,8 @@ function createNativeBeaconSignalSlots(payload, status = "signal-api-error", bea
     payload?.id ??
     payload?.beaconName ??
     payload?.zoneName;
-  slots[0] = {
-    ...slots[0],
+  slots[slotIndex] = {
+    ...slots[slotIndex],
     title: beaconLabel == null ? "비콘 ID 없음" : String(beaconLabel),
     status
   };
@@ -579,7 +595,7 @@ function getBeaconCongestionItems(root) {
     root.content,
     Array.isArray(root) ? root : null
   ];
-  return lists.flatMap(getCongestionEntries).slice(0, BEACON_CONGESTION_SLOTS.length);
+  return lists.flatMap(getCongestionEntries);
 }
 
 function normalizeHomeCongestion(data, beaconZones = []) {
@@ -604,11 +620,32 @@ function normalizeHomeCongestion(data, beaconZones = []) {
   const beaconItems = getBeaconCongestionItems(root);
   const beaconZoneLookup = createBeaconZoneLookup(beaconZones);
   const isSingleNearestBeaconLevel = beaconItems.length === 0 && fallbackLevel != null;
-  const beacons = BEACON_CONGESTION_SLOTS.map((slot, index) => {
-    const item = beaconItems[index];
+  const slotDefinitions = createBeaconSlotDefinitions(
+    beaconZones,
+    beaconItems.length
+  );
+  const usedItemIndexes = new Set();
+  const beacons = slotDefinitions.map((slot, index) => {
+    const configuredZone = beaconZones[index] ?? null;
+    let itemIndex = configuredZone
+      ? beaconItems.findIndex(
+          (candidate, candidateIndex) =>
+            !usedItemIndexes.has(candidateIndex) &&
+            findBeaconZoneConfig(candidate, beaconZoneLookup)?.id === configuredZone.id
+        )
+      : -1;
+    if (
+      itemIndex < 0 &&
+      beaconItems[index] &&
+      !usedItemIndexes.has(index)
+    ) {
+      itemIndex = index;
+    }
+    const item = itemIndex >= 0 ? beaconItems[itemIndex] : null;
+    if (itemIndex >= 0) usedItemIndexes.add(itemIndex);
     const zoneConfig =
+      configuredZone ??
       findBeaconZoneConfig(item, beaconZoneLookup) ??
-      beaconZones[index] ??
       null;
     const level = normalizeZoneCongestion(item, zoneConfig);
     const current = getBeaconCount(item);

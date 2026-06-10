@@ -224,7 +224,7 @@ function normalizeCongestionZones(data, beaconZones) {
   const items = getCongestionItems(data);
   const usedIndexes = new Set();
 
-  return beaconZones.slice(0, 3).map((zone, zoneIndex) => {
+  return beaconZones.map((zone, zoneIndex) => {
     const zoneKeys = [zone.id, zone.name]
       .filter(Boolean)
       .map(normalizeZoneKey);
