@@ -363,7 +363,6 @@ function isWithinPreset(dateKey, preset) {
 }
 
 const attendanceDatePresets = [
-  { id: "all", label: "전체" },
   { id: "today", label: "오늘" },
   { id: "week", label: "이번 주" },
   { id: "month", label: "이번 달" }

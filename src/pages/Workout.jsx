@@ -72,6 +72,7 @@ const EXERCISES = [
     name: "스쿼트",
     category: "legs",
     difficulty: "중급",
+    poseImage: "/exercises/poses/squat.png",
     description: "하체와 코어를 함께 강화하는 전신 운동이에요.",
     targetMuscle: "대퇴사두 · 둔근 · 코어",
     targetMuscles: ["quad", "glute", "hamstring"]
@@ -223,17 +224,29 @@ function ExerciseModal({ open, exercise, onClose, onRequestAdd, addDisabled }) {
         </div>
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
-          <div className="rounded-3xl border border-[color:var(--c-border)] bg-gradient-to-br from-[color:var(--c-surface-2)] to-[color:var(--c-surface)] p-6">
-            <div className="flex items-center justify-between">
-              <div className="grid h-12 w-12 place-items-center rounded-3xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)]">
-                <Dumbbell size={20} aria-hidden="true" />
+          {exercise.poseImage ? (
+            <div className="overflow-hidden rounded-3xl border border-[color:var(--c-border)] bg-[color:var(--c-surface-2)]">
+              <div className="aspect-[4/3] w-full">
+                <img
+                  src={exercise.poseImage}
+                  alt={`${exercise.name} 자세`}
+                  className="h-full w-full object-contain"
+                />
               </div>
-              <DifficultyPill difficulty={exercise.difficulty} />
             </div>
-            <p className="mt-4 text-sm font-semibold text-[color:var(--c-muted)]">
-              동작 예시(이미지/영상)는 추후 업데이트 예정이에요.
-            </p>
-          </div>
+          ) : (
+            <div className="rounded-3xl border border-[color:var(--c-border)] bg-gradient-to-br from-[color:var(--c-surface-2)] to-[color:var(--c-surface)] p-6">
+              <div className="flex items-center justify-between">
+                <div className="grid h-12 w-12 place-items-center rounded-3xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)]">
+                  <Dumbbell size={20} aria-hidden="true" />
+                </div>
+                <DifficultyPill difficulty={exercise.difficulty} />
+              </div>
+              <p className="mt-4 text-sm font-semibold text-[color:var(--c-muted)]">
+                동작 예시 이미지는 추후 업데이트 예정이에요.
+              </p>
+            </div>
+          )}
 
           <MuscleTargetMap
             exerciseName={exercise.name}
