@@ -38,7 +38,12 @@ const EXERCISES = [
     category: "chest",
     difficulty: "초급",
     poseImage: "/exercises/poses/pushup.png",
-    description: "가슴과 삼두를 함께 강화하는 대표적인 맨몸 운동이에요.",
+    description:
+      "양손을 어깨너비보다 조금 넓게 짚고 머리부터 발끝까지 일직선을 유지한 채 가슴이 바닥에 가까워질 때까지 내려갔다가 밀어 올려요.",
+    tips: [
+      "팔꿈치는 몸통에서 약 45도 방향으로 유지해요.",
+      "허리가 꺾이지 않도록 복부와 엉덩이에 힘을 주세요."
+    ],
     targetMuscle: "가슴 · 삼두 · 코어",
     targetMuscles: ["chest", "triceps", "shoulder"]
   },
@@ -48,7 +53,12 @@ const EXERCISES = [
     category: "chest",
     difficulty: "중급",
     poseImage: "/exercises/poses/bench-press.png",
-    description: "가슴 근육을 집중적으로 자극하는 대표적인 웨이트 운동이에요.",
+    description:
+      "벤치에 등을 단단히 고정하고 바를 가슴 중앙까지 천천히 내린 뒤, 발로 바닥을 밀면서 수직으로 들어 올리는 가슴 운동이에요.",
+    tips: [
+      "손목이 뒤로 꺾이지 않게 바를 손바닥 아래쪽에 올려요.",
+      "어깨를 뒤로 모으고 내린 상태를 동작 내내 유지해요."
+    ],
     targetMuscle: "가슴 · 삼두 · 전면 어깨",
     targetMuscles: ["chest", "triceps", "shoulder"]
   },
@@ -58,7 +68,12 @@ const EXERCISES = [
     category: "back",
     difficulty: "고급",
     poseImage: "/exercises/poses/pullup.png",
-    description: "상체 당기는 힘을 키우는 고전적인 운동이에요.",
+    description:
+      "바를 어깨너비보다 넓게 잡고 견갑골을 먼저 아래로 당긴 다음, 가슴을 바 쪽으로 끌어올려 등과 팔을 강화해요.",
+    tips: [
+      "반동보다 등 근육의 수축에 집중해 천천히 움직여요.",
+      "내려갈 때 팔을 충분히 펴되 어깨 힘은 완전히 풀지 않아요."
+    ],
     targetMuscle: "광배 · 이두 · 코어",
     targetMuscles: ["back", "biceps"]
   },
@@ -68,7 +83,12 @@ const EXERCISES = [
     category: "back",
     difficulty: "초급",
     poseImage: "/exercises/poses/seated-row.png",
-    description: "등 중앙을 안정적으로 강화할 수 있어요.",
+    description:
+      "상체를 세우고 손잡이를 배꼽 방향으로 당기며 견갑골을 모았다가, 등이 둥글게 말리지 않는 범위에서 팔을 천천히 펴요.",
+    tips: [
+      "손보다 팔꿈치를 뒤로 보낸다는 느낌으로 당겨요.",
+      "상체를 과하게 앞뒤로 흔들지 않도록 코어를 고정해요."
+    ],
     targetMuscle: "등(중부) · 이두",
     targetMuscles: ["back", "biceps"]
   },
@@ -78,7 +98,12 @@ const EXERCISES = [
     category: "legs",
     difficulty: "중급",
     poseImage: "/exercises/poses/squat.png",
-    description: "하체와 코어를 함께 강화하는 전신 운동이에요.",
+    description:
+      "발을 어깨너비로 벌리고 엉덩이를 뒤로 보내며 앉은 뒤, 발바닥 전체로 바닥을 밀어 일어나 하체와 코어를 강화해요.",
+    tips: [
+      "무릎은 발끝과 같은 방향으로 움직이게 유지해요.",
+      "가슴이 과하게 숙여지거나 허리가 둥글게 말리지 않게 해요."
+    ],
     targetMuscle: "대퇴사두 · 둔근 · 코어",
     targetMuscles: ["quad", "glute", "hamstring"]
   },
@@ -88,7 +113,12 @@ const EXERCISES = [
     category: "legs",
     difficulty: "초급",
     poseImage: "/exercises/poses/lunge.png",
-    description: "균형과 하체 근력을 함께 잡을 수 있어요.",
+    description:
+      "한 발을 앞으로 내딛고 양쪽 무릎을 굽혀 몸을 수직으로 낮춘 뒤, 앞발로 바닥을 밀어 시작 자세로 돌아와요.",
+    tips: [
+      "앞 무릎이 안쪽으로 무너지지 않게 발끝 방향을 따라가요.",
+      "보폭을 충분히 확보하고 상체를 곧게 세워요."
+    ],
     targetMuscle: "둔근 · 햄스트링 · 대퇴사두",
     targetMuscles: ["quad", "glute", "hamstring"]
   },
@@ -98,7 +128,12 @@ const EXERCISES = [
     category: "shoulders",
     difficulty: "중급",
     poseImage: "/exercises/poses/overhead-press.png",
-    description: "어깨 전반을 키우는 기본 프레스 동작이에요.",
+    description:
+      "복부에 힘을 주고 중량을 어깨 높이에서 머리 위로 밀어 올린 뒤, 팔꿈치가 손목 아래에 오도록 천천히 내려요.",
+    tips: [
+      "허리를 과하게 젖히지 않도록 갈비뼈와 골반을 고정해요.",
+      "중량은 얼굴을 지나 몸의 중심선 위로 올려요."
+    ],
     targetMuscle: "어깨 · 삼두",
     targetMuscles: ["shoulder", "triceps"]
   },
@@ -108,7 +143,12 @@ const EXERCISES = [
     category: "shoulders",
     difficulty: "초급",
     poseImage: "/exercises/poses/lateral-raise.png",
-    description: "측면 어깨(삼각근 측면)를 집중적으로 자극해요.",
+    description:
+      "팔꿈치를 살짝 굽힌 상태에서 양팔을 옆으로 들어 어깨 높이 근처까지 올린 후, 긴장을 유지하며 천천히 내려요.",
+    tips: [
+      "손보다 팔꿈치가 먼저 올라간다는 느낌으로 움직여요.",
+      "반동 없이 가벼운 중량으로 어깨 자극에 집중해요."
+    ],
     targetMuscle: "측면 어깨",
     targetMuscles: ["shoulder"]
   },
@@ -118,7 +158,12 @@ const EXERCISES = [
     category: "arms",
     difficulty: "초급",
     poseImage: "/exercises/poses/biceps-curl.png",
-    description: "이두근을 단순하고 확실하게 자극할 수 있어요.",
+    description:
+      "팔꿈치를 몸통 옆에 고정하고 손바닥이 위를 향하도록 중량을 들어 올린 뒤, 이두의 긴장을 느끼며 천천히 내려요.",
+    tips: [
+      "팔꿈치가 앞뒤로 움직이지 않게 고정해요.",
+      "손목을 꺾거나 상체 반동으로 중량을 들지 않아요."
+    ],
     targetMuscle: "이두",
     targetMuscles: ["biceps"]
   },
@@ -128,7 +173,12 @@ const EXERCISES = [
     category: "arms",
     difficulty: "초급",
     poseImage: "/exercises/poses/triceps-pushdown.png",
-    description: "삼두를 안전하게 자극하기 좋은 케이블 운동이에요.",
+    description:
+      "팔꿈치를 몸통 옆에 붙이고 케이블 손잡이를 아래로 밀어 팔을 편 뒤, 팔꿈치 위치를 유지하며 천천히 돌아와요.",
+    tips: [
+      "어깨가 아닌 팔꿈치 관절만 움직이도록 해요.",
+      "아래 지점에서 팔을 펴고 삼두를 짧게 수축해요."
+    ],
     targetMuscle: "삼두",
     targetMuscles: ["triceps"]
   },
@@ -138,7 +188,12 @@ const EXERCISES = [
     category: "abs",
     difficulty: "초급",
     poseImage: "/exercises/poses/plank.png",
-    description: "코어 안정성을 길러주는 정적 운동이에요.",
+    description:
+      "팔꿈치를 어깨 바로 아래에 두고 머리부터 발뒤꿈치까지 일직선을 만든 상태로 복부와 엉덩이에 힘을 주어 버텨요.",
+    tips: [
+      "엉덩이가 올라가거나 허리가 아래로 처지지 않게 해요.",
+      "숨을 참지 말고 짧고 일정하게 호흡해요."
+    ],
     targetMuscle: "코어",
     targetMuscles: ["abs", "shoulder"]
   },
@@ -148,7 +203,12 @@ const EXERCISES = [
     category: "abs",
     difficulty: "초급",
     poseImage: "/exercises/poses/crunch.png",
-    description: "복근(상복부)을 집중적으로 수축해요.",
+    description:
+      "무릎을 세우고 누운 상태에서 허리를 바닥에 붙인 채, 갈비뼈를 골반 쪽으로 당기며 어깨뼈가 들릴 정도만 상체를 말아 올려요.",
+    tips: [
+      "목을 손으로 당기지 말고 시선은 천장을 향해요.",
+      "크게 일어나기보다 복근을 짧게 수축하는 데 집중해요."
+    ],
     targetMuscle: "복근",
     targetMuscles: ["abs"]
   }
@@ -279,6 +339,22 @@ function ExerciseModal({ open, exercise, onClose, onRequestAdd, addDisabled }) {
             <p className="text-sm font-semibold leading-relaxed text-[color:var(--c-muted)]">
               {exercise.description}
             </p>
+          </Card>
+
+          <Card className="space-y-2">
+            <p className="text-sm font-extrabold text-[color:var(--c-text)]">
+              운동 팁
+            </p>
+            <ul className="space-y-2 text-sm font-semibold leading-relaxed text-[color:var(--c-muted)]">
+              {exercise.tips.map((tip) => (
+                <li key={tip} className="flex gap-2">
+                  <span className="text-[color:var(--c-primary)]" aria-hidden="true">
+                    •
+                  </span>
+                  <span>{tip}</span>
+                </li>
+              ))}
+            </ul>
           </Card>
         </div>
 
