@@ -2,6 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { replaceAuthorizationHeader } from "../src/auth/authHeaders.js";
 import {
+  collectAuthRoles,
+  hasAdminRole,
+  normalizeRoles
+} from "../src/auth/roles.js";
+import {
   clearUserStorage,
   getUserStorageKey
 } from "../src/auth/userStorage.js";
@@ -108,4 +113,24 @@ test("account switch leaves the second account with empty user data", () => {
     storage.getItem("moduflow:beacon-attendance:v1:test%40test.com:ModuFlow"),
     null
   );
+});
+
+test("preserves ADMIN from top-level and nested login response roles", () => {
+  assert.deepEqual(
+    collectAuthRoles({
+      role: "ADMIN",
+      data: {
+        accessToken: "admin-token",
+        user: { role: "ROLE_ADMIN" }
+      }
+    }),
+    ["ADMIN", "ROLE_ADMIN"]
+  );
+});
+
+test("restores persisted ADMIN role after refresh", () => {
+  const storedRoles = JSON.parse(JSON.stringify(["ADMIN"]));
+
+  assert.deepEqual(normalizeRoles(storedRoles), ["ADMIN"]);
+  assert.equal(hasAdminRole(storedRoles), true);
 });

@@ -4,6 +4,7 @@ import {
   getApiBaseUrl,
   getApiErrorMessage
 } from "@/api/client";
+import { collectAuthRoles } from "@/auth/roles";
 
 const SOCIAL_PROVIDERS = new Set(["google", "kakao"]);
 export const SOCIAL_LOGIN_RETURN_TO_KEY = "moduflow:social-login-return-to:v1";
@@ -30,24 +31,6 @@ function unwrapData(value) {
 
 function normalizeAccessToken(value) {
   return String(value || "").trim().replace(/^Bearer\s+/i, "");
-}
-
-function pickRoles(source) {
-  if (!source || typeof source !== "object") return [];
-  const roles =
-    source.roles ??
-    source.role ??
-    source.auth ??
-    source.authorities ??
-    source.authority ??
-    source.permissions ??
-    source.user?.roles ??
-    source.user?.role ??
-    source.user?.auth ??
-    source.user?.authorities ??
-    source.user?.authority ??
-    source.user?.permissions;
-  return Array.isArray(roles) ? roles : roles ? [roles] : [];
 }
 
 function pickUserId(source) {
@@ -96,7 +79,7 @@ export async function loginWithEmail({ email, password }) {
       email: data?.email ?? data?.user?.email,
       userId: pickUserId(data),
       name: pickDisplayName(data),
-      roles: pickRoles(data)
+      roles: collectAuthRoles(response, data)
     };
   } catch (e) {
     const httpStatus = e?.response?.status ?? null;
@@ -164,7 +147,7 @@ export async function signupWithEmail({ email, password, name }) {
       email: data?.email ?? data?.user?.email,
       userId: pickUserId(data),
       name: pickDisplayName(data) || normalizedName,
-      roles: pickRoles(data)
+      roles: collectAuthRoles(response, data)
     };
   } catch (e) {
     const httpStatus = e?.response?.status ?? null;

@@ -15,12 +15,14 @@ export default function RequireAdmin({ children }) {
   const [serverPermission, setServerPermission] = useState(
     hasStoredAdminRole ? "allowed" : "checking"
   );
+  const [permissionStatus, setPermissionStatus] = useState(null);
 
   useEffect(() => {
     let active = true;
 
     if (!token || hasStoredAdminRole) {
       setServerPermission(hasStoredAdminRole ? "allowed" : "denied");
+      setPermissionStatus(null);
       return () => {
         active = false;
       };
@@ -28,18 +30,23 @@ export default function RequireAdmin({ children }) {
 
     if (isDevTestAuthToken(token)) {
       setServerPermission("denied");
+      setPermissionStatus(null);
       return () => {
         active = false;
       };
     }
 
     setServerPermission("checking");
+    setPermissionStatus(null);
     fetchAdminDashboardSummary()
       .then(() => {
         if (active) setServerPermission("allowed");
       })
-      .catch(() => {
-        if (active) setServerPermission("denied");
+      .catch((error) => {
+        if (active) {
+          setPermissionStatus(error?.response?.status ?? null);
+          setServerPermission("denied");
+        }
       });
 
     return () => {
@@ -70,7 +77,11 @@ export default function RequireAdmin({ children }) {
           </p>
           <h1 className="mt-2 text-xl font-black">관리자 권한이 필요합니다</h1>
           <p className="mt-2 text-sm font-semibold text-[color:var(--c-muted)]">
-            관리자 계정으로 로그인해야 CMS에 접근할 수 있습니다.
+            {permissionStatus === 403
+              ? "서버가 관리자 권한이 없는 요청으로 응답했습니다."
+              : permissionStatus === 401
+                ? "관리자 로그인이 만료되었거나 토큰이 유효하지 않습니다."
+                : "관리자 권한을 확인하지 못했습니다. 다시 로그인해 주세요."}
           </p>
           <div className="mt-5 flex gap-2">
             <Link

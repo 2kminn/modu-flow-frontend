@@ -4,6 +4,7 @@ import {
   setNativeUserId
 } from "@/native/androidBridge";
 import { clearUserStorage } from "@/auth/userStorage";
+import { hasAdminRole, normalizeRoles } from "@/auth/roles";
 
 const TOKEN_KEY = "auth_token";
 const ACCOUNT_KEY = "auth_account";
@@ -134,30 +135,6 @@ function getJwtUserId(token) {
       payload.id ??
       payload.sub
   );
-}
-
-function normalizeRoles(...sources) {
-  const roles = [];
-
-  function add(value) {
-    if (!value) return;
-    if (Array.isArray(value)) {
-      value.forEach(add);
-      return;
-    }
-    if (typeof value === "object") {
-      add(value.role ?? value.name ?? value.authority ?? value.value);
-      return;
-    }
-    String(value)
-      .split(/[,\s]+/)
-      .map((role) => role.trim())
-      .filter(Boolean)
-      .forEach((role) => roles.push(role));
-  }
-
-  sources.forEach(add);
-  return [...new Set(roles)];
 }
 
 function getJwtRoles(token = getAuthToken()) {
@@ -299,10 +276,7 @@ export function getAuthSessionKey() {
 }
 
 export function isAdminSession() {
-  return getStoredAuthRoles().some((role) => {
-    const normalized = String(role || "").trim().toUpperCase();
-    return normalized === "ADMIN" || normalized === "ROLE_ADMIN";
-  });
+  return hasAdminRole(getStoredAuthRoles());
 }
 
 function normalizeAccount(accountHint = getStoredAuthIdentity()) {
