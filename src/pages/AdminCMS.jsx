@@ -522,7 +522,10 @@ function AdminCMS() {
   const loadCongestion = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setLoadingCongestion(true);
     try {
-      const data = await fetchRecentCongestion({ gymName: resolveGymName() });
+      const data = await fetchRecentCongestion(
+        { gymName: resolveGymName() },
+        { skipAuthRedirect: true }
+      );
       setCongestionData(data);
       setCongestionMessage("");
     } catch (err) {
