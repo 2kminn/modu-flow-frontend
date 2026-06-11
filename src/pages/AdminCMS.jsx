@@ -20,6 +20,9 @@ import Card from "@/components/ui/Card";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import {
   Activity,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   BarChart3,
   Check,
   ChevronRight,
@@ -329,6 +332,43 @@ const attendanceStatusFilters = [
   { id: "미출석", label: "미출석" }
 ];
 
+function SortableTableHeader({ label, sortKey, sort, onSort }) {
+  const isActive = sort?.key === sortKey;
+  const directionLabel = isActive
+    ? sort.direction === "asc"
+      ? "오름차순"
+      : "내림차순"
+    : "가입순";
+  const Icon = isActive
+    ? sort.direction === "asc"
+      ? ArrowUp
+      : ArrowDown
+    : ArrowUpDown;
+
+  return (
+    <th
+      className="border-b border-[color:var(--c-border)] px-3 py-3"
+      aria-sort={
+        isActive ? (sort.direction === "asc" ? "ascending" : "descending") : "none"
+      }
+    >
+      <button
+        type="button"
+        className={[
+          "inline-flex items-center gap-1 rounded-md transition hover:text-[color:var(--c-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--c-focus-ring)]",
+          isActive ? "text-[color:var(--c-primary)]" : ""
+        ].join(" ")}
+        onClick={() => onSort(sortKey)}
+        title={`${label} 정렬: ${directionLabel}`}
+        aria-label={`${label} 정렬, 현재 ${directionLabel}`}
+      >
+        <span>{label}</span>
+        <Icon size={13} strokeWidth={2.5} aria-hidden="true" />
+      </button>
+    </th>
+  );
+}
+
 function Sidebar({ open, activeSection, onSelect, onClose }) {
   return (
     <>
@@ -428,6 +468,7 @@ function AdminCMS() {
     query: "",
     status: "all"
   });
+  const [attendanceSort, setAttendanceSort] = useState(null);
   const [loadingAttendance, setLoadingAttendance] = useState(false);
   const [attendanceMessage, setAttendanceMessage] = useState("");
   const [dashboardSummary, setDashboardSummary] = useState({
@@ -478,6 +519,45 @@ function AdminCMS() {
       return searchable.includes(query);
     });
   }, [attendanceFilters, attendanceRecords]);
+  const sortedAttendanceRecords = useMemo(() => {
+    if (!attendanceSort) return filteredAttendanceRecords;
+
+    const direction = attendanceSort.direction === "asc" ? 1 : -1;
+    const collator = new Intl.Collator("ko-KR", {
+      numeric: true,
+      sensitivity: "base"
+    });
+
+    return filteredAttendanceRecords
+      .map((record, index) => ({ record, index }))
+      .sort((a, b) => {
+        let result = 0;
+        if (attendanceSort.key === "checkInAt") {
+          const aTime = Date.parse(a.record.checkInAt);
+          const bTime = Date.parse(b.record.checkInAt);
+          const aMissing = Number.isNaN(aTime);
+          const bMissing = Number.isNaN(bTime);
+          if (aMissing !== bMissing) return aMissing ? 1 : -1;
+          if (!aMissing) result = aTime - bTime;
+        } else {
+          result = collator.compare(
+            String(a.record[attendanceSort.key] || ""),
+            String(b.record[attendanceSort.key] || "")
+          );
+        }
+
+        return result === 0 ? a.index - b.index : result * direction;
+      })
+      .map(({ record }) => record);
+  }, [attendanceSort, filteredAttendanceRecords]);
+
+  function toggleAttendanceSort(key) {
+    setAttendanceSort((current) => {
+      if (current?.key !== key) return { key, direction: "asc" };
+      if (current.direction === "asc") return { key, direction: "desc" };
+      return null;
+    });
+  }
 
   const loadCongestion = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setLoadingCongestion(true);
@@ -1051,22 +1131,31 @@ function AdminCMS() {
                   <table className="w-full min-w-[640px] border-separate border-spacing-0 text-left">
                     <thead>
                       <tr className="text-xs font-extrabold uppercase tracking-wide text-[color:var(--c-muted-2)]">
-                        <th className="border-b border-[color:var(--c-border)] px-3 py-3">
-                          이메일
-                        </th>
-                        <th className="border-b border-[color:var(--c-border)] px-3 py-3">
-                          이름
-                        </th>
-                        <th className="border-b border-[color:var(--c-border)] px-3 py-3">
-                          출석 시간
-                        </th>
+                        <SortableTableHeader
+                          label="이메일"
+                          sortKey="email"
+                          sort={attendanceSort}
+                          onSort={toggleAttendanceSort}
+                        />
+                        <SortableTableHeader
+                          label="이름"
+                          sortKey="name"
+                          sort={attendanceSort}
+                          onSort={toggleAttendanceSort}
+                        />
+                        <SortableTableHeader
+                          label="출석 시간"
+                          sortKey="checkInAt"
+                          sort={attendanceSort}
+                          onSort={toggleAttendanceSort}
+                        />
                         <th className="border-b border-[color:var(--c-border)] px-3 py-3">
                           상태
                         </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredAttendanceRecords.map((record, index) => (
+                      {sortedAttendanceRecords.map((record, index) => (
                         <tr
                           key={`${record.id}-${record.checkInAt || index}`}
                           className="text-sm font-bold"
