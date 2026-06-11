@@ -1043,6 +1043,7 @@ export default function Stats() {
                   const dateStr = `${monthLabel}-${String(day).padStart(2, "0")}`;
                   const hasWorkout = Boolean(workoutByDate[dateStr]?.length);
                   const hasAttendance = Boolean(attendanceByDate[dateStr]);
+                  const isRestDay = restDateSet.has(dateStr);
                   const isToday = dateStr === todayLabel;
                   const isFutureActiveDate = isFutureDateKey(dateStr, todayLabel);
                   const hasActiveRecord =
@@ -1064,15 +1065,19 @@ export default function Stats() {
                           ? "bg-emerald-500 text-white hover:opacity-90"
                           : hasActiveRecord
                             ? "bg-[color:var(--c-primary)] text-white hover:opacity-90"
+                            : isRestDay
+                              ? "bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:hover:bg-amber-500/20"
                             : "bg-[color:var(--c-surface)] text-[color:var(--c-muted-2)] hover:bg-[color:var(--c-surface)]/80",
                         isToday ? "ring-2 ring-[color:var(--c-purple)] ring-offset-2 ring-offset-[color:var(--c-surface-2)]" : "",
                         activeTab === "workouts" && selectedDate === dateStr ? "ring-2 ring-[color:var(--c-purple)] ring-offset-2 ring-offset-[color:var(--c-surface-2)]" : ""
                       ].join(" ")}
-                      aria-label={`${dateStr}${isToday ? " 오늘" : ""}${isFutureActiveDate ? " 선택 불가" : ""}${hasActiveRecord ? ` ${activeTab === "attendance" ? "출석" : "운동 기록"} 있음` : ""}`}
+                      aria-label={`${dateStr}${isToday ? " 오늘" : ""}${isRestDay ? " 쉬는 날" : ""}${isFutureActiveDate ? " 선택 불가" : ""}${hasActiveRecord ? ` ${activeTab === "attendance" ? "출석" : "운동 기록"} 있음` : ""}`}
                     >
                       <span>{day}</span>
-                      {isToday ? (
-                        <span className="mt-0.5 text-[10px] leading-none">오늘</span>
+                      {isToday || isRestDay ? (
+                        <span className="mt-0.5 text-[10px] leading-none">
+                          {isToday && isRestDay ? "오늘·휴식" : isToday ? "오늘" : "휴식"}
+                        </span>
                       ) : null}
                     </button>
                   );
@@ -1091,6 +1096,10 @@ export default function Stats() {
                 <span className="inline-flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full bg-white ring-1 ring-[color:var(--c-border)] dark:bg-[color:var(--c-surface)]" />
                   {activeTab === "attendance" ? "미출석" : "운동 없음"}
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-amber-300 dark:bg-amber-400" />
+                  쉬는 날
                 </span>
                 <span>(기준일: {todayLabel})</span>
               </div>
