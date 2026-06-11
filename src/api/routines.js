@@ -1,5 +1,8 @@
 import { apiClient } from "@/api/client";
-import { validateWorkoutItemDraft } from "@/api/validation";
+import {
+  normalizeExerciseIdentity,
+  validateWorkoutItemDraft
+} from "@/api/validation";
 import {
   getAuthToken,
   getStoredAuthIdentity,
@@ -94,7 +97,9 @@ function extractRoutinesByDay(data) {
   for (const [dayKey, list] of Object.entries(source)) {
     if (!DAY_KEYS.has(dayKey)) continue;
     if (!Array.isArray(list)) continue;
-    out[dayKey] = list.filter((it) => it && typeof it === "object");
+    out[dayKey] = list
+      .filter((it) => it && typeof it === "object")
+      .map(normalizeExerciseIdentity);
   }
   return out;
 }

@@ -4,6 +4,22 @@ function safeLength(value) {
   return String(value ?? "").length;
 }
 
+export function normalizeExerciseIdentity(item) {
+  if (!item || typeof item !== "object") return item;
+
+  const exerciseId =
+    String(item.exerciseId ?? "").trim() === "overhead-press"
+      ? "shoulder-press"
+      : item.exerciseId;
+  const name =
+    String(item.name ?? "").trim() === "오버헤드 프레스"
+      ? "숄더 프레스"
+      : item.name;
+
+  if (exerciseId === item.exerciseId && name === item.name) return item;
+  return { ...item, exerciseId, name };
+}
+
 export function toNumberOrNull(value) {
   if (value == null || value === "") return null;
   const n = typeof value === "number" ? value : Number(value);
@@ -11,14 +27,16 @@ export function toNumberOrNull(value) {
 }
 
 export function validateWorkoutItemDraft(item) {
+  const normalizedItem = normalizeExerciseIdentity(item);
   const errors = [];
-  const name = String(item?.name ?? "").trim();
-  const id = item?.id == null ? "" : String(item.id);
-  const exerciseId = item?.exerciseId == null ? "" : String(item.exerciseId);
-  const note = item?.note == null ? "" : String(item.note);
-  const sets = toNumberOrNull(item?.sets);
-  const reps = toNumberOrNull(item?.reps);
-  const weight = toNumberOrNull(item?.weight);
+  const name = String(normalizedItem?.name ?? "").trim();
+  const id = normalizedItem?.id == null ? "" : String(normalizedItem.id);
+  const exerciseId =
+    normalizedItem?.exerciseId == null ? "" : String(normalizedItem.exerciseId);
+  const note = normalizedItem?.note == null ? "" : String(normalizedItem.note);
+  const sets = toNumberOrNull(normalizedItem?.sets);
+  const reps = toNumberOrNull(normalizedItem?.reps);
+  const weight = toNumberOrNull(normalizedItem?.weight);
 
   if (!name) errors.push("운동 이름은 필수입니다.");
   if (safeLength(name) > 100) errors.push("운동 이름은 최대 100자까지 입력할 수 있어요.");
@@ -27,13 +45,13 @@ export function validateWorkoutItemDraft(item) {
     errors.push("운동 id는 최대 100자까지 허용됩니다.");
   }
   if (note && safeLength(note) > 255) errors.push("메모는 최대 255자까지 입력할 수 있어요.");
-  if (item?.sets !== "" && item?.sets != null && (!Number.isInteger(sets) || sets < 0 || sets > 999)) {
+  if (normalizedItem?.sets !== "" && normalizedItem?.sets != null && (!Number.isInteger(sets) || sets < 0 || sets > 999)) {
     errors.push("세트는 0~999 사이의 정수로 입력해 주세요.");
   }
-  if (item?.reps !== "" && item?.reps != null && (!Number.isInteger(reps) || reps < 0 || reps > 999)) {
+  if (normalizedItem?.reps !== "" && normalizedItem?.reps != null && (!Number.isInteger(reps) || reps < 0 || reps > 999)) {
     errors.push("횟수는 0~999 사이의 정수로 입력해 주세요.");
   }
-  if (item?.weight !== "" && item?.weight != null && (weight == null || weight < 0)) {
+  if (normalizedItem?.weight !== "" && normalizedItem?.weight != null && (weight == null || weight < 0)) {
     errors.push("무게는 0 이상으로 입력해 주세요.");
   }
 
