@@ -32,9 +32,12 @@ export function normalizeBeaconZone(item) {
   const capacity = readNumeric(
     item.capacity ??
     item.maxCapacity ??
+    item.max_capacity ??
     item.limit ??
     item.acceptableCapacity ??
-    item.totalCapacity
+    item.acceptable_capacity ??
+    item.totalCapacity ??
+    item.total_capacity
   );
 
   if (id == null || String(id).trim() === "") return null;

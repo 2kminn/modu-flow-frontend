@@ -350,11 +350,8 @@ function getBeaconCount(item) {
 }
 
 function getBeaconCapacity(item, zoneConfig) {
-  const configuredCapacity = readNumeric(zoneConfig?.capacity);
-  if (configuredCapacity != null && configuredCapacity > 0) return configuredCapacity;
-  if (!item || typeof item !== "object") return null;
-  return (
-    readNumeric(
+  if (item && typeof item === "object") {
+    const liveCapacity = readNumeric(
       item.capacity ??
         item.maxCapacity ??
         item.max_capacity ??
@@ -363,8 +360,14 @@ function getBeaconCapacity(item, zoneConfig) {
         item.acceptable_capacity ??
         item.totalCapacity ??
         item.total_capacity
-    ) ?? null
-  );
+    );
+    if (liveCapacity != null && liveCapacity > 0) return liveCapacity;
+  }
+
+  const configuredCapacity = readNumeric(zoneConfig?.capacity);
+  return configuredCapacity != null && configuredCapacity > 0
+    ? configuredCapacity
+    : null;
 }
 
 function getBeaconOccupancyRate(item, zoneConfig) {
