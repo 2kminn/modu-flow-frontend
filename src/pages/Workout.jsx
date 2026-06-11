@@ -123,11 +123,11 @@ const EXERCISES = [
     targetMuscles: ["quad", "glute", "hamstring"]
   },
   {
-    id: "overhead-press",
-    name: "오버헤드 프레스",
+    id: "shoulder-press",
+    name: "숄더 프레스",
     category: "shoulders",
     difficulty: "중급",
-    poseImage: "/exercises/poses/overhead-press.png",
+    poseImage: "/exercises/poses/shoulder-press.png",
     description:
       "복부에 힘을 주고 중량을 어깨 높이에서 머리 위로 밀어 올린 뒤, 팔꿈치가 손목 아래에 오도록 천천히 내려요.",
     tips: [

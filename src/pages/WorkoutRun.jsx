@@ -45,8 +45,8 @@ const EXERCISE_INFO = [
     description: "균형과 하체 근력을 함께 잡을 수 있어요."
   },
   {
-    id: "overhead-press",
-    name: "오버헤드 프레스",
+    id: "shoulder-press",
+    name: "숄더 프레스",
     description: "어깨 전반을 키우는 기본 프레스 동작이에요."
   },
   {
