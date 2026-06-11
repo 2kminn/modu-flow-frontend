@@ -985,50 +985,43 @@ export default function Stats() {
 
         <Card className="p-0">
           <div className="p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-[color:var(--c-muted)]">
-                  {monthLabelKo}
-                </p>
-                <p className="mt-1 text-xl font-extrabold">
-                  {activeTab === "attendance" ? "월간 출석 캘린더" : "월간 운동 캘린더"}
-                </p>
-                <p className="mt-1 text-xs font-semibold text-[color:var(--c-muted-2)]">
-                  {activeTab === "attendance"
-                    ? "비콘 신호로 출석 처리된 날짜만 표시해요."
-                    : "운동 기록이 있는 날짜만 표시해요."}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={prevMonth}
-                  className="grid h-11 w-11 place-items-center rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-[color:var(--c-text)] transition hover:bg-[color:var(--c-surface-2)] active:scale-[0.98]"
-                  aria-label="이전 달"
-                >
-                  <ChevronLeft size={18} aria-hidden="true" />
-                </button>
-                <span className="min-w-[84px] text-center text-xs font-extrabold text-[color:var(--c-text)]">
-                  {monthLabelKo}
-                </span>
-                <button
-                  type="button"
-                  onClick={nextMonth}
-                  className="grid h-11 w-11 place-items-center rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-[color:var(--c-text)] transition hover:bg-[color:var(--c-surface-2)] active:scale-[0.98]"
-                  aria-label="다음 달"
-                  disabled={nextDisabled}
-                >
-                  <ChevronRight
-                    size={18}
-                    aria-hidden="true"
-                    className={nextDisabled ? "opacity-40" : undefined}
-                  />
-                </button>
-              </div>
-            </div>
+            <p className="text-xl font-extrabold">
+              {activeTab === "attendance" ? "월간 출석 캘린더" : "월간 운동 캘린더"}
+            </p>
+            <p className="mt-1 text-xs font-semibold text-[color:var(--c-muted-2)]">
+              {activeTab === "attendance"
+                ? "비콘 신호로 출석 처리된 날짜만 표시해요."
+                : "운동 기록이 있는 날짜만 표시해요."}
+            </p>
           </div>
 
           <div className="px-4 pb-4">
+            <div className="mb-3 flex items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={prevMonth}
+                className="grid h-11 w-11 place-items-center rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-[color:var(--c-text)] transition hover:bg-[color:var(--c-surface-2)] active:scale-[0.98]"
+                aria-label="이전 달"
+              >
+                <ChevronLeft size={18} aria-hidden="true" />
+              </button>
+              <span className="min-w-[84px] text-center text-sm font-extrabold text-[color:var(--c-text)]">
+                {monthLabelKo}
+              </span>
+              <button
+                type="button"
+                onClick={nextMonth}
+                className="grid h-11 w-11 place-items-center rounded-2xl border border-[color:var(--c-border)] bg-[color:var(--c-surface)] text-[color:var(--c-text)] transition hover:bg-[color:var(--c-surface-2)] active:scale-[0.98]"
+                aria-label="다음 달"
+                disabled={nextDisabled}
+              >
+                <ChevronRight
+                  size={18}
+                  aria-hidden="true"
+                  className={nextDisabled ? "opacity-40" : undefined}
+                />
+              </button>
+            </div>
             <div className="rounded-3xl bg-[color:var(--c-surface-2)] p-3">
               <div className="grid grid-cols-7 gap-2 text-center text-[11px] font-extrabold text-[color:var(--c-muted-2)]">
                 {["일", "월", "화", "수", "목", "금", "토"].map((d) => (
