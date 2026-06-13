@@ -1,3 +1,4 @@
+// 로그인·회원가입·OAuth·비밀번호 변경 API를 호출하고 다양한 서버 응답을 앱의 인증 형식으로 정규화한다.
 import {
   apiClient,
   DEFAULT_API_BASE_URL,
@@ -106,8 +107,7 @@ export function getSocialLoginUrl(provider) {
   }
 
   const path = `/oauth2/authorization/${normalizedProvider}`;
-  // OAuth starts with a top-level browser navigation, so it can safely use the
-  // backend origin directly. Production API calls still use the same-origin proxy.
+  // OAuth는 브라우저 전체 이동으로 시작하므로 백엔드 주소를 직접 사용한다.
   const baseUrl = getApiBaseUrl() ?? DEFAULT_API_BASE_URL;
 
   return {

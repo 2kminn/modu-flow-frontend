@@ -1,3 +1,4 @@
+// 삭제·로그아웃·안내 작업에서 공통으로 사용하는 확인 대화상자이며 Escape 키 처리도 담당한다.
 import { useEffect, useId } from "react";
 import { AlertCircle, LogOut, Trash2 } from "lucide-react";
 

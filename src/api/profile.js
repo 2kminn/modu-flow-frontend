@@ -1,3 +1,4 @@
+// 마이페이지와 인증 화면에 연결되어 현재 사용자 프로필 조회 및 이름 변경을 담당한다.
 import { apiClient } from "@/api/client";
 import {
   getAuthDisplayIdentity,

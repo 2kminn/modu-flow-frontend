@@ -1,3 +1,4 @@
+// api/client가 발생시키는 전역 오류 이벤트를 받아 잠시 표시하는 공통 토스트다.
 import { API_ERROR_EVENT } from "@/api/client";
 import { useEffect, useState } from "react";
 

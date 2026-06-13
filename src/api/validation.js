@@ -1,3 +1,4 @@
+// 운동·루틴 API에 전달하기 전 날짜, 횟수, 운동 항목의 형식과 허용 범위를 공통 검증한다.
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function safeLength(value) {

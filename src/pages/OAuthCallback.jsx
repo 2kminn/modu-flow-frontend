@@ -1,3 +1,4 @@
+// 소셜 로그인 콜백 화면이다. URL의 토큰·사용자 정보를 세션으로 옮기고 원래 요청한 라우트로 복귀한다.
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Card from "@/components/ui/Card";
@@ -43,7 +44,7 @@ function safeClearReturnTo() {
     window.sessionStorage.removeItem(SOCIAL_LOGIN_RETURN_TO_KEY);
     window.sessionStorage.removeItem(SOCIAL_LOGIN_PROVIDER_KEY);
   } catch {
-    // ignore
+    // 세션 저장소 삭제가 실패해도 콜백 인증 처리는 계속한다.
   }
 }
 
@@ -118,7 +119,7 @@ export default function OAuthCallback() {
       try {
         await fetchMyProfile();
       } catch {
-        // The OAuth token is authoritative. Some accounts cannot access /me.
+        // OAuth 토큰을 우선 사용하며, 일부 계정의 /me 조회 실패는 로그인 실패로 보지 않는다.
       }
 
       if (cancelled) return;

@@ -1,3 +1,4 @@
+// RootLayout 하단에서 홈·운동·기록·마이페이지 라우트로 이동하는 공통 내비게이션이다.
 import { NavLink } from "react-router-dom";
 import { BarChart3, Dumbbell, Home, User } from "lucide-react";
 

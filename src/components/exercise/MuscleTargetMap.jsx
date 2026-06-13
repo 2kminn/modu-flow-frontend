@@ -1,3 +1,4 @@
+// Workout 화면의 운동 정보와 연결되어 기본 인체 이미지 위에 대상 근육 오버레이를 겹쳐 표시한다.
 const BODY_MAP = {
   src: "/exercises/body-map-base.jpeg",
   width: 1988,

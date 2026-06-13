@@ -1,3 +1,4 @@
+// 기록 화면이다. 루틴·운동 기록·출석 데이터를 월별 달력과 일자별 편집 모달로 통합해 보여준다.
 import Button from "@/components/ui/Button";
 import ActionDialog from "@/components/ui/ActionDialog";
 import Card from "@/components/ui/Card";
@@ -126,6 +127,7 @@ function cloneWorkoutItem(item) {
   };
 }
 
+// 루틴 항목과 기록 항목의 이름·ID를 비교할 때 사용할 문자열을 통일한다.
 function normalizeWorkoutName(value) {
   return String(value || "").trim().replace(/\s+/g, " ").toLowerCase();
 }
@@ -179,6 +181,7 @@ function mergeRoutineWithWorkoutItems(routineItems, currentItems) {
   return merged;
 }
 
+// 서버 또는 로컬 저장소의 기록을 날짜별 운동 배열 구조로 정규화한다.
 function normalizeRecordsByDate(raw) {
   if (!raw || typeof raw !== "object") return {};
   const out = Object.create(null);
@@ -223,6 +226,7 @@ function normalizeRecordsByDate(raw) {
   return out;
 }
 
+// 선택 날짜의 운동 추가·수정·삭제를 처리하고 결과를 상위 Stats 화면에 전달한다.
 function WorkoutListModal({
   open,
   title,
@@ -599,6 +603,7 @@ function WorkoutListModal({
 }
 
 export default function Stats() {
+  // 월 이동, 선택 날짜, 운동 기록, 출석 날짜와 로딩·오류 상태를 통합 관리한다.
   const [month, setMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -751,7 +756,7 @@ export default function Stats() {
       }
       window.localStorage.setItem(getWorkoutHistoryStorageKey(), JSON.stringify(out));
     } catch {
-      // ignore
+      // 로컬 출석 저장소 접근 실패 시 서버에서 받은 출석 정보만 사용한다.
     }
   }, [recordsByDate]);
 

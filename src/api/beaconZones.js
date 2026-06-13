@@ -1,3 +1,4 @@
+// 홈과 관리자 CMS에서 사용하는 비콘 구역을 서버 및 로컬 캐시에서 조회·저장·수정한다.
 import { apiClient } from "@/api/client";
 import { isDevTestAuthToken } from "@/auth/auth";
 
@@ -79,7 +80,7 @@ export function saveBeaconZonesToLocalStorage(zones) {
     window.localStorage.setItem(BEACON_ZONES_STORAGE_KEY, JSON.stringify(normalized));
     window.dispatchEvent(new CustomEvent(BEACON_ZONES_EVENT, { detail: normalized }));
   } catch {
-    // ignore
+    // 로컬 저장소를 사용할 수 없으면 서버 또는 기본 구역 데이터로 계속 처리한다.
   }
 }
 

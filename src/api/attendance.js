@@ -1,3 +1,4 @@
+// 홈·통계·관리자 화면의 출석 체크, 위치 갱신, 혼잡도 및 출석 목록 API를 담당한다.
 import { apiClient } from "@/api/client";
 import { isDevTestAuthToken } from "@/auth/auth";
 

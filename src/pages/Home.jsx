@@ -1,3 +1,4 @@
+// 메인 홈 화면이다. 루틴·운동 기록·출석·비콘 혼잡도 API를 모아 오늘의 운동과 체육관 상태를 보여준다.
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import {
@@ -65,6 +66,8 @@ import {
 const GYM_NAME_STORAGE_KEY = "moduflow:gym-name:v1";
 const BEACON_ATTENDANCE_STORAGE_PREFIX = "moduflow:beacon-attendance:v1";
 const DEFAULT_GYM_NAME = "ModuFlow";
+
+// 서버와 로컬 저장소의 서로 다른 운동·요일 표현을 화면에서 사용하는 형식으로 맞춘다.
 const DAY_LABELS = {
   mon: "월",
   tue: "화",
@@ -171,7 +174,7 @@ function markBeaconAttendanceDate(date, gymName = resolveGymName()) {
   try {
     window.localStorage.setItem(getBeaconAttendanceStorageKey(gymName), date);
   } catch {
-    // ignore
+    // 저장소를 사용할 수 없어도 서버 출석 처리 결과는 유지한다.
   }
 }
 
@@ -197,7 +200,7 @@ function readStoredGymName() {
       return fromQuery.trim();
     }
   } catch {
-    // ignore
+    // URL이나 저장소를 읽지 못하면 아래의 기본 체육관 이름을 사용한다.
   }
 
   try {
@@ -871,6 +874,7 @@ function CongestionPill({ level, title, current, rate, loading, status }) {
 }
 
 export default function Home() {
+  // 오늘의 루틴, 출석 여부, 비콘 신호와 혼잡도 상태를 한 화면에서 관리한다.
   const navigate = useNavigate();
   const [userName, setUserName] = useState(() => getAuthProfileName());
   const todayDayKey = useMemo(() => dayKeyFromDate(new Date()), []);
@@ -1240,7 +1244,7 @@ export default function Home() {
             }
           }
         } catch {
-          // Background beacon failures keep waiting for the next signal.
+          // 백그라운드 비콘 처리 실패는 알림을 띄우지 않고 다음 신호를 기다린다.
         } finally {
           if (shouldAttemptAttendance && active) setCheckingInAttendance(false);
           if (

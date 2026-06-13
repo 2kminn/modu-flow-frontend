@@ -1,3 +1,4 @@
+// 콘텐츠를 묶는 공통 카드 스타일이며 필요하면 div 대신 다른 HTML 요소로 렌더링한다.
 export default function Card({ as: Component = "div", className, ...props }) {
   return (
     <Component

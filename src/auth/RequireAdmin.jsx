@@ -1,3 +1,4 @@
+// 관리자 라우트 앞에서 저장된 역할과 서버 권한을 확인하고 허용·거부·확인 중 화면을 제어한다.
 import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import {

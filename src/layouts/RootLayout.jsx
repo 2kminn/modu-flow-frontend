@@ -1,3 +1,4 @@
+// 로그인 후 일반 화면의 공통 헤더·뒤로가기·테마 전환·하단 내비게이션을 구성한다.
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import BottomNavigation from "@/components/BottomNavigation";
 import ThemeToggle from "@/components/ui/ThemeToggle";

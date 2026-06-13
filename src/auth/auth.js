@@ -1,3 +1,4 @@
+// 앱 전역 인증 세션 저장소다. 토큰·계정·권한·프로필 이름을 보관하고 Android 브리지와 동기화한다.
 import {
   clearNativeSession,
   setNativeAuthToken,
@@ -32,7 +33,7 @@ function safeSet(storage, key, value) {
   try {
     storage.setItem(key, value);
   } catch {
-    // ignore
+    // 저장소 접근이 제한된 환경에서는 값이 없는 것으로 처리한다.
   }
 }
 
@@ -40,7 +41,7 @@ function safeRemove(storage, key = TOKEN_KEY) {
   try {
     storage.removeItem(key);
   } catch {
-    // ignore
+    // 저장소 쓰기 실패가 로그인 화면의 진행을 막지 않게 한다.
   }
 }
 
@@ -82,7 +83,7 @@ function emitAuthSessionChanged(type) {
       })
     );
   } catch {
-    // ignore
+    // 저장소 삭제 실패가 로그아웃 후속 처리를 막지 않게 한다.
   }
 }
 
@@ -90,7 +91,7 @@ function clearStoredUserData(userId, accountIdentity) {
   try {
     clearUserStorage(localStorage, { userId, accountIdentity });
   } catch {
-    // ignore
+    // 세션 변경 이벤트를 보낼 수 없는 환경에서는 저장소 값만 갱신한다.
   }
 }
 
@@ -333,7 +334,7 @@ export function setStoredProfileName(name, accountHint) {
       })
     );
   } catch {
-    // ignore
+    // 네이티브 동기화 실패 시에도 웹 세션은 그대로 사용한다.
   }
   return normalizedName;
 }

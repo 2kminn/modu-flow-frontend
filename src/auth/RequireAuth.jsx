@@ -1,3 +1,4 @@
+// RootLayout 앞에서 로그인 여부를 검사하며, 미인증 사용자는 로그인으로 관리자는 CMS로 이동시킨다.
 import { Fragment, useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import {

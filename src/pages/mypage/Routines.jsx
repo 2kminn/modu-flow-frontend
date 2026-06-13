@@ -1,3 +1,4 @@
+// 루틴 설정 화면이다. 요일별 운동과 휴식일을 편집하고 루틴 API 및 계정별 캐시에 자동 저장한다.
 import Button from "@/components/ui/Button";
 import ActionDialog from "@/components/ui/ActionDialog";
 import Card from "@/components/ui/Card";
@@ -146,7 +147,7 @@ export default function Routines() {
   const selectedDayLabel = DAYS.find((d) => d.key === selectedDay)?.label || "";
   const isSelectedDayRest = restDays.includes(selectedDay);
 
-  // Load the current account's routines from the backend.
+  // 현재 계정의 루틴을 서버에서 읽고 서버 사용이 불가능하면 로컬 캐시를 사용한다.
   useEffect(() => {
     let cancelled = false;
     async function run() {
@@ -156,11 +157,11 @@ export default function Routines() {
         const safeServerData = sanitizeRoutinesByDay(serverData);
         setRestDays(Array.isArray(serverData?.restDays) ? serverData.restDays : []);
         setRoutinesByDay(safeServerData);
-        // Avoid immediately PUT'ing right after hydration.
+        // 최초 조회 결과를 상태에 넣은 직후 불필요한 PUT 요청이 발생하지 않게 한다.
         skipNextAutosaveRef.current = true;
         didHydrateFromServerRef.current = true;
       } catch (e) {
-        // Fallback to localStorage only; no UI changes.
+        // 서버 조회 실패 시 화면 구조는 유지하고 localStorage 데이터로 대체한다.
         didHydrateFromServerRef.current = true;
       }
     }
@@ -170,7 +171,7 @@ export default function Routines() {
     };
   }, []);
 
-  // Background autosave to backend (debounced; silent)
+  // 편집이 멈춘 뒤 서버에 자동 저장하며 입력 중 반복 요청은 디바운스로 줄인다.
   useEffect(() => {
     if (!didHydrateFromServerRef.current) return;
     if (skipNextAutosaveRef.current) {

@@ -1,3 +1,4 @@
+// 마이페이지다. 프로필 API와 인증 저장소를 연결해 이름 수정, 설정 이동, 로그아웃을 처리한다.
 import Button from "@/components/ui/Button";
 import ActionDialog from "@/components/ui/ActionDialog";
 import Card from "@/components/ui/Card";
@@ -21,6 +22,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CalendarCheck, ChevronRight, Lock, LogOut, Pencil, UserCircle } from "lucide-react";
 
+// 각 설정 라우트로 이동하는 공통 메뉴 행이다.
 function MenuRow({ label, description, onClick, icon: Icon }) {
   return (
     <button
@@ -56,6 +58,7 @@ function MenuRow({ label, description, onClick, icon: Icon }) {
   );
 }
 
+// 프로필 이름을 입력받아 MyPage의 서버 저장 함수로 전달하는 대화상자다.
 function ProfileNameDialog({ initialName, accountEmail, onCancel, onSave, saving }) {
   const [name, setName] = useState(initialName);
   const [error, setError] = useState(null);

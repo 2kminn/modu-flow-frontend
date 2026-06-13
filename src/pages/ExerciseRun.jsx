@@ -1,3 +1,4 @@
+// 개별 운동 실행 화면이다. 라우트의 운동 ID와 카메라를 연결하고 자세 횟수·정확도 UI를 표시한다.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -22,7 +23,8 @@ export default function ExerciseRun() {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
 
-  const [cameraState, setCameraState] = useState("idle"); // idle | ready | denied | error | native
+  // 카메라 상태는 대기·웹 준비·권한 거부·오류·네이티브 실행으로 구분한다.
+  const [cameraState, setCameraState] = useState("idle");
 
   const [count, setCount] = useState(8);
   const [accuracy, setAccuracy] = useState(92);

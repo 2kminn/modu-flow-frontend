@@ -1,3 +1,4 @@
+// 이전 오버헤드 프레스 식별자가 현재 숄더 프레스 식별자로 변환되어 저장되는지 검증한다.
 import test from "node:test";
 import assert from "node:assert/strict";
 import {

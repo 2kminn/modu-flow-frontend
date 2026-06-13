@@ -1,3 +1,4 @@
+// 로그인·회원가입·마이페이지 폼에서 값과 포커스 상태에 따라 라벨이 이동하는 공통 입력창이다.
 import { useState } from "react";
 
 export default function FloatingLabelInput({

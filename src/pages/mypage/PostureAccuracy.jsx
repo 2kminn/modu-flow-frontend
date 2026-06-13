@@ -1,3 +1,4 @@
+// 자세 정확도 통계의 정적 예시 화면이다. 현재 App에서는 /stats로 리다이렉트된다.
 import Card from "@/components/ui/Card";
 
 function Row({ label, value }) {

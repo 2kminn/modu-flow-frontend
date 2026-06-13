@@ -1,3 +1,4 @@
+// 모든 서버 요청의 공통 Axios 클라이언트다. API 주소, 인증 헤더, 401 처리와 오류 알림을 관리한다.
 import axios from "axios";
 import { getAuthToken, clearAuthToken } from "@/auth/auth";
 import { replaceAuthorizationHeader } from "@/auth/authHeaders";
@@ -22,9 +23,7 @@ function canUseBaseUrl(value) {
 function resolveBaseUrl() {
   const envUrl = normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL);
 
-  // In production, call the deployed backend directly instead of relying on
-  // the same-origin Vercel rewrite. If the env var is missing, fall back to
-  // the default deployed backend URL.
+  // 운영 환경에서는 Vercel 프록시 대신 배포된 백엔드를 직접 호출하고, 환경 변수가 없으면 기본 주소를 쓴다.
   if (import.meta.env.PROD) {
     if (canUseBaseUrl(envUrl)) return envUrl;
     return DEFAULT_API_BASE_URL;
@@ -42,7 +41,7 @@ function resolveBaseUrl() {
       );
       if (canUseBaseUrl(fromStorage)) return fromStorage;
     } catch {
-      // ignore
+      // 저장소 접근이 제한되면 다음 API 주소 후보를 사용한다.
     }
   }
 
@@ -60,7 +59,7 @@ export function setApiBaseUrl(nextBaseUrl) {
     try {
       window.localStorage.removeItem(STORAGE_API_BASE_URL_KEY);
     } catch {
-      // ignore
+      // 브라우저 저장소에 기록하지 못해도 현재 실행 중인 전역 설정은 유지한다.
     }
     apiClient.defaults.baseURL = resolveBaseUrl() || undefined;
     return;
@@ -74,7 +73,7 @@ export function setApiBaseUrl(nextBaseUrl) {
       window.localStorage.setItem(STORAGE_API_BASE_URL_KEY, value);
     }
   } catch {
-    // ignore
+    // 브라우저 이벤트를 보낼 수 없는 환경에서는 오류 객체만 반환한다.
   }
   apiClient.defaults.baseURL = canUseBaseUrl(value) ? value : resolveBaseUrl() || undefined;
 }
@@ -108,7 +107,7 @@ function emitApiError(message) {
   try {
     window.dispatchEvent(new CustomEvent(API_ERROR_EVENT, { detail: { message } }));
   } catch {
-    // ignore
+    // 로그아웃 처리 중 저장소 오류가 발생해도 원래 API 오류를 유지한다.
   }
 }
 

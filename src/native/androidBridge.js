@@ -1,10 +1,11 @@
+// 웹 화면과 Android WebView의 자바스크립트 인터페이스를 연결해 카메라·운동·세션 기능을 호출한다.
 export const NATIVE_EVENT_NAME = "moduflow:native-event";
 
 function getBridgeObject() {
   if (typeof window === "undefined") return null;
-  // Recommended name for Android WebView JS interface.
+  // 앱에서 우선 사용하도록 정한 Android WebView 인터페이스 이름이다.
   if (window.ModuFlowAndroid) return window.ModuFlowAndroid;
-  // Common alternatives (in case the host app uses another name).
+  // 호스트 앱의 구현 차이를 고려해 자주 쓰이는 대체 이름도 확인한다.
   if (window.AndroidBridge) return window.AndroidBridge;
   if (window.Android) return window.Android;
   return null;
@@ -38,7 +39,7 @@ export function startNativeWorkout(exercises) {
     bridge.startWorkout(exerciseCsv);
     return true;
   } catch {
-    // ignore
+    // 네이티브 메서드 호출 실패 시 웹 기능으로 대체할 수 있도록 false를 반환한다.
   }
   return false;
 }
@@ -51,7 +52,7 @@ export function setNativeAuthToken(token) {
     bridge.setAuthToken(String(token ?? ""));
     return true;
   } catch {
-    // ignore
+    // 네이티브 메서드 호출 실패 시 웹 기능으로 대체할 수 있도록 false를 반환한다.
   }
   return false;
 }
@@ -64,7 +65,7 @@ export function setNativeUserId(userId) {
     bridge.setUserId(String(userId ?? ""));
     return true;
   } catch {
-    // ignore
+    // 네이티브 메서드 호출 실패 시 웹 기능으로 대체할 수 있도록 false를 반환한다.
   }
   return false;
 }
@@ -78,7 +79,7 @@ export function clearNativeSession() {
       bridge.clearSession();
       return true;
     } catch {
-      // Fall back to clearing individual values.
+      // 일괄 삭제 메서드가 없으면 토큰과 사용자 ID를 각각 비운다.
     }
   }
 
@@ -104,7 +105,7 @@ export function getNativeDeviceId() {
       if (value) return value;
     }
   } catch {
-    // ignore
+    // 네이티브 세션 삭제 실패가 웹 로그아웃을 막지 않게 한다.
   }
 
   const bridge = getBridgeObject();
@@ -116,7 +117,7 @@ export function getNativeDeviceId() {
       const value = String(bridge[methodName]() ?? "").trim();
       if (value) return value;
     } catch {
-      // try the next compatible method
+      // 현재 메서드가 실패하면 다음 호환 메서드를 시도한다.
     }
   }
 
@@ -143,7 +144,7 @@ export function openNativeCamera(payload = {}) {
       return true;
     }
   } catch {
-    // ignore
+    // 카메라 실행 실패 시 브라우저 카메라를 사용할 수 있도록 false를 반환한다.
   }
   return false;
 }
@@ -166,7 +167,7 @@ export function closeNativeCamera(payload = {}) {
       return true;
     }
   } catch {
-    // ignore
+    // 카메라 종료 실패가 화면 정리를 막지 않게 한다.
   }
   return false;
 }

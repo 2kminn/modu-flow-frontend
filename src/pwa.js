@@ -1,3 +1,4 @@
+// Vite PWA 플러그인과 연결되어 운영 환경의 서비스 워커 등록·갱신·캐시 삭제를 담당한다.
 import { registerSW } from "virtual:pwa-register";
 
 export function registerServiceWorker() {

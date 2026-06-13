@@ -1,3 +1,4 @@
+// ThemeProvider의 상태와 연결되어 라이트·다크 테마를 전환하는 공통 스위치다.
 import { useTheme } from "@/theme/ThemeProvider";
 import { Moon, Sun } from "lucide-react";
 

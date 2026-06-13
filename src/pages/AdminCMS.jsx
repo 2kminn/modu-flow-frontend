@@ -1,3 +1,4 @@
+// 관리자 CMS 화면이다. 관리자 API와 비콘 API를 연결해 회원 출석·혼잡도·구역 설정을 관리한다.
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -223,6 +224,7 @@ function getCongestionUpdatedAt(item, data) {
   return Number.isNaN(date.getTime()) ? null : date.getTime();
 }
 
+// 서버 혼잡도와 비콘 설정을 구역별 인원·수용량·상태 표시 구조로 합친다.
 function normalizeCongestionZones(data, beaconZones) {
   const items = getCongestionItems(data);
   const usedIndexes = new Set();
@@ -332,6 +334,7 @@ const attendanceStatusFilters = [
   { id: "미출석", label: "미출석" }
 ];
 
+// 열 제목을 클릭하면 출석 표의 정렬 기준과 오름·내림차순을 변경한다.
 function SortableTableHeader({ label, sortKey, sort, onSort }) {
   const isActive = sort?.key === sortKey;
   const directionLabel = isActive
@@ -369,6 +372,7 @@ function SortableTableHeader({ label, sortKey, sort, onSort }) {
   );
 }
 
+// 모바일과 데스크톱에서 공통으로 쓰는 CMS 메뉴이며 선택 섹션을 부모에 전달한다.
 function Sidebar({ open, activeSection, onSelect, onClose }) {
   return (
     <>
@@ -459,6 +463,7 @@ function StatCard({ icon: Icon, label, value, tone }) {
 }
 
 function AdminCMS() {
+  // 요약 지표, 출석 목록, 혼잡도, 비콘 구역과 각 편집 상태를 관리한다.
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);

@@ -1,3 +1,4 @@
+/* Tailwind 기본 계층과 앱 전역 색상 토큰·다크 테마·공통 애니메이션을 정의한다. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

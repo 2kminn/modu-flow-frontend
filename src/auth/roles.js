@@ -1,3 +1,4 @@
+// JWT와 서버 응답의 여러 권한 필드 형식을 하나의 역할 목록으로 합쳐 관리자 여부를 판별한다.
 const ROLE_FIELDS = [
   "roles",
   "role",

@@ -1,3 +1,4 @@
+// 회원가입 화면이다. 입력값을 검증해 가입 API를 호출하고 발급된 인증 정보를 세션과 프로필에 연결한다.
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Card from "@/components/ui/Card";
@@ -64,7 +65,7 @@ export default function SignUp() {
     try {
       await fetchMyProfile();
     } catch {
-      // The signup token is authoritative. Profile loading can retry in the app.
+      // 가입 토큰을 우선 사용하며 프로필 조회는 앱 진입 후 다시 시도할 수 있다.
     }
     setLoading(false);
     navigate("/", { replace: true });

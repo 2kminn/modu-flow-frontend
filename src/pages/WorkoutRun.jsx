@@ -1,3 +1,4 @@
+// 오늘의 루틴 실행 화면이다. 웹 또는 Android 카메라를 열고 운동 진행 결과를 일자별 기록 API에 저장한다.
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { Camera, CameraOff, ChevronLeft, ChevronRight, RefreshCw, RotateCcw } from "lucide-react";
@@ -13,6 +14,7 @@ import {
 import { loadRoutinesFromLocalStorage } from "@/api/routines";
 import { replaceWorkoutDay } from "@/api/workouts";
 
+// 루틴 항목의 ID나 이름을 화면용 운동 설명과 연결하는 기준 데이터다.
 const EXERCISE_INFO = [
   {
     id: "pushup",
@@ -99,7 +101,7 @@ function resolveExerciseInfo(item) {
 }
 
 function analyzePosture() {
-  // TODO: 자세 분석 기능은 추후 구현
+  // 자세 분석 모델이 연결되기 전까지 화면 흐름을 유지하기 위한 임시 결과를 반환한다.
 }
 
 export default function WorkoutRun() {
@@ -109,8 +111,10 @@ export default function WorkoutRun() {
   const streamRef = useRef(null);
 
   const [cameraOn, setCameraOn] = useState(true);
-  const [cameraState, setCameraState] = useState("idle"); // idle | ready | denied | error | native
-  const [facingMode, setFacingMode] = useState("user"); // user | environment
+  // 카메라 상태는 대기·웹 준비·권한 거부·오류·네이티브 실행으로 구분한다.
+  const [cameraState, setCameraState] = useState("idle");
+  // 모바일에서 전면(user)과 후면(environment) 카메라를 전환한다.
+  const [facingMode, setFacingMode] = useState("user");
   const [savingWorkout, setSavingWorkout] = useState(false);
   const [saveError, setSaveError] = useState("");
 
@@ -198,9 +202,7 @@ export default function WorkoutRun() {
   }, [cameraOn, cameraState]);
 
   useEffect(() => {
-    // Optional: Native can push status back to the web via CustomEvent.
-    // detail example:
-    // { type: "camera", status: "ready" | "denied" | "error" | "closed" }
+    // Android 앱은 CustomEvent로 카메라 준비·거부·오류·종료 상태를 웹에 전달한다.
     return onNativeEvent((detail) => {
       if (!detail || detail.type !== "camera") return;
       if (detail.status === "ready") setCameraState("native");

@@ -1,3 +1,4 @@
+// 운동 탐색 화면이다. 운동 상세·근육 지도를 보여주고 선택한 운동을 요일별 루틴 API에 추가한다.
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import MuscleTargetMap from "@/components/exercise/MuscleTargetMap";
@@ -31,6 +32,7 @@ const DAYS = [
   { key: "sun", label: "일" }
 ];
 
+// 운동 카드와 상세 모달에서 함께 사용하는 설명·이미지·대상 근육 데이터다.
 const EXERCISES = [
   {
     id: "pushup",
@@ -253,7 +255,8 @@ function getExerciseIconClass(exercise) {
   return "border-[color:var(--c-primary)]/20 bg-[color:var(--c-primary-soft)] text-[color:var(--c-primary)]";
 }
 
-function ExerciseModal({ open, exercise, onClose, onRequestAdd, addDisabled }) {
+// 운동 카드를 선택했을 때 자세 설명과 대상 근육을 보여주는 상세 모달이다.
+function ExerciseModal({ open, exercise, onClose, onRequestAdd }) {
   const [poseImageFailed, setPoseImageFailed] = useState(false);
 
   useEffect(() => {
@@ -360,8 +363,8 @@ function ExerciseModal({ open, exercise, onClose, onRequestAdd, addDisabled }) {
 
         <div className="shrink-0 border-t border-[color:var(--c-border)] bg-[color:var(--c-surface)] p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
           <div className="grid gap-2">
-            <Button type="button" onClick={onRequestAdd} disabled={addDisabled}>
-              {addDisabled ? "이미 루틴에 있어요" : "루틴에 추가"}
+            <Button type="button" onClick={onRequestAdd}>
+              루틴에 추가
             </Button>
             <Button type="button" variant="secondary" onClick={onClose}>
               닫기
@@ -373,6 +376,7 @@ function ExerciseModal({ open, exercise, onClose, onRequestAdd, addDisabled }) {
   );
 }
 
+// 세트·횟수·중량·요일을 입력받아 Workout의 루틴 저장 처리로 전달한다.
 function AddToRoutineModal({
   open,
   exercise,
@@ -529,6 +533,7 @@ function AddToRoutineModal({
 }
 
 export default function Workout() {
+  // 검색·카테고리·상세 모달·저장 상태를 운동 목록과 함께 관리한다.
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [query, setQuery] = useState("");
   const [listVisible, setListVisible] = useState(true);
@@ -549,6 +554,7 @@ export default function Workout() {
     return () => window.cancelAnimationFrame(raf);
   }, [selectedCategory]);
 
+  // 선택 카테고리와 검색어를 모두 만족하는 운동만 화면에 표시한다.
   const exercisesForCategory = useMemo(() => {
     const normalizedQuery = query.trim();
     return EXERCISES.filter((ex) => {
@@ -569,6 +575,7 @@ export default function Workout() {
     setAddModalOpen(true);
   }
 
+  // 서버 루틴에 항목을 추가한 뒤 홈과 루틴 화면이 즉시 읽도록 로컬 캐시도 갱신한다.
   async function addToRoutine({ dayKey, sets, reps, weight }) {
     if (!modalExercise || savingRoutine) return;
     const validation = validateWorkoutItemDraft({
@@ -735,7 +742,6 @@ export default function Workout() {
         exercise={modalExercise}
         onClose={() => setModalExerciseId(null)}
         onRequestAdd={openAddModal}
-        addDisabled={false}
       />
 
       <AddToRoutineModal

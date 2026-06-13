@@ -1,4 +1,5 @@
-// Default is only meant for local/dev. In production, always set BACKEND_ORIGIN.
+// Vercel 서버리스 프록시의 공통 구현이다. 요청 본문·헤더·CORS를 정리해 실제 백엔드로 전달한다.
+// 기본 주소는 로컬 개발 전용이며 운영 배포에서는 BACKEND_ORIGIN 환경 변수를 사용한다.
 const DEFAULT_BACKEND_ORIGIN = "https://3-39-194-42.sslip.io";
 
 function normalizeOrigin(value) {
@@ -32,9 +33,7 @@ function resolveBackendOrigin() {
   const fromEnv = normalizeOrigin(process.env.BACKEND_ORIGIN);
   if (fromEnv) return fromEnv;
 
-  // Vercel sets VERCEL_ENV to "production" | "preview" | "development".
-  // If we're deployed and missing BACKEND_ORIGIN, fail closed instead of proxying to an
-  // accidental hardcoded origin.
+  // 배포 환경에서 BACKEND_ORIGIN이 빠지면 하드코딩 주소로 잘못 전송하지 않고 요청을 거부한다.
   if (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "development") return "";
 
   return DEFAULT_BACKEND_ORIGIN;

@@ -1,3 +1,4 @@
+// 운동·홈·통계·루틴 화면이 공유하는 요일별 루틴을 서버와 계정별 로컬 캐시에 동기화한다.
 import { apiClient } from "@/api/client";
 import {
   normalizeExerciseIdentity,
@@ -145,7 +146,7 @@ function cacheRoutinesToStorageKey(storageKey, routinesByDay) {
     const out = extractRoutinesByDay(routinesByDay);
     window.localStorage.setItem(storageKey, JSON.stringify(out));
   } catch {
-    // ignore
+    // 계정별 캐시를 읽지 못하면 빈 루틴을 사용한다.
   }
 }
 
@@ -191,7 +192,7 @@ function cacheRoutineRestDaysToStorageKey(storageKey, restDays, emitEvent = true
       );
     }
   } catch {
-    // ignore
+    // 캐시 저장 실패가 서버 저장 결과에 영향을 주지 않게 한다.
   }
 }
 
@@ -204,7 +205,7 @@ export function removeLegacyRoutineCache() {
   try {
     window.localStorage.removeItem(ROUTINE_STORAGE_KEY);
   } catch {
-    // ignore
+    // 이전 형식 캐시 삭제 실패는 현재 계정 데이터 처리와 분리한다.
   }
 }
 
@@ -244,7 +245,7 @@ function validationError(message) {
   return error;
 }
 
-// Backend RoutineItemDto supports: { id, name, sets, weight, exerciseId, reps, note }
+// 백엔드 RoutineItemDto가 허용하는 필드만 구성해 요청 본문으로 보낸다.
 function toBackendRoutineItem(item) {
   if (!item || typeof item !== "object") return null;
   if (!String(item.name ?? "").trim()) return null;

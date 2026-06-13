@@ -1,3 +1,4 @@
+// 루틴·운동 기록 등 사용자별 로컬 데이터를 계정 키로 분리하고 로그아웃 시 해당 데이터만 정리한다.
 export const USER_STORAGE_PREFIXES = [
   "moduflow:routines-by-day:v1:",
   "moduflow:routine-rest-days:v1:",

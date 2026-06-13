@@ -1,3 +1,4 @@
+// React 빌드, PWA 매니페스트·서비스 워커, @ 경로 별칭과 개발 서버 설정을 정의한다.
 import { fileURLToPath, URL } from "node:url";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";

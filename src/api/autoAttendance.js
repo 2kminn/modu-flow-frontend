@@ -1,3 +1,4 @@
+// 홈 화면의 자동 출석 설정을 계정별 로컬 저장소와 서버 API 사이에서 동기화한다.
 import { apiClient } from "@/api/client";
 import {
   getStoredAuthIdentity,
@@ -38,7 +39,7 @@ export function saveAutoAttendanceEnabled(
     window.localStorage.setItem(storageKey, String(next));
     window.dispatchEvent(new CustomEvent(AUTO_ATTENDANCE_EVENT, { detail: next }));
   } catch {
-    // ignore
+    // 저장소가 차단되어도 메모리의 설정값은 호출자에게 반환한다.
   }
   return next;
 }

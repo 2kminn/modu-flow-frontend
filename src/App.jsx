@@ -1,3 +1,4 @@
+// 전체 라우트를 정의한다. 인증 화면은 AuthLayout, 일반 사용자 화면은 RootLayout과 RequireAuth에 연결된다.
 import { Navigate, Route, Routes } from "react-router-dom";
 import RequireAdmin from "@/auth/RequireAdmin";
 import RequireAuth from "@/auth/RequireAuth";
@@ -22,8 +23,10 @@ import ApiErrorToast from "@/components/ApiErrorToast";
 export default function App() {
   return (
     <>
+      {/* API 모듈에서 전달한 공통 오류를 현재 화면 위에 표시한다. */}
       <ApiErrorToast />
       <Routes>
+        {/* 로그인 전에도 접근할 수 있는 인증 관련 화면이다. */}
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<Login />} />
           <Route path="/oauth/callback" element={<OAuthCallback />} />
@@ -31,6 +34,7 @@ export default function App() {
           <Route path="/signup" element={<SignUp />} />
         </Route>
 
+        {/* 관리자 권한을 서버와 세션에서 확인한 뒤 CMS 화면을 연다. */}
         <Route
           path="/admin"
           element={
@@ -39,6 +43,7 @@ export default function App() {
             </RequireAdmin>
           }
         />
+        {/* 로그인한 일반 사용자가 이용하는 메인 애플리케이션 영역이다. */}
         <Route
           path="/cms"
           element={

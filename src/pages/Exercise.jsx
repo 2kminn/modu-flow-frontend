@@ -1,3 +1,4 @@
+// /workout/:exerciseId 상세 화면으로, 라우트의 운동 ID를 설명과 실행 화면 링크에 연결한다.
 import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Button from "@/components/ui/Button";

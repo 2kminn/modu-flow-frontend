@@ -1,3 +1,4 @@
+// App 전체에 현재 테마와 전환 함수를 제공하며 인증 화면의 임시 테마 재정의도 지원한다.
 import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { applyTheme, getStoredTheme, setStoredTheme } from "@/theme/theme";
 

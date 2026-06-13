@@ -1,3 +1,4 @@
+// 관리자 CMS와 연결되어 대시보드 요약 및 전체 출석 데이터를 조회하고 응답 형식을 통일한다.
 import { apiClient } from "@/api/client";
 import { normalizeAttendanceRecords } from "@/api/attendance";
 import { isDevTestAuthToken } from "@/auth/auth";

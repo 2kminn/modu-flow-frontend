@@ -1,3 +1,4 @@
+// 관리자 계정으로 로그인해 JWT 권한과 주요 관리자 API의 상태·CORS 헤더를 점검하는 수동 검증 스크립트다.
 const baseUrl = String(
   process.env.API_BASE_URL || process.env.VITE_API_BASE_URL || "https://3-39-194-42.sslip.io"
 ).replace(/\/+$/, "");

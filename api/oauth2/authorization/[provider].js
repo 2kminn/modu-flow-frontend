@@ -1,3 +1,4 @@
+// 프론트의 소셜 로그인 요청을 허용된 제공자인지 검사한 뒤 백엔드 OAuth 시작 주소로 이동시킨다.
 const DEFAULT_BACKEND_ORIGIN = "https://3-39-194-42.sslip.io";
 
 function normalizeOrigin(value) {

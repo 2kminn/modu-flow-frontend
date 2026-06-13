@@ -1,3 +1,4 @@
+// 비밀번호 변경 화면이다. 일반 계정은 인증 API에 변경을 요청하고 소셜 계정은 변경을 제한한다.
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import FloatingLabelInput from "@/components/ui/FloatingLabelInput";

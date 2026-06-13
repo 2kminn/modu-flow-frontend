@@ -1,3 +1,4 @@
+// 주간 목표의 정적 예시 화면이다. 현재 App에서는 /mypage로 리다이렉트되어 직접 사용되지 않는다.
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 

@@ -1,3 +1,4 @@
+// 로그인 화면이다. 이메일·소셜 인증 API의 결과를 세션에 저장하고 일반 화면 또는 관리자 CMS로 이동한다.
 import { useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Card from "@/components/ui/Card";
@@ -60,7 +61,7 @@ export default function Login() {
       window.sessionStorage.setItem(SOCIAL_LOGIN_RETURN_TO_KEY, fromPath);
       window.sessionStorage.setItem(SOCIAL_LOGIN_PROVIDER_KEY, provider);
     } catch {
-      // ignore
+      // 세션 저장소 접근이 제한돼도 소셜 로그인 페이지 이동은 계속한다.
     }
 
     clearAuthToken();
@@ -106,14 +107,14 @@ export default function Login() {
     try {
       await fetchMyProfile();
     } catch {
-      // The login token is authoritative. Some accounts cannot access /me.
+      // 로그인 토큰을 우선 사용하며, 일부 계정에서 /me 조회가 실패해도 로그인은 유지한다.
     }
     if (!isAdminSession()) {
       try {
         await fetchAdminDashboardSummary();
         addStoredAuthRoles("ADMIN");
       } catch {
-        // A regular user is expected to fail the admin capability check.
+        // 일반 사용자의 관리자 권한 확인 실패는 정상 흐름이므로 별도 오류로 표시하지 않는다.
       }
     }
     setLoading(false);

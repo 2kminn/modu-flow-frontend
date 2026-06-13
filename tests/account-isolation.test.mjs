@@ -1,3 +1,4 @@
+// 인증 헤더, 역할 판별, 계정별 캐시 삭제, 프록시 전달 규칙이 사용자 간에 섞이지 않는지 검증한다.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { replaceAuthorizationHeader } from "../src/auth/authHeaders.js";

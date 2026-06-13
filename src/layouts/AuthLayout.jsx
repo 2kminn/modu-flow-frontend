@@ -1,3 +1,4 @@
+// 로그인·회원가입 라우트가 공유하는 소개 영역과 밝은 테마를 제공하고 자식 화면을 Outlet에 표시한다.
 import { useLayoutEffect } from "react";
 import { Outlet } from "react-router-dom";
 import { useTheme } from "@/theme/ThemeProvider";

@@ -1,3 +1,4 @@
+// 애플리케이션 진입점이다. PWA, 테마, 인증 토큰, API 주소를 초기화한 뒤 App을 브라우저에 렌더링한다.
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
@@ -13,9 +14,7 @@ registerServiceWorker();
 applyTheme(getStoredTheme() ?? "light");
 syncStoredAuthTokenToNative();
 
-// Optional runtime override:
-//   https://your-frontend/login?apiBaseUrl=https://3-39-194-42.sslip.io
-// This helps local/mobile testing override the build-time VITE_API_BASE_URL.
+// 로컬·모바일 테스트에서는 URL의 apiBaseUrl 값으로 빌드 시 API 주소를 임시 재정의할 수 있다.
 try {
   const params = new URLSearchParams(window.location.search);
   const apiBaseUrl = params.get("apiBaseUrl");
@@ -27,7 +26,7 @@ try {
     window.history.replaceState({}, "", nextUrl);
   }
 } catch {
-  // ignore
+  // 잘못된 URL 값이 들어와도 기본 API 설정으로 계속 실행한다.
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(

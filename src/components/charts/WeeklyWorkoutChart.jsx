@@ -1,3 +1,4 @@
+// Stats 등에서 전달한 주간 데이터를 Chart.js 선 그래프로 그리며 테마 변경 시 색상을 다시 계산한다.
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Chart,

@@ -1,3 +1,4 @@
+// 테마 값을 localStorage와 HTML 루트 클래스에 반영하고 브라우저 theme-color도 함께 갱신한다.
 const THEME_KEY = "theme";
 
 export function getStoredTheme() {
@@ -14,7 +15,7 @@ export function setStoredTheme(theme) {
   try {
     localStorage.setItem(THEME_KEY, theme);
   } catch {
-    // ignore
+    // 저장소가 차단되면 현재 화면 테마만 유지한다.
   }
 }
 
@@ -30,6 +31,6 @@ export function applyTheme(theme) {
       requestAnimationFrame(() => root.classList.remove("theme-changing"));
     });
   } catch {
-    // ignore
+    // DOM 접근이 불가능한 환경에서는 테마 적용을 건너뛴다.
   }
 }

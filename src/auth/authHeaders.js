@@ -1,3 +1,4 @@
+// Axios 요청 헤더의 기존 인증 값을 제거하고 현재 계정의 Bearer 토큰 하나만 설정한다.
 export function replaceAuthorizationHeader(headers = {}, token, skipAuth = false) {
   if (typeof headers.delete === "function") {
     headers.delete("Authorization");

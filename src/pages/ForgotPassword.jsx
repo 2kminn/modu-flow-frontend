@@ -1,3 +1,4 @@
+// 비밀번호 찾기 화면이다. 현재는 입력 검증과 전송 완료 안내만 제공하는 임시 화면이다.
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Card from "@/components/ui/Card";

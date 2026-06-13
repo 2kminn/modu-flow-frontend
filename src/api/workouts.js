@@ -1,3 +1,4 @@
+// 홈·운동 실행·통계 화면의 일자별 운동 기록을 서버와 계정별 로컬 캐시에 저장하고 조회한다.
 import { apiClient } from "@/api/client";
 import {
   getAuthToken,
